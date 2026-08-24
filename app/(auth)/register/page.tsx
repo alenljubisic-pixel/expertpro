@@ -87,14 +87,20 @@ function RegisterForm() {
       return
     }
 
-    // Update profile with extra data
+    // Upsert profile with extra data (handles case where trigger hasn't run yet)
     if (data.user) {
-      await supabase.from('profiles').update({
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id: data.user.id,
         name: displayName,
         type: userType,
         pib: pib || null,
         is_approved: userType === 'individual',
-      }).eq('id', data.user.id)
+        email: email,
+      }, { onConflict: 'id' })
+
+      if (profileError) {
+        console.error('Profile upsert error:', profileError)
+      }
     }
 
     setSuccess(true)
