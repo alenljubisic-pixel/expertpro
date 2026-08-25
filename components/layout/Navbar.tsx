@@ -70,6 +70,18 @@ export default function Navbar() {
             >
               Radnici
             </Link>
+            <Link
+              href="/blog"
+              className={`text-sm font-medium transition-colors ${pathname.startsWith('/blog') ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              Blog
+            </Link>
+            <Link
+              href="/faq"
+              className={`text-sm font-medium transition-colors ${pathname.startsWith('/faq') ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              FAQ
+            </Link>
           </div>
 
           {/* Right side */}
@@ -166,6 +178,8 @@ export default function Navbar() {
           <Link href="/oglasi" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Oglasi</Link>
           <Link href="/oglasi?type=urgent" className="block text-sm font-medium text-red-600 py-2" onClick={() => setMenuOpen(false)}>🚨 Hitno</Link>
           <Link href="/radnici" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Radnici</Link>
+          <Link href="/blog" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Blog</Link>
+          <Link href="/faq" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>FAQ</Link>
           {user ? (
             <>
               <Link href="/oglasi/novi" className="block bg-blue-600 text-white text-center py-2 rounded-lg text-sm font-medium" onClick={() => setMenuOpen(false)}>+ Novi oglas</Link>
