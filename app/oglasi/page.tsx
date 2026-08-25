@@ -6,136 +6,136 @@ import { MapPin, Clock, Search, SlidersHorizontal, Plus } from 'lucide-react'
 import { SERBIAN_CITIES } from '@/types'
 
 const CATEGORIES = [
-  { icon: 'ðï¸', name: 'GraÄevina', slug: 'gradevina' },
-  { icon: 'ð§¹', name: 'ÄiÅ¡Äenje', slug: 'ciscenje' },
-  { icon: 'ð', name: 'Transport', slug: 'transport' },
-  { icon: 'ð½ï¸', name: 'Ugostiteljstvo', slug: 'ugostiteljstvo' },
-  { icon: 'ð·', name: 'PomoÄni radnici', slug: 'pomocni-radnici' },
-  { icon: 'ð¦', name: 'Magacin', slug: 'magacin' },
-  { icon: 'ð¶', name: 'Äuvanje i nega', slug: 'cuvanje' },
-  { icon: 'ð»', name: 'IT i raÄunari', slug: 'it' },
-  { icon: 'ð¾', name: 'Poljoprivreda', slug: 'poljoprivreda' },
-  { icon: 'ðª', name: 'DogaÄaji', slug: 'dogadjaji' },
-  { icon: 'ð', name: 'Administracija', slug: 'administracija' },
-  { icon: 'ð', name: 'Ostalo', slug: 'ostalo' },
+  { icon: '🔨', name: 'Građevina', slug: 'gradevina' },
+  { icon: '🧹', name: 'Čišćenje', slug: 'ciscenje' },
+  { icon: '🚛', name: 'Transport', slug: 'transport' },
+  { icon: '🍴', name: 'Ugostiteljstvo', slug: 'ugostiteljstvo' },
+  { icon: '👷', name: 'Pomoćni radnici', slug: 'pomocni-radnici' },
+  { icon: '📦', name: 'Magacin', slug: 'magacin' },
+  { icon: '👶', name: 'Čuvanje i nega', slug: 'cuvanje' },
+  { icon: '💻', name: 'IT i računari', slug: 'it' },
+  { icon: '🌾', name: 'Poljoprivreda', slug: 'poljoprivreda' },
+  { icon: '🎪', name: 'Događaji', slug: 'dogadjaji' },
+  { icon: '📋', name: 'Administracija', slug: 'administracija' },
+  { icon: '📌', name: 'Ostalo', slug: 'ostalo' },
 ]
 
 const TYPE_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   offer: { label: 'Nudim uslugu', color: 'text-green-700', bg: 'bg-green-50 border-green-200' },
-  request: { label: 'TraÅ¾im radnika', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
-  urgent: { label: 'ð¨ Hitno', color: 'text-red-700', bg: 'bg-red-50 border-red-200' },
+  request: { label: 'Tražim radnika', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
+  urgent: { label: '🚨 Hitno', color: 'text-red-700', bg: 'bg-red-50 border-red-200' },
 }
 
 const DUMMY_LISTINGS = [
   {
     id: 'd1',
     type: 'request',
-    title: 'TraÅ¾im iskusnog molera za stan od 60mÂ² u Beogradu',
-    description: 'Potreban moler za farbanje 3 sobe, hodnika i kupatila. Stanovanje obezbeÄeno. PoÄetak rada odmah.',
+    title: 'Tražim iskusnog molera za stan od 60m² u Beogradu',
+    description: 'Potreban moler za farbanje 3 sobe, hodnika i kupatila. Stanovanje obezbeđeno. Početak rada odmah.',
     city: 'Beograd',
     price_amount: 800,
     price_type: 'daily',
     profiles: { name: 'Stefan M.', rating_avg: 0, is_verified: false },
-    categories: { icon: 'ðï¸' },
+    categories: { icon: '🔨' },
   },
   {
     id: 'd2',
     type: 'offer',
-    title: 'Vodoinstalater â nudim usluge popravke i montaÅ¾e',
-    description: 'Popravka curenja, montaÅ¾a sanitarija, zamena cevi. 10 godina iskustva. Dostupan vikendom.',
+    title: 'Vodoinstalater — nudim usluge popravke i montaže',
+    description: 'Popravka curenja, montaža sanitarija, zamena cevi. 10 godina iskustva. Dostupan vikendom.',
     city: 'Novi Sad',
     price_amount: 1500,
     price_type: 'fixed',
     profiles: { name: 'Dragan P.', rating_avg: 4.8, is_verified: true },
-    categories: { icon: 'ðï¸' },
+    categories: { icon: '🔨' },
   },
   {
     id: 'd3',
     type: 'urgent',
-    title: 'HITNO â potrebni utovartivaÄi za selidbu danas u 14h',
-    description: 'Potrebna 2-3 radnika za selidbu nameÅ¡taja iz stana u Zemunu. Posao traje 3-4 sata.',
+    title: 'HITNO — potrebni utovartivači za selidbu danas u 14h',
+    description: 'Potrebna 2-3 radnika za selidbu nameštaja iz stana u Zemunu. Posao traje 3-4 sata.',
     city: 'Beograd',
     price_amount: 1200,
     price_type: 'fixed',
     profiles: { name: 'Marina T.', rating_avg: 0, is_verified: false },
-    categories: { icon: 'ð' },
+    categories: { icon: '🚛' },
   },
   {
     id: 'd4',
     type: 'offer',
-    title: 'ÄiÅ¡Äenje stanova, kancelarija i poslovnih prostora',
-    description: 'Profesionalno ÄiÅ¡Äenje sa sopstvenom opremom i sredstvima. Beograd i okolina. TaÄnost zagarantovana.',
+    title: 'Čišćenje stanova, kancelarija i poslovnih prostora',
+    description: 'Profesionalno čišćenje sa sopstvenom opremom i sredstvima. Beograd i okolina. Tačnost zagarantovana.',
     city: 'Beograd',
     price_amount: 600,
     price_type: 'hourly',
     profiles: { name: 'Jelena K.', rating_avg: 4.9, is_verified: true },
-    categories: { icon: 'ð§¹' },
+    categories: { icon: '🧹' },
   },
   {
     id: 'd5',
     type: 'request',
-    title: 'Potreban kuvar za porodiÄnu proslavu â 50 osoba',
-    description: 'TraÅ¾im kuvara koji moÅ¾e da pripremi srpsku trpezu za 50 osoba. Datum: naredni vikend. Nis.',
-    city: 'NiÅ¡',
+    title: 'Potreban kuvar za porodičnu proslavu — 50 osoba',
+    description: 'Tražim kuvara koji može da pripremi srpsku trpezu za 50 osoba. Datum: naredni vikend. Nis.',
+    city: 'Niš',
     price_amount: 5000,
     price_type: 'fixed',
     profiles: { name: 'Slobodan V.', rating_avg: 0, is_verified: false },
-    categories: { icon: 'ð½ï¸' },
+    categories: { icon: '🍴' },
   },
   {
     id: 'd6',
     type: 'offer',
-    title: 'IT podrÅ¡ka za firme â mreÅ¾na administracija i helpdesk',
-    description: 'Nudim IT podrÅ¡ku za mala preduzeÄa: postavljanje mreÅ¾e, odrÅ¾avanje raÄunara, backup sistemi.',
+    title: 'IT podrška za firme — mrežna administracija i helpdesk',
+    description: 'Nudim IT podršku za mala preduzeća: postavljanje mreže, održavanje računara, backup sistemi.',
     city: 'Novi Sad',
     price_amount: 1200,
     price_type: 'hourly',
-    profiles: { name: 'Aleksa Ä.', rating_avg: 5.0, is_verified: true },
-    categories: { icon: 'ð»' },
+    profiles: { name: 'Aleksa Đ.', rating_avg: 5.0, is_verified: true },
+    categories: { icon: '💻' },
   },
   {
     id: 'd7',
     type: 'offer',
-    title: 'Äuvanje dece uzrasta 1-7 godina â iskusna dadilja',
+    title: 'Čuvanje dece uzrasta 1-7 godina — iskusna dadilja',
     description: 'Medicinska sestra sa 8 godina iskustva u radu sa decom. Reference dostupne. Kragujevac.',
     city: 'Kragujevac',
     price_amount: 700,
     price_type: 'hourly',
     profiles: { name: 'Ana B.', rating_avg: 4.7, is_verified: true },
-    categories: { icon: 'ð¶' },
+    categories: { icon: '👶' },
   },
   {
     id: 'd8',
     type: 'request',
-    title: 'Potrebni radnici za magacin â pakovanje robe, noÄna smena',
-    description: 'Firma traÅ¾i 5 radnika za rad u magacinu (noÄna smena). Iskustvo nije potrebno. Subotica.',
+    title: 'Potrebni radnici za magacin — pakovanje robe, noćna smena',
+    description: 'Firma traži 5 radnika za rad u magacinu (noćna smena). Iskustvo nije potrebno. Subotica.',
     city: 'Subotica',
     price_amount: 1800,
     price_type: 'daily',
     profiles: { name: 'ProLogistika d.o.o.', rating_avg: 4.2, is_verified: true },
-    categories: { icon: 'ð¦' },
+    categories: { icon: '📦' },
   },
   {
     id: 'd9',
     type: 'urgent',
-    title: 'HITNO â elektricar za zamenu osigurica i instalacija',
+    title: 'HITNO — elektricar za zamenu osigurica i instalacija',
     description: 'Izgorele osigurace u stanu, deca bez struje. Potreban elektricar sto pre. Vracar, Beograd.',
     city: 'Beograd',
     price_amount: 2500,
     price_type: 'fixed',
     profiles: { name: 'Mirko O.', rating_avg: 0, is_verified: false },
-    categories: { icon: 'ðï¸' },
+    categories: { icon: '🔨' },
   },
   {
     id: 'd10',
     type: 'offer',
-    title: 'Administrativna podrÅ¡ka i data entry â rad od kuÄe',
-    description: 'Nudim usluge administrativne podrÅ¡ke: unos podataka, priprema dokumenata, email korespondencija.',
+    title: 'Administrativna podrška i data entry — rad od kuće',
+    description: 'Nudim usluge administrativne podrške: unos podataka, priprema dokumenata, email korespondencija.',
     city: 'Novi Sad',
     price_amount: 500,
     price_type: 'hourly',
     profiles: { name: 'Tamara L.', rating_avg: 4.6, is_verified: true },
-    categories: { icon: 'ð' },
+    categories: { icon: '📋' },
   },
 ]
 
@@ -183,10 +183,10 @@ export default async function ListingsPage({
       {isUrgent && (
         <div className="bg-red-600 text-white py-4">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-3">
-            <span className="text-2xl">ð¨</span>
+            <span className="text-2xl">🚨</span>
             <div>
               <h1 className="font-bold text-lg">Hitna berza</h1>
-              <p className="text-red-100 text-sm">Hitni poslovi â radnici se javljaju odmah</p>
+              <p className="text-red-100 text-sm">Hitni poslovi — radnici se javljaju odmah</p>
             </div>
           </div>
         </div>
@@ -206,7 +206,7 @@ export default async function ListingsPage({
                     type="text"
                     defaultValue={searchParams.q}
                     className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Å ta traÅ¾iÅ¡?"
+                    placeholder="Šta tražiš?"
                   />
                 </div>
               </div>
@@ -215,10 +215,10 @@ export default async function ListingsPage({
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Tip oglasa</label>
                 <div className="space-y-1">
                   {[
-                    { value: '', label: 'Svi oglasi' },
-                    { value: 'offer', label: 'ð¼ Nudim uslugu' },
-                    { value: 'request', label: 'ð TraÅ¾im radnika' },
-                    { value: 'urgent', label: 'ð¨ Hitno' },
+                    { value: '', label: 'Svi oglasi', dot: 'bg-gray-400' },
+                    { value: 'offer', label: 'Nudim uslugu', dot: 'bg-green-500' },
+                    { value: 'request', label: 'Tražim radnika', dot: 'bg-blue-500' },
+                    { value: 'urgent', label: 'Hitno', dot: 'bg-red-500' },
                   ].map(opt => (
                     <label key={opt.value} className="flex items-center gap-2 cursor-pointer py-1">
                       <input
@@ -228,6 +228,7 @@ export default async function ListingsPage({
                         defaultChecked={searchParams.type === opt.value || (!searchParams.type && opt.value === '')}
                         className="text-blue-600"
                       />
+                      <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${opt.dot}`} />
                       <span className="text-sm text-gray-700">{opt.label}</span>
                     </label>
                   ))}
@@ -275,7 +276,7 @@ export default async function ListingsPage({
                 Filtriraj
               </button>
               <Link href="/oglasi" className="block text-center text-xs text-gray-400 hover:text-gray-600">
-                PoniÅ¡ti filtere
+                Poništi filtere
               </Link>
             </form>
           </aside>
@@ -289,7 +290,7 @@ export default async function ListingsPage({
                   {searchParams.city ? ` u gradu ${searchParams.city}` : ''}
                 </p>
                 {isDemoMode && (
-                  <p className="text-xs text-amber-600 mt-0.5">ð Prikazani su primeri oglasa. Budi prvi koji postavlja pravi oglas!</p>
+                  <p className="text-xs text-amber-600 mt-0.5">📋 Prikazani su primeri oglasa. Budi prvi koji postavlja pravi oglas!</p>
                 )}
               </div>
               <Link
@@ -303,9 +304,9 @@ export default async function ListingsPage({
 
             {displayListings.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-                <p className="text-4xl mb-4">ð</p>
+                <p className="text-4xl mb-4">🔍</p>
                 <p className="text-gray-500 mb-2">Nema oglasa koji odgovaraju pretrazi</p>
-                <Link href="/oglasi" className="text-sm text-blue-600 hover:text-blue-700">PoniÅ¡ti filtere</Link>
+                <Link href="/oglasi" className="text-sm text-blue-600 hover:text-blue-700">Poništi filtere</Link>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -360,10 +361,10 @@ export default async function ListingsPage({
                         </div>
                         <span className="text-xs text-gray-600 truncate">{profile?.name}</span>
                         {profile?.rating_avg > 0 && (
-                          <span className="text-xs text-yellow-600 ml-auto flex-shrink-0">â {profile.rating_avg.toFixed(1)}</span>
+                          <span className="text-xs text-yellow-600 ml-auto flex-shrink-0">★ {profile.rating_avg.toFixed(1)}</span>
                         )}
                         {profile?.is_verified && (
-                          <span className="text-xs text-green-600 flex-shrink-0">â</span>
+                          <span className="text-xs text-green-600 flex-shrink-0">✓</span>
                         )}
                       </div>
                     </Link>
