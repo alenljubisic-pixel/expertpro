@@ -16,8 +16,18 @@ export default function Navbar() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [notifCount, setNotifCount] = useState(0)
   const pathname = usePathname()
   const supabase = createClient()
+
+  const fetchNotifCount = async (userId: string) => {
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_read', false)
+    setNotifCount(count ?? 0)
+  }
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -25,10 +35,27 @@ export default function Navbar() {
       if (data.user) {
         supabase.from('profiles').select('*').eq('id', data.user.id).single()
           .then(({ data: p }) => setProfile(p))
+        fetchNotifCount(data.user.id)
+
+        const channel = supabase
+          .channel('notif-count')
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${data.user.id}`,
+          }, () => {
+            fetchNotifCount(data.user.id)
+          })
+          .subscribe()
+
+        return () => { supabase.removeChannel(channel) }
       }
     })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null)
+      if (!session?.user) setNotifCount(0)
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -88,7 +115,6 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
-                {/* New Listing Button */}
                 <Link
                   href="/oglasi/novi"
                   className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
@@ -97,21 +123,25 @@ export default function Navbar() {
                   Novi oglas
                 </Link>
 
-                {/* Icons */}
                 <Link href="/poruke" className="relative p-2 text-gray-500 hover:text-gray-700">
                   <MessageSquare className="w-5 h-5" />
                 </Link>
-                <Link href="/obaveštenja" className="relative p-2 text-gray-500 hover:text-gray-700">
+
+                <Link href="/obavestenja" className="relative p-2 text-gray-500 hover:text-gray-700">
                   <Bell className="w-5 h-5" />
+                  {notifCount > 0 && (
+                    <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
+                      {notifCount > 99 ? '99+' : notifCount}
+                    </span>
+                  )}
                 </Link>
 
-                {/* User Menu */}
                 <div className="relative">
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                   >
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
                       {profile?.avatar_url
                         ? <img src={profile.avatar_url} className="w-8 h-8 rounded-full object-cover" alt="" />
                         : <UserIcon className="w-4 h-4 text-blue-600" />
@@ -132,7 +162,16 @@ export default function Navbar() {
                       <Link href="/dashboard/oglasi" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>
                         <Settings className="w-4 h-4" /> Moji oglasi
                       </Link>
-                      {profile?.type === 'individual' && (
+                      <Link href="/obavestenja" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>
+                        <Bell className="w-4 h-4" />
+                        Obaveštenja
+                        {notifCount > 0 && (
+                          <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
+                            {notifCount}
+                          </span>
+                        )}
+                      </Link>
+                      {profile?.is_verified && profile?.type === 'individual' && (
                         <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>
                           <Settings className="w-4 h-4" /> Admin panel
                         </Link>
@@ -162,7 +201,6 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile menu button */}
           <button
             className="md:hidden p-2 text-gray-500"
             onClick={() => setMenuOpen(!menuOpen)}
@@ -172,7 +210,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {menuOpen && (
         <div className="md:hidden border-t border-gray-200 bg-white px-4 py-4 space-y-3">
           <Link href="/oglasi" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Oglasi</Link>
@@ -183,6 +220,10 @@ export default function Navbar() {
           {user ? (
             <>
               <Link href="/oglasi/novi" className="block bg-blue-600 text-white text-center py-2 rounded-lg text-sm font-medium" onClick={() => setMenuOpen(false)}>+ Novi oglas</Link>
+              <Link href="/obavestenja" className="flex items-center gap-2 text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>
+                Obaveštenja
+                {notifCount > 0 && <span className="bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">{notifCount}</span>}
+              </Link>
               <Link href="/dashboard" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Moj profil</Link>
               <button onClick={handleSignOut} className="block w-full text-left text-sm font-medium text-red-600 py-2">Odjavi se</button>
             </>
