@@ -30,6 +30,9 @@ export default function ProfileEditPage() {
   const [experience, setExperience] = useState('')
   const [available, setAvailable] = useState(true)
   const [languages, setLanguages] = useState<string[]>(['Srpski'])
+  const [userType, setUserType] = useState<'individual' | 'company' | 'agency'>('individual')
+  const [pib, setPib] = useState('')
+  const [typeChangeRequested, setTypeChangeRequested] = useState(false)
 
   const router = useRouter()
   const supabase = createClient()
@@ -50,6 +53,8 @@ export default function ProfileEditPage() {
         setExperience(p.experience_years?.toString() || '')
         setAvailable(p.available ?? true)
         setLanguages(p.languages || ['Srpski'])
+        setUserType(p.type || 'individual')
+        setPib(p.pib || '')
       }
       setLoading(false)
     }
@@ -68,6 +73,9 @@ export default function ProfileEditPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
+    const typeChanged = userType !== profile?.type
+    const needsApproval = typeChanged && (userType === 'company' || userType === 'agency')
+
     await supabase.from('profiles').update({
       name,
       bio,
@@ -77,8 +85,13 @@ export default function ProfileEditPage() {
       experience_years: experience ? parseInt(experience) : null,
       available,
       languages,
+      type: userType,
+      pib: (userType === 'company' || userType === 'agency') ? (pib || null) : null,
+      is_approved: needsApproval ? false : (profile?.is_approved ?? true),
       updated_at: new Date().toISOString(),
     }).eq('id', user.id)
+
+    if (typeChanged) setTypeChangeRequested(needsApproval)
 
     setSaving(false)
     setSuccess(true)
@@ -261,6 +274,58 @@ export default function ProfileEditPage() {
               </div>
             </div>
           )}
+
+          {/* Account Type */}
+          <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+            <div>
+              <h2 className="font-semibold text-gray-900 mb-1">Tip naloga</h2>
+              <p className="text-xs text-gray-400">Promena tipa naloga na firmu ili agenciju zahteva odobrenje admina.</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { value: 'individual' as const, icon: '👤', label: 'Fizičko lice' },
+                { value: 'company' as const, icon: '🏢', label: 'Firma' },
+                { value: 'agency' as const, icon: '🏛️', label: 'Agencija' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setUserType(opt.value)}
+                  className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all text-center ${
+                    userType === opt.value
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="text-2xl mb-1">{opt.icon}</span>
+                  <span className="text-xs font-medium">{opt.label}</span>
+                </button>
+              ))}
+            </div>
+            {(userType === 'company' || userType === 'agency') && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">PIB (Porezni identifikacioni broj)</label>
+                <input
+                  type="text"
+                  value={pib}
+                  onChange={e => setPib(e.target.value)}
+                  maxLength={9}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="123456789"
+                />
+              </div>
+            )}
+            {userType !== profile?.type && (userType === 'company' || userType === 'agency') && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg text-sm">
+                ⚠️ Promena tipa na firmu/agenciju zahteva odobrenje admina. Sačuvaj promene i biće te obavešteni emailom.
+              </div>
+            )}
+            {typeChangeRequested && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                ✅ Zahtev za promenu tipa poslat. Bićete obavešteni emailom.
+              </div>
+            )}
+          </div>
 
           {/* Save */}
           <div className="flex items-center gap-4">
