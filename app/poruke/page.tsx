@@ -7,25 +7,50 @@ import ConversationList from '@/components/chat/ConversationList'
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: { conv?: string }
+  searchParams: Promise<{ conv?: string; new?: string }>
 }) {
+  const sp = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  let activeConvId = sp.conv
+
+  // Coming from a "Pošalji poruku" button (?new=<otherUserId>): find or
+  // create the conversation with that user, then continue as normal.
+  if (!activeConvId && sp.new && sp.new !== user.id) {
+    const otherUserId = sp.new
+    const { data: existingConv } = await supabase
+      .from('conversations')
+      .select('id')
+      .or(
+        `and(participant_1_id.eq.${user.id},participant_2_id.eq.${otherUserId}),and(participant_1_id.eq.${otherUserId},participant_2_id.eq.${user.id})`
+      )
+      .maybeSingle()
+
+    if (existingConv) {
+      activeConvId = existingConv.id
+    } else {
+      const { data: newConv } = await supabase
+        .from('conversations')
+        .insert({ participant_1_id: user.id, participant_2_id: otherUserId })
+        .select('id')
+        .single()
+      if (newConv) activeConvId = newConv.id
+    }
+  }
 
   const { data: conversations } = await supabase
     .from('conversations')
     .select(`
       *,
-      user1:profiles!user1_id(id, name, avatar_url, is_verified),
-      user2:profiles!user2_id(id, name, avatar_url, is_verified),
+      user1:profiles!participant_1_id(id, name, avatar_url, is_verified),
+      user2:profiles!participant_2_id(id, name, avatar_url, is_verified),
       listing:listings(id, title, type),
       messages(content, created_at, sender_id)
     `)
-    .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-    .order('updated_at', { ascending: false })
-
-  const activeConvId = searchParams.conv
+    .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`)
+    .order('last_message_at', { ascending: false })
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

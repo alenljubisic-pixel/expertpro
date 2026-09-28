@@ -18,7 +18,7 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
   const supabase = createClient()
 
   const conv = conversations.find(c => c.id === conversationId)
-  const other = conv?.user1_id === currentUserId ? conv?.user2 : conv?.user1
+  const other = conv?.participant_1_id === currentUserId ? conv?.user2 : conv?.user1
 
   useEffect(() => {
     loadMessages()
@@ -77,10 +77,10 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
       content,
     })
 
-    // Update conversation timestamp
+    // Update conversation preview/timestamp so it sorts to the top of the list
     await supabase
       .from('conversations')
-      .update({ updated_at: new Date().toISOString() })
+      .update({ last_message_at: new Date().toISOString(), last_message_preview: content.slice(0, 140) })
       .eq('id', conversationId)
 
     setSending(false)

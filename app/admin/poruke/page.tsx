@@ -23,8 +23,8 @@ export default async function AdminMessagesPage() {
       sender:profiles!sender_id(name, type),
       conversations(
         id,
-        user1:profiles!user1_id(name),
-        user2:profiles!user2_id(name),
+        user1:profiles!participant_1_id(name),
+        user2:profiles!participant_2_id(name),
         listing:listings(title)
       )
     `)

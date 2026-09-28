@@ -50,7 +50,7 @@ export default async function AdminPage() {
     supabase.from('messages').select('*', { count: 'exact', head: true }).eq('flagged_contact_share', true),
     supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(5),
     supabase.from('profiles').select('*').eq('is_approved', false).in('type', ['company', 'agency']).limit(10),
-    supabase.from('messages').select('*, conversations(user1_id, user2_id, listing_id)').eq('flagged_contact_share', true).order('created_at', { ascending: false }).limit(10),
+    supabase.from('messages').select('*, conversations(participant_1_id, participant_2_id, listing_id)').eq('flagged_contact_share', true).order('created_at', { ascending: false }).limit(10),
   ])
 
   return (

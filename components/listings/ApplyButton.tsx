@@ -81,14 +81,14 @@ export default function ApplyButton({ listingId, listingUserId, currentUserId, e
         .from('conversations')
         .select('id')
         .or(
-          `and(user1_id.eq.${currentUserId},user2_id.eq.${listingUserId}),and(user1_id.eq.${listingUserId},user2_id.eq.${currentUserId})`
+          `and(participant_1_id.eq.${currentUserId},participant_2_id.eq.${listingUserId}),and(participant_1_id.eq.${listingUserId},participant_2_id.eq.${currentUserId})`
         )
         .single()
 
       if (!existingConv) {
         await supabase.from('conversations').insert({
-          user1_id: currentUserId,
-          user2_id: listingUserId,
+          participant_1_id: currentUserId,
+          participant_2_id: listingUserId,
           listing_id: listingId,
         })
       }

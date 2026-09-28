@@ -23,7 +23,7 @@ export default function ConversationList({ conversations, currentUserId, activeC
       ) : (
         <div className="divide-y divide-gray-50">
           {conversations.map((conv) => {
-            const other = conv.user1_id === currentUserId ? conv.user2 : conv.user1
+            const other = conv.participant_1_id === currentUserId ? conv.user2 : conv.user1
             const lastMsg = conv.messages?.[conv.messages.length - 1]
             const isActive = conv.id === activeConvId
 

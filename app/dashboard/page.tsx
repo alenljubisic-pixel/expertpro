@@ -36,8 +36,8 @@ export default async function DashboardPage() {
   const { data: conversations } = await supabase
     .from('conversations')
     .select('*, messages(content, created_at)')
-    .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-    .order('updated_at', { ascending: false })
+    .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`)
+    .order('last_message_at', { ascending: false })
     .limit(5)
 
   const activeListings = myListings?.filter(l => l.status === 'active').length || 0
