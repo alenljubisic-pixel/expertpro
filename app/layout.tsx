@@ -36,6 +36,18 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+    : undefined,
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "ExpertPro",
+  url: SITE_URL,
+  description: SITE_DESCRIPTION,
+  areaServed: "RS",
 };
 
 export default function RootLayout({
@@ -45,7 +57,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="sr">
-      <body className={`${inter.className} min-h-full`}>{children}</body>
+      <body className={`${inter.className} min-h-full`}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
