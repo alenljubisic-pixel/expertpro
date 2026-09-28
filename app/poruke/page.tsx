@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import ChatWindow from '@/components/chat/ChatWindow'
 import ConversationList from '@/components/chat/ConversationList'
+import ConversationsRealtimeRefresher from '@/components/chat/ConversationsRealtimeRefresher'
 
 export default async function MessagesPage({
   searchParams,
@@ -55,6 +56,7 @@ export default async function MessagesPage({
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
+      <ConversationsRealtimeRefresher userId={user.id} />
 
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
         <h1 className="text-xl font-bold text-gray-900 mb-5">Poruke</h1>

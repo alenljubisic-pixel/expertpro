@@ -5,6 +5,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { MapPin, Star, CheckCircle, Briefcase, MessageSquare } from 'lucide-react'
 import { safeName, safeInitial } from '@/lib/safe-name'
+import ReviewForm from '@/components/reviews/ReviewForm'
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -36,6 +37,30 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
   const { data: { user } } = await supabase.auth.getUser()
   const isOwnProfile = user?.id === id
+
+  // Can this visitor leave a review? Only if they've messaged this person
+  // before (mirrors the DB trigger) and haven't already reviewed them.
+  let canReview = false
+  if (user && !isOwnProfile) {
+    const { data: existingConv } = await supabase
+      .from('conversations')
+      .select('id')
+      .or(
+        `and(participant_1_id.eq.${user.id},participant_2_id.eq.${id}),and(participant_1_id.eq.${id},participant_2_id.eq.${user.id})`
+      )
+      .maybeSingle()
+
+    if (existingConv) {
+      const { data: existingReview } = await supabase
+        .from('reviews')
+        .select('id')
+        .eq('reviewer_id', user.id)
+        .eq('reviewee_id', id)
+        .is('listing_id', null)
+        .maybeSingle()
+      canReview = !existingReview
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -170,6 +195,8 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
               </div>
             )}
 
+            {canReview && <ReviewForm revieweeId={id} />}
+
             {/* Reviews */}
             {reviews && reviews.length > 0 && (
               <div className="bg-white rounded-xl border border-gray-100 p-6">
@@ -201,7 +228,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
               </div>
             )}
 
-            {(!listings || listings.length === 0) && (!reviews || reviews.length === 0) && !profile.bio && (
+            {(!listings || listings.length === 0) && (!reviews || reviews.length === 0) && !profile.bio && !canReview && (
               <div className="bg-white rounded-xl border border-gray-100 p-10 text-center">
                 <p className="text-gray-400">Profil je tek kreiran</p>
               </div>

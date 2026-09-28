@@ -2,15 +2,16 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Send, AlertTriangle } from 'lucide-react'
+import { Send, AlertTriangle, Star } from 'lucide-react'
+import Link from 'next/link'
 import { safeInitial, safeName } from '@/lib/safe-name'
 import type { Message, Profile } from '@/types'
 
 interface ConversationSummary {
   id: string
   participant_1_id: string
-  user1?: Pick<Profile, 'name'> | null
-  user2?: Pick<Profile, 'name'> | null
+  user1?: Pick<Profile, 'id' | 'name'> | null
+  user2?: Pick<Profile, 'id' | 'name'> | null
   listing?: { title: string } | null
 }
 
@@ -113,7 +114,7 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
         <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600">
           {safeInitial(other?.name)}
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="font-medium text-gray-900 text-sm">{safeName(other?.name)}</p>
           {conv?.listing && (
             <p className="text-xs text-gray-400">
@@ -121,6 +122,15 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
             </p>
           )}
         </div>
+        {other?.id && (
+          <Link
+            href={`/profil/${other.id}`}
+            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 flex-shrink-0"
+          >
+            <Star className="w-3.5 h-3.5" />
+            Profil / oceni
+          </Link>
+        )}
       </div>
 
       {/* Warning */}
