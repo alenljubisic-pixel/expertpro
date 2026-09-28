@@ -5,8 +5,8 @@ import Navbar from '@/components/layout/Navbar'
 import { AlertTriangle, ArrowLeft, MessageSquare } from 'lucide-react'
 
 async function isAdmin(userId: string, supabase: any): Promise<boolean> {
-  const { data } = await supabase.from('profiles').select('type, is_verified').eq('id', userId).single()
-  return data?.type === 'individual' && data?.is_verified === true
+  const { data } = await supabase.from('profiles').select('is_admin').eq('id', userId).single()
+  return data?.is_admin === true
 }
 
 export default async function AdminMessagesPage() {

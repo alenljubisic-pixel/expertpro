@@ -3,16 +3,25 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import { Users, Briefcase, MessageSquare, AlertTriangle, CheckCircle, Clock, TrendingUp, Shield } from 'lucide-react'
+import { revalidatePath } from 'next/cache'
+
+async function approveUser(formData: FormData) {
+  'use server'
+  const id = formData.get('id') as string
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !(await isAdmin(user.id, supabase))) return
+  await supabase.from('profiles').update({ is_approved: true, is_active: true }).eq('id', id)
+  revalidatePath('/admin')
+}
 
 async function isAdmin(userId: string, supabase: any): Promise<boolean> {
-  // Admin check: profile type 'individual' with is_verified=true (customize to your needs)
-  // In production, add an 'is_admin' column to profiles
   const { data } = await supabase
     .from('profiles')
-    .select('type, is_verified')
+    .select('is_admin')
     .eq('id', userId)
     .single()
-  return data?.type === 'individual' && data?.is_verified === true
+  return data?.is_admin === true
 }
 
 export default async function AdminPage() {
@@ -132,7 +141,12 @@ export default async function AdminPage() {
                         {company.pib ? ` · PIB: ${company.pib}` : ''}
                       </p>
                     </div>
-                    <ApproveButton profileId={company.id} />
+                    <form action={approveUser}>
+                      <input type="hidden" name="id" value={company.id} />
+                      <button type="submit" className="flex-shrink-0 text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors">
+                        Odobri
+                      </button>
+                    </form>
                   </div>
                 ))
               ) : (
@@ -211,17 +225,5 @@ export default async function AdminPage() {
         </div>
       </main>
     </div>
-  )
-}
-
-// Inline server action button (simplified — in production use Server Actions)
-function ApproveButton({ profileId }: { profileId: string }) {
-  return (
-    <Link
-      href={`/admin/users?approve=${profileId}`}
-      className="flex-shrink-0 text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors"
-    >
-      Odobri
-    </Link>
   )
 }

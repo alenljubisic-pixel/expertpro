@@ -2,40 +2,47 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
-import { CheckCircle, XCircle, Clock, Shield, ArrowLeft } from 'lucide-react'
+import { CheckCircle, Clock, ArrowLeft } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 
 async function isAdmin(userId: string, supabase: any): Promise<boolean> {
-  const { data } = await supabase.from('profiles').select('type, is_verified').eq('id', userId).single()
-  return data?.type === 'individual' && data?.is_verified === true
+  const { data } = await supabase.from('profiles').select('is_admin').eq('id', userId).single()
+  return data?.is_admin === true
+}
+
+async function approveUser(formData: FormData) {
+  'use server'
+  const id = formData.get('id') as string
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !(await isAdmin(user.id, supabase))) return
+  await supabase.from('profiles').update({ is_approved: true, is_active: true }).eq('id', id)
+  revalidatePath('/admin/users')
+}
+
+async function rejectUser(formData: FormData) {
+  'use server'
+  const id = formData.get('id') as string
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !(await isAdmin(user.id, supabase))) return
+  await supabase.from('profiles').update({ is_approved: false, is_active: false }).eq('id', id)
+  revalidatePath('/admin/users')
 }
 
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: { filter?: string; approve?: string; reject?: string }
+  searchParams: Promise<{ filter?: string }>
 }) {
+  const sp = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
   const admin = await isAdmin(user.id, supabase)
   if (!admin) redirect('/dashboard')
 
-  // Handle approve/reject via searchParam (simple approach; use Server Actions in production)
-  if (searchParams.approve) {
-    await supabase.from('profiles')
-      .update({ is_approved: true, is_active: true })
-      .eq('id', searchParams.approve)
-    redirect('/admin/users')
-  }
-  if (searchParams.reject) {
-    await supabase.from('profiles')
-      .update({ is_approved: false, is_active: false })
-      .eq('id', searchParams.reject)
-    redirect('/admin/users')
-  }
-
-  const filter = searchParams.filter || 'all'
+  const filter = sp.filter || 'all'
 
   let query = supabase.from('profiles').select('*').order('created_at', { ascending: false })
   if (filter === 'pending') query = query.eq('is_approved', false).in('type', ['company', 'agency'])
@@ -118,18 +125,18 @@ export default async function AdminUsersPage({
                         <Clock className="w-4 h-4" />
                         Čeka
                       </span>
-                      <Link
-                        href={`/admin/users?approve=${u.id}`}
-                        className="text-xs bg-green-600 text-white px-2.5 py-1 rounded-lg hover:bg-green-700 transition-colors"
-                      >
-                        Odobri
-                      </Link>
-                      <Link
-                        href={`/admin/users?reject=${u.id}`}
-                        className="text-xs bg-red-500 text-white px-2.5 py-1 rounded-lg hover:bg-red-600 transition-colors"
-                      >
-                        Odbij
-                      </Link>
+                      <form action={approveUser}>
+                        <input type="hidden" name="id" value={u.id} />
+                        <button type="submit" className="text-xs bg-green-600 text-white px-2.5 py-1 rounded-lg hover:bg-green-700 transition-colors">
+                          Odobri
+                        </button>
+                      </form>
+                      <form action={rejectUser}>
+                        <input type="hidden" name="id" value={u.id} />
+                        <button type="submit" className="text-xs bg-red-500 text-white px-2.5 py-1 rounded-lg hover:bg-red-600 transition-colors">
+                          Odbij
+                        </button>
+                      </form>
                     </>
                   )}
                 </div>
