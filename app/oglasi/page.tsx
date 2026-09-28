@@ -4,6 +4,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { MapPin, Clock, Search, SlidersHorizontal, Plus } from 'lucide-react'
 import { SERBIAN_CITIES } from '@/types'
+import { safeName, safeInitial } from '@/lib/safe-name'
 
 const CATEGORIES = [
   { icon: '🔨', name: 'Građevina', slug: 'gradevina' },
@@ -357,9 +358,9 @@ export default async function ListingsPage({
 
                       <div className="border-t border-gray-50 px-5 py-3 flex items-center gap-2">
                         <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600 flex-shrink-0">
-                          {profile?.name ? profile.name[0].toUpperCase() : '?'}
+                          {safeInitial(profile?.name)}
                         </div>
-                        <span className="text-xs text-gray-600 truncate">{profile?.name}</span>
+                        <span className="text-xs text-gray-600 truncate">{safeName(profile?.name)}</span>
                         {profile?.rating_avg > 0 && (
                           <span className="text-xs text-yellow-600 ml-auto flex-shrink-0">★ {profile.rating_avg.toFixed(1)}</span>
                         )}

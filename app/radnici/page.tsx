@@ -4,6 +4,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { MapPin, Star, CheckCircle } from 'lucide-react'
 import { SERBIAN_CITIES } from '@/types'
+import { safeName, safeInitial } from '@/lib/safe-name'
 
 const SKILLS = [
   'Građevina', 'Čišćenje', 'Transport', 'Ugostiteljstvo',
@@ -103,10 +104,10 @@ export default async function WorkersPage({
                   >
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-lg font-bold text-blue-600 flex-shrink-0">
-                        {worker.name?.[0]?.toUpperCase() || '?'}
+                        {safeInitial(worker.name)}
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900 text-sm">{worker.name}</p>
+                        <p className="font-semibold text-gray-900 text-sm">{safeName(worker.name)}</p>
                         <div className="flex items-center gap-1.5 text-xs text-gray-400">
                           {worker.is_verified && (
                             <span className="flex items-center gap-0.5 text-green-600">

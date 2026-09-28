@@ -5,7 +5,7 @@ import { Check, X, Zap } from 'lucide-react'
 
 export const metadata = {
   title: 'Cenovnik | ExpertPro',
-  description: 'Pregled planova i cena na ExpertPro platformi. Fizička lica besplatno zauvek.',
+  description: 'Pregled planova i cena na ExpertPro platformi.',
 }
 
 const PLANS = [
@@ -21,7 +21,7 @@ const PLANS = [
       { text: '1 aktivan oglas po tipu posla', ok: true },
       { text: 'Profil sa ocenama i referencama', ok: true },
       { text: 'Poruke i kontakt', ok: true },
-      { text: 'Hitna berza — besplatno', ok: true },
+      { text: 'Hitna berza (kreditni oglas)', ok: true },
       { text: 'Oglas aktivan 15 dana (standardni)', ok: true },
       { text: 'Oglas aktivan 30 dana (dugoročni)', ok: true },
       { text: 'Više od 1 oglasa po tipu posla', ok: false },
@@ -84,7 +84,7 @@ export default function CenovnikPage() {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-900 mb-3">Cenovnik</h1>
             <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-              Fizička lica uvek besplatno. Firme i agencije plaćaju mesečnu pretplatu tek kad im treba više oglasa.
+              Fizička lica uvek besplatno. Firme i agencije dobijaju pristup proširenim funkcijama i neograničenim oglasima.
             </p>
           </div>
 
@@ -162,12 +162,11 @@ export default function CenovnikPage() {
             <div className="flex items-start gap-4">
               <div className="text-3xl">🚨</div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Hitna berza — besplatno</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Hitna berza — kreditni oglas</h2>
                 <p className="text-gray-600 leading-relaxed">
                   Hitna berza je sekcija za urgentne potrebe — kvar u stanu, hitna selidba, potreban radnik danas.
-                  Svi korisnici mogu besplatno postavljati hitne oglase. U budućnosti planiramo opciju
-                  plaćenog isticanja hitnih oglasa radi veće vidljivosti, ali osnovna funkcionalnost
-                  ostaje besplatna zauvek.
+                  Hitni oglasi se objavljuju putem kredita i šalju push notifikaciju svim dostupnim radnicima
+                  u vašem gradu. Sistem kredita je u pripremi — pratite vesti na platformi.
                 </p>
               </div>
             </div>

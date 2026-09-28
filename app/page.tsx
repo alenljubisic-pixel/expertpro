@@ -3,6 +3,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import HomeSearchBar from '@/components/home/HomeSearchBar'
 import { Star, Shield, Zap, Users, Briefcase, ChevronRight, MapPin, Clock } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 
 const CATEGORIES = [
   { icon: '🏗️', name: 'Građevina', slug: 'gradevina' },
@@ -25,100 +26,6 @@ const CATEGORIES = [
   { icon: '📋', name: 'Administracija', slug: 'administracija' },
   { icon: '🚗', name: 'Auto i moto', slug: 'auto' },
   { icon: '📌', name: 'Ostalo', slug: 'ostalo' },
-]
-
-const STATS = [
-  { number: '5.000+', label: 'Aktivnih radnika' },
-  { number: '1.200+', label: 'Firmi i agencija' },
-  { number: '15.000+', label: 'Završenih poslova' },
-  { number: '4.8★', label: 'Prosečna ocena' },
-]
-
-const FEATURED_LISTINGS = [
-  {
-    id: 'f1',
-    type: 'offer',
-    typeLabel: 'Nudim uslugu',
-    typeBg: 'bg-green-50 border-green-200 text-green-700',
-    title: 'Profesionalno čišćenje stanova i poslovnih prostora — Beograd',
-    desc: 'Iskusna spremačica sa 8 godina iskustva. Generalno čišćenje, čišćenje posle selidbe, peglanje. Sopstvena sredstva za čišćenje.',
-    city: 'Beograd',
-    price: '700 RSD/h',
-    name: 'Marija S.',
-    rating: '4.9',
-    category: '🧹',
-    urgent: false,
-  },
-  {
-    id: 'f2',
-    type: 'urgent',
-    typeLabel: '🚨 Hitno',
-    typeBg: 'bg-red-50 border-red-200 text-red-700',
-    title: 'HITNO — Tražim pomoćne radnike za selidbu sutra u 8h — Novi Sad',
-    desc: 'Potrebna 2–3 fizički snažna radnika za jednodnevnu selidbu. Plaćanje odmah po završetku posla. Prevoz obezbeđen.',
-    city: 'Novi Sad',
-    price: '3.500 RSD/dan',
-    name: 'Firma Selidbe NS',
-    rating: '4.7',
-    category: '🚛',
-    urgent: true,
-  },
-  {
-    id: 'f3',
-    type: 'offer',
-    typeLabel: 'Nudim uslugu',
-    typeBg: 'bg-green-50 border-green-200 text-green-700',
-    title: 'Babysitting — čuvanje dece uzrasta 1–10 godina, Beograd i okolina',
-    desc: 'Vaspitač po struci sa 5 godina iskustva u čuvanju dece. Dostupna vikendom i tokom školskih praznika. Reference dostupne.',
-    city: 'Beograd',
-    price: '800 RSD/h',
-    name: 'Ana J.',
-    rating: '5.0',
-    category: '👶',
-    urgent: false,
-  },
-  {
-    id: 'f4',
-    type: 'request',
-    typeLabel: 'Tražim radnika',
-    typeBg: 'bg-blue-50 border-blue-200 text-blue-700',
-    title: 'Potreban elektricar za zamenu razvodnoga ormana — Niš',
-    desc: 'Potrebna zamena glavnog razvodnog ormana u stanu. Posao za pola dana. Traži se licencirani majstor. Plaćanje gotovinom.',
-    city: 'Niš',
-    price: 'Dogovor',
-    name: 'Petar M.',
-    rating: '',
-    category: '🔧',
-    urgent: false,
-  },
-  {
-    id: 'f5',
-    type: 'offer',
-    typeLabel: 'Nudim uslugu',
-    typeBg: 'bg-green-50 border-green-200 text-green-700',
-    title: 'Šetanje pasa i pet-siting — Beograd (Zemun, Novi Beograd)',
-    desc: 'Ljubitelj životinja sa iskustvom u brizi o psima svih rasa. Šetam pse ujutru i popodne. Imam sopstveni auto za hitne slučajeve.',
-    city: 'Beograd',
-    price: '400 RSD/šetnja',
-    name: 'Jelena V.',
-    rating: '4.8',
-    category: '🐕',
-    urgent: false,
-  },
-  {
-    id: 'f6',
-    type: 'request',
-    typeLabel: 'Tražim radnika',
-    typeBg: 'bg-blue-50 border-blue-200 text-blue-700',
-    title: 'Traži se konobar/ica za privatnu proslavu — Kragujevac, subota',
-    desc: 'Organizujemo proslavu za 50 osoba. Potrebna jedna ili dve osobe sa iskustvom u posluživanju. Hrana i piće obezbeđeni. Plaćanje na dan.',
-    city: 'Kragujevac',
-    price: '4.000 RSD/dan',
-    name: 'Porodica Đorđević',
-    rating: '',
-    category: '🍽️',
-    urgent: false,
-  },
 ]
 
 const BLOG_PREVIEWS = [
@@ -145,7 +52,23 @@ const BLOG_PREVIEWS = [
   },
 ]
 
-export default function HomePage() {
+const TYPE_CONFIG: Record<string, { label: string; bg: string }> = {
+  offer:   { label: '💼 Nudim uslugu', bg: 'bg-green-50 border-green-200 text-green-700' },
+  request: { label: '🔍 Tražim radnika', bg: 'bg-blue-50 border-blue-200 text-blue-700' },
+  urgent:  { label: '🚨 Hitno', bg: 'bg-red-50 border-red-200 text-red-700' },
+}
+
+export default async function HomePage() {
+  const supabase = await createClient()
+
+  // Real featured listings (latest 6 active)
+  const { data: featuredListings } = await supabase
+    .from('listings')
+    .select('*, profile:profiles!user_id(name, rating_avg, is_verified)')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(6)
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -210,20 +133,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {STATS.map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-3xl font-bold text-blue-600">{s.number}</p>
-                <p className="text-sm text-gray-500 mt-1">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Categories */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -259,49 +168,67 @@ export default function HomePage() {
             </Link>
           </div>
 
+          {featuredListings && featuredListings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FEATURED_LISTINGS.map((listing) => (
+            {featuredListings.map((listing) => {
+              const profile = listing.profile as any
+              const cfg = TYPE_CONFIG[listing.type] ?? TYPE_CONFIG.offer
+              return (
               <Link
                 key={listing.id}
-                href="/oglasi"
+                href={`/oglasi/${listing.id}`}
                 className={`block bg-white rounded-xl border hover:shadow-md transition-all overflow-hidden ${
-                  listing.urgent ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-100'
+                  listing.type === 'urgent' ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-100'
                 }`}
               >
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-2 mb-3">
-                    <span className={`inline-block text-xs px-2.5 py-1 rounded-full border font-medium ${listing.typeBg}`}>
-                      {listing.typeLabel}
+                    <span className={`inline-block text-xs px-2.5 py-1 rounded-full border font-medium ${cfg.bg}`}>
+                      {cfg.label}
                     </span>
-                    <span className="text-lg">{listing.category}</span>
                   </div>
 
                   <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 text-sm leading-snug">
                     {listing.title}
                   </h3>
-                  <p className="text-xs text-gray-400 line-clamp-2 mb-3">{listing.desc}</p>
+                  <p className="text-xs text-gray-400 line-clamp-2 mb-3">{listing.description}</p>
 
                   <div className="flex items-center gap-3 text-xs text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {listing.city}
-                    </span>
-                    <span className="font-semibold text-blue-600">{listing.price}</span>
+                    {listing.city && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {listing.city}
+                      </span>
+                    )}
+                    {listing.price_amount && (
+                      <span className="font-semibold text-blue-600">
+                        {listing.price_amount.toLocaleString('sr-RS')} RSD
+                        {listing.price_type === 'hourly' ? '/h' : listing.price_type === 'daily' ? '/dan' : ''}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 <div className="border-t border-gray-50 px-5 py-3 flex items-center gap-2">
                   <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600 flex-shrink-0">
-                    {listing.name[0]}
+                    {profile?.name && !profile.name.includes('@') ? profile.name[0].toUpperCase() : 'K'}
                   </div>
-                  <span className="text-xs text-gray-600 truncate">{listing.name}</span>
-                  {listing.rating && (
-                    <span className="text-xs text-yellow-600 ml-auto flex-shrink-0">★ {listing.rating}</span>
+                  <span className="text-xs text-gray-600 truncate">
+                    {profile?.name && !profile.name.includes('@') ? profile.name : 'Korisnik'}
+                  </span>
+                  {profile?.rating_avg > 0 && (
+                    <span className="text-xs text-yellow-600 ml-auto flex-shrink-0">★ {profile.rating_avg.toFixed(1)}</span>
                   )}
                 </div>
               </Link>
-            ))}
+              )
+            })}
           </div>
+          ) : (
+            <div className="text-center py-12 text-gray-400">
+              <p>Još nema oglasa — budi prvi koji objavi!</p>
+            </div>
+          )}
 
           <div className="text-center mt-8">
             <Link
@@ -433,7 +360,7 @@ export default function HomePage() {
           <h2 className="text-3xl font-bold mb-4">Počni danas — besplatno</h2>
           <p className="text-blue-100 text-lg mb-8 max-w-2xl mx-auto">
             Registracija je besplatna. Fizička lica koriste platformu bez naknade.
-            Firme i agencije imaju grejs period od 6 meseci.
+            Firme i agencije imaju pristup svim funkcijama platforme.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
