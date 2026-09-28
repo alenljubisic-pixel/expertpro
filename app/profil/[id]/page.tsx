@@ -4,14 +4,16 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { MapPin, Star, CheckCircle, Briefcase, MessageSquare } from 'lucide-react'
+import { safeName, safeInitial } from '@/lib/safe-name'
 
-export default async function PublicProfilePage({ params }: { params: { id: string } }) {
+export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('is_active', true)
     .single()
 
@@ -20,7 +22,7 @@ export default async function PublicProfilePage({ params }: { params: { id: stri
   const { data: listings } = await supabase
     .from('listings')
     .select('*')
-    .eq('user_id', params.id)
+    .eq('user_id', id)
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(6)
@@ -28,12 +30,12 @@ export default async function PublicProfilePage({ params }: { params: { id: stri
   const { data: reviews } = await supabase
     .from('reviews')
     .select('*, reviewer:profiles!reviewer_id(name)')
-    .eq('reviewee_id', params.id)
+    .eq('reviewee_id', id)
     .order('created_at', { ascending: false })
     .limit(10)
 
   const { data: { user } } = await supabase.auth.getUser()
-  const isOwnProfile = user?.id === params.id
+  const isOwnProfile = user?.id === id
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -46,9 +48,9 @@ export default async function PublicProfilePage({ params }: { params: { id: stri
             <div className="bg-white rounded-xl border border-gray-100 p-6 sticky top-20">
               <div className="text-center mb-4">
                 <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-3xl font-bold text-blue-600 mx-auto mb-3">
-                  {profile.name?.[0]?.toUpperCase() || '?'}
+                  {safeInitial(profile.name)}
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">{profile.name}</h1>
+                <h1 className="text-xl font-bold text-gray-900">{safeName(profile.name)}</h1>
                 <p className="text-sm text-gray-400 capitalize mt-0.5">
                   {profile.type === 'individual' ? 'Fizičko lice'
                     : profile.type === 'company' ? 'Firma'
@@ -111,7 +113,7 @@ export default async function PublicProfilePage({ params }: { params: { id: stri
 
               {!isOwnProfile && user && (
                 <Link
-                  href={`/poruke?new=${params.id}`}
+                  href={`/poruke?new=${id}`}
                   className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
                 >
                   <MessageSquare className="w-4 h-4" />
@@ -179,9 +181,9 @@ export default async function PublicProfilePage({ params }: { params: { id: stri
                       <div key={review.id} className="border-b border-gray-50 pb-4 last:border-0 last:pb-0">
                         <div className="flex items-center gap-2 mb-1">
                           <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
-                            {reviewer?.name?.[0]?.toUpperCase() || '?'}
+                            {safeInitial(reviewer?.name)}
                           </div>
-                          <span className="text-sm font-medium text-gray-900">{reviewer?.name}</span>
+                          <span className="text-sm font-medium text-gray-900">{safeName(reviewer?.name)}</span>
                           <div className="flex gap-0.5 ml-1">
                             {Array.from({ length: 5 }, (_, i) => (
                               <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />

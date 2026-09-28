@@ -5,6 +5,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import ApplyButton from '@/components/listings/ApplyButton'
 import { MapPin, Calendar, Users, Star, Clock, ArrowLeft, CheckCircle, Eye } from 'lucide-react'
+import { safeName, safeInitial } from '@/lib/safe-name'
 
 const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   offer: { label: '💼 Nudim uslugu', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200' },
@@ -12,16 +13,17 @@ const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; bo
   urgent: { label: '🚨 Hitno', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200' },
 }
 
-export default async function ListingDetailPage({ params }: { params: { id: string } }) {
+export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
 
   // Increment view count
-  await supabase.rpc('increment_view_count', { listing_id: params.id })
+  await supabase.rpc('increment_view_count', { listing_id: id })
 
   const { data: listing } = await supabase
     .from('listings')
-    .select('*, profiles(*), categories(*)')
-    .eq('id', params.id)
+    .select('*, profiles!user_id(*), categories(*)')
+    .eq('id', id)
     .single()
 
   if (!listing) notFound()
@@ -32,7 +34,7 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
     ? await supabase
         .from('applications')
         .select('id, status')
-        .eq('listing_id', params.id)
+        .eq('listing_id', id)
         .eq('applicant_id', user.id)
         .single()
     : { data: null }
@@ -47,7 +49,7 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
   const { data: applicationCount } = await supabase
     .from('applications')
     .select('id', { count: 'exact' })
-    .eq('listing_id', params.id)
+    .eq('listing_id', id)
 
   const profile = listing.profiles as any
   const category = listing.categories as any
@@ -167,9 +169,9 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
                       <div key={review.id} className="border-b border-gray-50 pb-4 last:border-0 last:pb-0">
                         <div className="flex items-center gap-2 mb-1">
                           <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
-                            {reviewer?.name?.[0]?.toUpperCase() || '?'}
+                            {safeInitial(reviewer?.name)}
                           </div>
-                          <span className="text-sm font-medium text-gray-900">{reviewer?.name}</span>
+                          <span className="text-sm font-medium text-gray-900">{safeName(reviewer?.name)}</span>
                           <div className="flex gap-0.5 ml-1">
                             {Array.from({ length: 5 }, (_, i) => (
                               <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
@@ -191,10 +193,10 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
             <div className="bg-white rounded-xl border border-gray-100 p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-xl font-bold text-blue-600 flex-shrink-0">
-                  {profile?.name?.[0]?.toUpperCase() || '?'}
+                  {safeInitial(profile?.name)}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">{profile?.name}</p>
+                  <p className="font-semibold text-gray-900">{safeName(profile?.name)}</p>
                   <div className="flex items-center gap-1.5 text-xs text-gray-400">
                     {profile?.is_verified && (
                       <span className="flex items-center gap-0.5 text-green-600">

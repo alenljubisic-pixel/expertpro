@@ -582,8 +582,9 @@ export async function generateStaticParams() {
   return Object.keys(POSTS).map(slug => ({ slug }))
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const post = POSTS[params.slug]
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const post = POSTS[slug]
   if (!post) return {}
   return {
     title: `${post.title} — ExpertPro Blog`,
@@ -591,11 +592,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = POSTS[params.slug]
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const post = POSTS[slug]
   if (!post) notFound()
 
-  const relatedSlugs = Object.keys(POSTS).filter(s => s !== params.slug).slice(0, 3)
+  const relatedSlugs = Object.keys(POSTS).filter(s => s !== slug).slice(0, 3)
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
