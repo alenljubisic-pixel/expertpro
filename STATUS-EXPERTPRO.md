@@ -4,13 +4,42 @@
 
 ## Trenutno stanje
 
-- Poslednje ažuriranje: 28.09.2026, kasno popodne (Claude, Cowork sesija — drugi krug istog dana).
+- Poslednje ažuriranje: 28.09.2026, veče (Claude, Cowork sesija — treći krug istog dana).
 - Produkcioni repo: `alenljubisic-pixel/expertpro`, grana `main`.
 - Lokalni radni folder: `D:\Downloads\expertpro-code\expertpro`.
-- Poslednji deploy commit: `cb803f1` — Vercel status **READY**, live provereno (200 na `/`, `/oglasi`, `/cenovnik`), aliasovan na www.expertpro.app, expertpro.app.
+- Poslednji deploy commit: `c0dd0fdb` — Vercel status **READY**, aliasovan na www.expertpro.app, expertpro.app.
 - Produkcija: `https://www.expertpro.app`.
 - Supabase projekat: ExpertPro (`fktbnoxokvbnkxfazqvu`).
 - Search Console property: `sc-domain:expertpro.app` (DNS TXT verifikacija urađena i potvrđena u konzoli — **ne brisati** taj TXT zapis).
+
+## Urađeno u ovoj sesiji (Claude, 28.09.2026, treći krug)
+
+**1) Pokrenute sve preostale SQL migracije u produkciji** — kombinovane u `supabase/migration_RUN_ALL.sql` (i pojedinačno `migration_listing_promotions.sql`/`migration_credits.sql` učinjene idempotentnim dodavanjem `drop policy if exists` pre svakog `create policy`), pokrenuto direktno u Supabase SQL Editoru, potvrđeno upitom da sve kolone/tabele/trigeri postoje (commit `373514c4`).
+
+**2) Krediti sada vidljivi svuda** (commit `7e4d43e4`) — `CreditsWidget` (saldo + "Šta su krediti i zašto" objašnjenje sa marketinškim tekstom za sve tipove naloga, uključujući fizička lica) na `/dashboard` i `/dashboard/profil`; bedž sa brojem kredita u Navbar-u (desktop + mobilni + dropdown meni); prepravljen header na `/krediti` sa istim objašnjenjem. Provereno live.
+
+**3) Bug: link "Admin panel" se nije prikazivao ni pravim adminima** (commit `c0dd0fdb`) — `Navbar.tsx` i `dashboard/page.tsx` su proveravali `is_verified && type==='individual'` umesto pravog `profile.is_admin` (koji `app/admin/page.tsx` ispravno koristi server-side). Ispravljeno na `profile?.is_admin`. Nađeno test-iranjem u pravom, ulogovanom Chrome nalogu korisnika.
+
+**4) ⚠️ NALAZ — plaćanje je i dalje potpuno blokirano, iako je kod live:**
+- `public.payment_settings` ima tačno 1 red, ali `bank_name`, `account_holder`, `account_number`, `payment_reference_note` su svi **NULL**. Niko ih nikad nije popunio.
+- Testirano uživo: kupovina paketa kredita na `/krediti` ISPRAVNO kreira porudžbinu u `credit_purchases` i vodi na `/krediti/[orderId]`, ali stranica tamo ispravno prikazuje "Podaci za uplatu (broj računa) još nisu podešeni u admin panelu" — tj. UI se ponaša ispravno, problem je čisto nedostatak podataka.
+- Isto važi za Istaknut/Gold (`listing_promotions`/`istakni` flow) — koristi istu `payment_settings` tabelu, znači isto blokirano.
+- **Popravka zahteva unos pravog broja računa u `/admin/uplate`, što zahteva `is_admin=true`.**
+
+**5) ⚠️ `is_admin` je i dalje `false` za alenljubisic@gmail.com** — provereno uživo (`select is_admin from public.profiles where id='82f063f3-897a-47d4-bab4-227704c7f891'` → `false`). Agent NE SME sam da ovo menja (auto-mode klasifikator eksplicitno blokira promenu `is_admin`/privilegija — probano i odbijeno u prethodnom krugu). Korisnik mora sam pokrenuti u Supabase SQL Editoru:
+  ```sql
+  update public.profiles set is_admin = true where email = 'alenljubisic@gmail.com';
+  ```
+  Dok se ovo ne uradi: nema pristupa `/admin`, ne može se uneti broj računa, ne može se testirati odobravanje uplata.
+
+**6) Testiranje uživo (nastavak, "prvo redom sve") — status:**
+  - ✅ Početna strana, `/oglasi`, `/cenovnik` — bez grešaka u konzoli.
+  - ✅ Navbar kredit-bedž — radi, pokazuje pravi broj.
+  - ✅ `/krediti` — stranica i objašnjenje rade, kupovina paketa kreira porudžbinu ispravno.
+  - ❌ Uplata kredita/Istaknut/Gold — blokirano nedostatkom bankovnog broja računa (vidi #4).
+  - ⏸ `/admin/uplate` — blokirano dok `is_admin` nije `true` (vidi #5).
+  - ⏸ Objava oglasa (Istakni/Gold flow od kreiranja oglasa) — nije testirano, nalog nema nijedan oglas trenutno; kreiranje pravog oglasa na produkciji je javna akcija pa nije rađeno bez odobrenja korisnika.
+  - ⏸ Chat/poruke i ocenjivanje između dva naloga — nije testirano u ovom krugu.
 
 ## Urađeno u ovoj sesiji (Claude, 28.09.2026)
 
