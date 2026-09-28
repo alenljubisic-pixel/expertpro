@@ -32,6 +32,26 @@ async function rejectPromotion(formData: FormData) {
   revalidatePath('/admin/uplate')
 }
 
+async function confirmCreditPurchase(formData: FormData) {
+  'use server'
+  const id = formData.get('id') as string
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !(await isAdmin(user.id, supabase))) return
+  await supabase.rpc('admin_confirm_credit_purchase', { p_purchase_id: id })
+  revalidatePath('/admin/uplate')
+}
+
+async function rejectCreditPurchase(formData: FormData) {
+  'use server'
+  const id = formData.get('id') as string
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !(await isAdmin(user.id, supabase))) return
+  await supabase.rpc('admin_reject_credit_purchase', { p_purchase_id: id })
+  revalidatePath('/admin/uplate')
+}
+
 async function updatePaymentSettings(formData: FormData) {
   'use server'
   const supabase = await createClient()
@@ -81,6 +101,16 @@ export default async function AdminPaymentsPage({
 
   const { data: orders } = await query.limit(200)
 
+  let creditQuery = supabase
+    .from('credit_purchases')
+    .select('*, profiles!user_id(name, email)')
+    .order('created_at', { ascending: false })
+
+  if (filter === 'pending') creditQuery = creditQuery.in('status', ['pending_payment', 'user_confirmed'])
+  else if (filter !== 'all') creditQuery = creditQuery.eq('status', filter)
+
+  const { data: creditOrders } = await creditQuery.limit(200)
+
   const { data: settings } = await supabase
     .from('payment_settings')
     .select('bank_name, account_holder, account_number, payment_reference_note')
@@ -102,7 +132,7 @@ export default async function AdminPaymentsPage({
           <Link href="/admin" className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
             <ArrowLeft className="w-5 h-5 text-gray-500" />
           </Link>
-          <h1 className="text-xl font-bold text-gray-900">Uplate — Istaknuto / Gold</h1>
+          <h1 className="text-xl font-bold text-gray-900">Uplate — Istaknuto / Gold / Krediti</h1>
         </div>
 
         {/* Bank details settings */}
@@ -154,7 +184,8 @@ export default async function AdminPaymentsPage({
           ))}
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Istaknuto / Gold</h2>
+        <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 mb-8">
           {!orders || orders.length === 0 ? (
             <div className="p-8 text-center text-gray-400">Nema porudžbina u ovoj kategoriji</div>
           ) : (
@@ -191,6 +222,51 @@ export default async function AdminPaymentsPage({
                         </button>
                       </form>
                       <form action={rejectPromotion}>
+                        <input type="hidden" name="id" value={o.id} />
+                        <button type="submit" className="flex items-center gap-1 text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors">
+                          <X className="w-3.5 h-3.5" /> Odbij
+                        </button>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Kupovina kredita</h2>
+        <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
+          {!creditOrders || creditOrders.length === 0 ? (
+            <div className="p-8 text-center text-gray-400">Nema porudžbina u ovoj kategoriji</div>
+          ) : (
+            creditOrders.map((o: any) => {
+              const status = STATUS_LABEL[o.status] || STATUS_LABEL.pending_payment
+              const canAct = o.status === 'pending_payment' || o.status === 'user_confirmed'
+              return (
+                <div key={o.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-gray-900 text-sm">{o.credits_amount} kredita</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${status.bg}`}>{status.label}</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {safeName(o.profiles?.name)} · {o.price_amount} {o.currency} · šifra{' '}
+                      <span className="font-mono text-gray-600">{o.reference_code}</span> ·{' '}
+                      {new Date(o.created_at).toLocaleString('sr-RS')}
+                    </p>
+                    {o.admin_note && <p className="text-xs text-gray-400 mt-0.5">Napomena: {o.admin_note}</p>}
+                  </div>
+
+                  {canAct && (
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <form action={confirmCreditPurchase}>
+                        <input type="hidden" name="id" value={o.id} />
+                        <button type="submit" className="flex items-center gap-1 text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors">
+                          <Check className="w-3.5 h-3.5" /> Potvrdi
+                        </button>
+                      </form>
+                      <form action={rejectCreditPurchase}>
                         <input type="hidden" name="id" value={o.id} />
                         <button type="submit" className="flex items-center gap-1 text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors">
                           <X className="w-3.5 h-3.5" /> Odbij

@@ -3,6 +3,7 @@ import Footer from '@/components/layout/Footer'
 import Link from 'next/link'
 import { Check, X, Zap, Star, Crown } from 'lucide-react'
 import { PROMOTION_TIERS, PROMOTION_PRICES, PROMOTION_DURATIONS, type PromotionTier } from '@/lib/promotions'
+import { CREDIT_PACKAGES, PAID_MEMBERSHIP_WELCOME_BONUS_CREDITS } from '@/lib/credits'
 
 export const metadata = {
   title: 'Cenovnik | ExpertPro',
@@ -189,17 +190,44 @@ export default function CenovnikPage() {
 
           {/* Hitno info */}
           <div className="bg-red-50 border border-red-100 rounded-2xl p-8 mb-8">
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 mb-5">
               <div className="text-3xl">🚨</div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-2">Hitna berza — kreditni oglas</h2>
                 <p className="text-gray-600 leading-relaxed">
                   Hitna berza je sekcija za urgentne potrebe — kvar u stanu, hitna selidba, potreban radnik danas.
-                  Hitni oglasi se objavljuju putem kredita i šalju push notifikaciju svim dostupnim radnicima
-                  u vašem gradu. Sistem kredita je u pripremi — pratite vesti na platformi.
+                  Hitni oglasi se objavljuju putem kredita i šalju push notifikaciju svim dostupnim radnicima u vašem gradu.
+                  1 kredit = 1 hitan oglas. Krediti se kupuju u paketima (uplata na tekući račun), ne pojedinačno po oglasu.
                 </p>
               </div>
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Fizička lica</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {CREDIT_PACKAGES.individual.map(pkg => (
+                    <div key={pkg.key} className="bg-white rounded-lg border border-gray-100 py-2 text-center">
+                      <div className="text-sm font-bold text-gray-900">{pkg.price.toLocaleString('sr-RS')} RSD</div>
+                      <div className="text-xs text-gray-400">{pkg.credits} kredita</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Firma / Agencija</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {CREDIT_PACKAGES.business.map(pkg => (
+                    <div key={pkg.key} className="bg-white rounded-lg border border-gray-100 py-2 text-center">
+                      <div className="text-sm font-bold text-gray-900">{pkg.price.toLocaleString('sr-RS')} RSD</div>
+                      <div className="text-xs text-gray-400">{pkg.credits} kredita</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-4">
+              Firma ili agencija sa punim članstvom dobija {PAID_MEMBERSHIP_WELCOME_BONUS_CREDITS} gratis kredita jednokratno pri odobrenju punog članstva.
+            </p>
           </div>
 
           {/* FAQ */}

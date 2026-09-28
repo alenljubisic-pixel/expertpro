@@ -95,6 +95,10 @@ function NewListingForm() {
     if (!title.trim()) { setError('Naslov je obavezan.'); return }
     if (!city) { setError('Izaberi grad.'); return }
     if (!categoryId) { setError('Izaberi kategoriju.'); return }
+    if (type === 'urgent' && (profile?.credit_balance || 0) < 1) {
+      setError('Nemaš dovoljno kredita za hitan oglas.')
+      return
+    }
 
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
@@ -162,12 +166,22 @@ function NewListingForm() {
             </div>
 
             {type === 'urgent' && (
-              <div className="mt-3 flex items-start gap-2 bg-red-50 rounded-lg p-3">
-                <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-red-700">
-                  Hitni oglas šalje push notifikaciju svim radnicima u izabranom gradu.
-                  Koristiti samo za stvarno hitne situacije.
-                </p>
+              <div className="mt-3 space-y-2">
+                <div className="flex items-start gap-2 bg-red-50 rounded-lg p-3">
+                  <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-700">
+                    Hitni oglas šalje push notifikaciju svim radnicima u izabranom gradu.
+                    Koristiti samo za stvarno hitne situacije. Objava hitnog oglasa košta 1 kredit.
+                  </p>
+                </div>
+                {(profile?.credit_balance || 0) < 1 ? (
+                  <div className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p className="text-xs text-amber-800">Nemaš kredita ({profile?.credit_balance || 0} na stanju).</p>
+                    <Link href="/krediti" className="text-xs font-medium text-amber-800 underline whitespace-nowrap">Kupi kredite →</Link>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400">Trenutno stanje: {profile.credit_balance} kredita.</p>
+                )}
               </div>
             )}
           </div>
