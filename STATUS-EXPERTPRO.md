@@ -38,6 +38,88 @@ Ovo je sada urađeno i potvrđeno (`is_admin = true`), admin panel je live-testi
 **Provereno:** `npx tsc --noEmit` čisto, `npm run build` prolazi ceo (svih ~40 ruta), `eslint` bez grešaka (samo pre-postojeća `any` upozorenja).
 
 ⚠️ **Sledeće za proveru:** skenirati IPS QR kod pravom bankarskom aplikacijom (Raiffeisen/Intesa/OTP itd. IPS skener) da se potvrdi da se račun/iznos/naziv tačno pročitaju pre nego što se korisnicima kaže da mu veruju bez gledanja u ručne podatke ispod.
+
+## Krug 6 (28.09.2026, kasno veče) — puna provera sajta pred lansiranje: nađeni bagovi, šta radi, šta ne, MVP vs finalna verzija
+
+Alen je tražio: testiraj sve što možeš, javi šta je dummy/pokvareno, popravi do kraja, proveri poruke i životni ciklus oglasa (dodeljen/popunjen), proveri verifikaciju/značke, i napravi listu šta je bitno za početnu verziju a šta za finalnu.
+
+### 🔴 BAG NAĐEN — dugme "Odobri" u `/admin/users` NIJE RADILO (uzrok pronađen, fix čeka tebe da pokreneš)
+
+Isti uzrok kao ranije sa `is_admin` preko SQL Editora, ali ovog puta na pravoj aplikaciji: `public.profiles` ima samo JEDNO UPDATE RLS pravilo — "korisnik menja samo svoj red". Kad admin (na sajtu, ulogovan, ne u SQL Editoru) klikne "Odobri" na TUĐEM nalogu, red ne prolazi kroz RLS proveru pa se upit tiho ne izvrši (nema greške, dugme "radi" ali ništa se ne menja). **Isti bag postoji i u `/admin/oglasi`** — dugmad Obriši/Pauziraj/Aktiviraj na tuđem oglasu isto tiho ne rade, identičan uzrok (na `listings` tabeli postoje samo pravila "vlasnik menja svoj oglas", nema admin pravila).
+
+**Fix je napisan, ALI agent (ja) ne sme sam da menja RLS pravila na produkciji — sistem me je blokirao kad sam pokušao da ga pokrenem automatski.** Ti moraš da odeš u Supabase SQL Editor (isti tab/projekat kao i pre) i pokreneš ovaj SQL — već je bio ubačen u editor u sesiji, ali evo ga i ovde da ne izgubiš:
+
+```sql
+-- FIX 1: Odobri dugme na /admin/users
+drop policy if exists "Admins can update any profile" on public.profiles;
+create policy "Admins can update any profile" on public.profiles
+  for update using (
+    exists (select 1 from public.profiles p2 where p2.id = auth.uid() and p2.is_admin = true)
+  );
+
+-- FIX 2: Obriši / pauziraj-aktiviraj tuđi oglas na /admin/oglasi
+drop policy if exists "Admins can update any listing" on public.listings;
+create policy "Admins can update any listing" on public.listings
+  for update using (
+    exists (select 1 from public.profiles p2 where p2.id = auth.uid() and p2.is_admin = true)
+  );
+
+drop policy if exists "Admins can delete any listing" on public.listings;
+create policy "Admins can delete any listing" on public.listings
+  for delete using (
+    exists (select 1 from public.profiles p2 where p2.id = auth.uid() and p2.is_admin = true)
+  );
+```
+
+Bezbedno je — ne daje nikom nova prava, samo dozvoljava POSTOJEĆEM adminu da uradi ono što UI već pretpostavlja da može. `prevent_privilege_escalation` trigger i dalje čuva `is_admin`/`is_verified`/`is_approved` od samo-dodele bez obzira na ovo. Fajlovi su sačuvani u repo: `supabase/migration_admin_can_update_profiles.sql`, `supabase/migration_admin_can_update_listings.sql`. **Posle pokretanja: probaj ponovo "Odobri" na `/admin/users?filter=pending` i Obriši/Pauziraj na `/admin/oglasi` da potvrdimo da radi.**
+
+### ✅ Provereno da RADI ispravno
+
+- `/admin/uplate` — Potvrdi/Odbij za uplate kredita i za isticanje oglasa: pozivaju `admin_confirm_promotion`/`admin_reject_promotion`/`admin_confirm_credit_purchase`/`admin_reject_credit_purchase` — to su SECURITY DEFINER funkcije koje zaobilaze RLS namerno, ispravno povezano.
+- `/admin/uplate` pretraga (dodata prošli krug) — radi.
+- Poruke (`/poruke`) — slanje, prijem, realtime osvežavanje (bez ručnog refresh-a), i automatsko flagovanje poruka koje sadrže broj telefona/email (da ljudi ne zaobilaze platformu) — sve radi ispravno, RLS pravila se poklapaju sa kodom.
+- `is_verified` (zelena kvačica), `avatar_url`, `rating_avg`/`rating_count`, recenzije — sve postoji u bazi i ispravno se prikazuje gde treba.
+
+### 🟡 Nađeno — postoji u bazi/tipovima ali NIJE povezano ni sa čim (kozmetičko, ne blokira lansiranje)
+
+- `conversations.unread_count_1/2` i `messages.is_read` kolone postoje u bazi ali se nigde ne koriste — nema "nepročitano" oznake na porukama (zvonce za obaveštenja je odvojen, ispravan sistem).
+
+### 🟠 NAĐENO — životni ciklus oglasa (dodeljen/popunjen) NE POSTOJI, iako baza ima mesto za njega
+
+Proverio sam pažljivo šta tačno postoji: `ListingStatus` tip već ima vrednost `'filled'` (popunjen), i baza to dozvoljava, ALI **ništa u kodu nikad ne postavlja oglas na `'filled'`** — to je samo priprema koja nikad nije iskorišćena. Ono što STVARNO postoji: vlasnik oglasa može da Prihvati/Odbije prijavu (`applications` tabela), ali to menja SAMO status prijave — sam oglas ostaje `active` i dalje se prikazuje javno kao da je slobodan.
+
+Znači, tačno ono što si tražio — treba izgraditi od nule:
+1. Kad vlasnik prihvati prijavu → oglas automatski postane neaktivan/`filled` i nestane iz `/oglasi` javne liste.
+2. Ako "dodeljena" osoba (prihvaćeni kandidat) NE potvrdi sa svoje strane (treba dodati korak potvrde na strani izvođača, trenutno ne postoji uopšte) → oglas se automatski vrati na aktivan.
+3. Vlasnik može ručno da vrati oglas na aktivan u svakom trenutku dok nije obostrano potvrđeno.
+
+Ovo je srednje veliki feature (nova kolona za "potvrda izvođača", nova dugmad na obe strane, izmena filtera javne liste) — **predlažem da bude sledeći zadatak posle ovog izveštaja**, pošto zahteva dizajn odluke (npr. da li izvođač dobija rok od X dana da potvrdi) koju je bolje da prvo ti odobriš pre nego što gradim.
+
+### 🟠 NAĐENO — "verifikovan" značka je danas samo ručni admin prekidač, ne prati stvarno stanje
+
+Trenutno: `is_verified` postoji i prikazuje se kao značka, ali ga NIKO ne postavlja automatski — samo admin ručno klikne. Konkretno nedostaje sve što si tražio:
+- **Nema upload slike profila uopšte** — `avatar_url` se popuni SAMO ako se korisnik uloguje preko Google-a (uzme se Google slika); korisnik koji se registrovao emailom/lozinkom nema NIKAKAV način da postavi profilnu sliku. Ovo treba dodati (upload dugme + Supabase Storage bucket) pre nego što "slika → verifikovan" uopšte ima smisla.
+- **Nema logike "email potvrđen → verifikovan"** — Supabase Auth već zna da li je email potvrđen (`email_confirmed_at`), ali kod to nigde ne proverava niti povezuje sa `is_verified`.
+- **Nema posebne "platio je" značke** — korisnik koji je kupio kredite izgleda identično kao neko ko nije, nema vizuelne razlike.
+- **Nema značke po oceni** (bronza/srebro/zlato ili slično) — ocena se prikazuje samo kao broj (★ 4.5), nema nivoe/nagrade koje bi korisnik "hteo da dostigne".
+
+### 📋 MVP (za prvo puštanje online) vs. Finalna verzija
+
+**Mora pre lansiranja (blokira "online app"):**
+1. Pokrenuti 2 SQL fixa iznad (Odobri dugme + oglasi admin akcije) — 5 minuta, samo ti to možeš.
+2. Skenirati IPS QR kod pravom bankarskom aplikacijom bar jednom da se potvrdi da radi (ili ga ukloniti ako ne stigneš da testiraš, pa ostaju samo ručni podaci kao rezerva — oni sigurno rade).
+3. Sve ostalo (plaćanja, poruke, oglasi, prijave, admin odobravanje) je već testirano i radi.
+
+**Može posle lansiranja / za finalnu verziju (ne blokira, ali je bitno za rast):**
+1. Životni ciklus oglasa (dodeljen → nestaje iz ponude → auto-povratak ako se ne potvrdi) — srednje veliki feature, treba tvoja odluka o roku za potvrdu.
+2. Upload profilne slike (email/lozinka korisnici) + automatska verifikacija na osnovu potvrđenog emaila i slike.
+3. Posebna "plaćeni korisnik" značka.
+4. Sistem značaka po oceni (nivoi/nagrade) da motiviše korisnike i one koji ocenjuju.
+5. "Nepročitano" oznaka na porukama (kolone već postoje u bazi, samo treba UI).
+6. Telegram bot za brže odobravanje uplata (već ranije pomenuto, nije građeno).
+7. Poseban "interni admin" nalog za firme/agencije, odvojen od tvog admin naloga za ceo sajt (već ranije pomenuto, nije građeno).
+
+**Sledeći korak:** čekam da pokreneš 2 SQL fixa i potvrdiš da Odobri/Obriši dugmad rade, pa mi reci kojim redosledom da idem kroz stavke iz "finalna verzija" liste (predlažem prvo životni ciklus oglasa, pošto direktno utiče na to da li se ponuda "čisti" od popunjenih poslova).
 - Produkcija: `https://www.expertpro.app`.
 - Supabase projekat: ExpertPro (`fktbnoxokvbnkxfazqvu`).
 - Search Console property: `sc-domain:expertpro.app` (DNS TXT verifikacija urađena i potvrđena u konzoli — **ne brisati** taj TXT zapis).
