@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   if (!listing) return {}
 
-  const title = `${listing.title} — ${listing.city} | ExpertPro`
+  const title = `${listing.title} — ${listing.city}`
   const description = (listing.description || `Oglas na ExpertPro platformi u gradu ${listing.city}.`).slice(0, 160)
 
   return {
