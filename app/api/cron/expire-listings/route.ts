@@ -21,5 +21,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ expired: data ?? 0 })
+  const { error: promoError } = await supabase.rpc('demote_expired_promotions')
+
+  return NextResponse.json({
+    expired: data ?? 0,
+    promotionsDemoteError: promoError ? promoError.message : null,
+  })
 }

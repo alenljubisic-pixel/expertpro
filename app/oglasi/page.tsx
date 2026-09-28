@@ -48,6 +48,8 @@ export default async function ListingsPage({
     .from('listings')
     .select('*, profiles!user_id(name, avatar_url, rating_avg, is_verified), categories(icon)', { count: 'exact' })
     .eq('status', 'active')
+    .order('is_gold', { ascending: false })
+    .order('is_featured', { ascending: false })
     .order('created_at', { ascending: false })
 
   if (sp.type) query = query.eq('type', sp.type)
@@ -209,14 +211,28 @@ export default async function ListingsPage({
                       key={listing.id}
                       href={`/oglasi/${listing.id}`}
                       className={`block bg-white rounded-xl border hover:shadow-md transition-all overflow-hidden ${
-                        listing.type === 'urgent' ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-100'
+                        listing.is_gold ? 'border-amber-300 ring-1 ring-amber-200'
+                        : listing.type === 'urgent' ? 'border-red-200 ring-1 ring-red-100'
+                        : 'border-gray-100'
                       }`}
                     >
                       <div className="p-5">
                         <div className="flex items-start justify-between gap-2 mb-3">
-                          <span className={`inline-block text-xs px-2.5 py-1 rounded-full border font-medium ${typeInfo.bg} ${typeInfo.color}`}>
-                            {typeInfo.label}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`inline-block text-xs px-2.5 py-1 rounded-full border font-medium ${typeInfo.bg} ${typeInfo.color}`}>
+                              {typeInfo.label}
+                            </span>
+                            {listing.is_gold && (
+                              <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-amber-300 bg-amber-50 text-amber-700 font-medium">
+                                🏆 Gold
+                              </span>
+                            )}
+                            {!listing.is_gold && listing.is_featured && (
+                              <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-blue-200 bg-blue-50 text-blue-700 font-medium">
+                                ⭐ Istaknut
+                              </span>
+                            )}
+                          </div>
                           {category && (
                             <span className="text-lg">{category.icon}</span>
                           )}

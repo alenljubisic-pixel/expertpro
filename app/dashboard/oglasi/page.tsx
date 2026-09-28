@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import { Plus, Eye, Pencil, ArrowLeft, Play, Pause, RotateCcw } from 'lucide-react'
+import { Plus, Eye, Pencil, ArrowLeft, Play, Pause, RotateCcw, Crown } from 'lucide-react'
 import DeleteListingButton from '@/components/listings/DeleteListingButton'
 
 async function deleteListing(formData: FormData) {
@@ -144,6 +144,16 @@ export default async function MyListingsPage({
                       {listing.status === 'active' && listing.expires_at && (
                         <span className="text-xs text-gray-300">do {formatDate(listing.expires_at)}</span>
                       )}
+                      {listing.is_gold && listing.gold_until && new Date(listing.gold_until) > new Date() && (
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-700">
+                          🏆 Gold do {formatDate(listing.gold_until)}
+                        </span>
+                      )}
+                      {!listing.is_gold && listing.is_featured && listing.featured_until && new Date(listing.featured_until) > new Date() && (
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700">
+                          ⭐ Istaknut do {formatDate(listing.featured_until)}
+                        </span>
+                      )}
                     </div>
                     <p className="font-medium text-gray-900 truncate">{listing.title}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
@@ -170,6 +180,13 @@ export default async function MyListingsPage({
                       title="Uredi"
                     >
                       <Pencil className="w-4 h-4" />
+                    </Link>
+                    <Link
+                      href={`/oglasi/${listing.id}/istakni`}
+                      className="p-2 text-gray-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
+                      title="Istakni oglas"
+                    >
+                      <Crown className="w-4 h-4" />
                     </Link>
 
                     {(listing.status === 'active' || listing.status === 'paused') && (

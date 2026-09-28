@@ -1,7 +1,8 @@
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Link from 'next/link'
-import { Check, X, Zap } from 'lucide-react'
+import { Check, X, Zap, Star, Crown } from 'lucide-react'
+import { PROMOTION_TIERS, PROMOTION_PRICES, PROMOTION_DURATIONS, type PromotionTier } from '@/lib/promotions'
 
 export const metadata = {
   title: 'Cenovnik | ExpertPro',
@@ -45,7 +46,7 @@ const PLANS = [
       { text: 'Oglas aktivan 15 dana (standardni)', ok: true },
       { text: 'Oglas aktivan 30 dana (dugoročni)', ok: true },
       { text: 'Neograničen broj oglasa', ok: false },
-      { text: 'Istaknuti oglasi', ok: false },
+      { text: 'Istaknut / Gold oglas (jednokratna uplata)', ok: true },
     ],
     cta: 'Registruj firmu',
     ctaHref: '/register',
@@ -61,7 +62,7 @@ const PLANS = [
     description: 'Za aktivne firme i agencije koje redovno zapošljavaju radnike.',
     features: [
       { text: 'Neograničen broj aktivnih oglasa', ok: true },
-      { text: 'Istaknuti oglasi u pretrazi', ok: true },
+      { text: 'Istaknut / Gold oglas uključen bez doplate', ok: true },
       { text: 'Firmski profil (PIB, naziv)', ok: true },
       { text: 'Prioritetna podrška', ok: true },
       { text: 'Oglas aktivan 15 dana (standardni)', ok: true },
@@ -155,6 +156,35 @@ export default function CenovnikPage() {
             <p className="text-xs text-gray-400 mt-4">
               Nakon isteka, oglas se automatski deaktivira. Možete ga obnoviti u svakom trenutku iz kontrolne table.
             </p>
+          </div>
+
+          {/* Istaknuto / Gold */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+              🏆 Istakni oglas
+            </h2>
+            <p className="text-gray-500 mb-6">
+              Dostupno svima (fizička lica, firme, agencije) — jednokratna uplata po oglasu, bez pretplate. Plaćanje se vrši uplatom na tekući račun (IPS/bankovni transfer); oglas se ističe čim admin potvrdi uplatu.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {(['featured', 'gold'] as PromotionTier[]).map((tier) => (
+                <div key={tier} className={`rounded-xl border p-5 ${tier === 'gold' ? 'border-amber-300 bg-amber-50/40' : 'border-blue-200 bg-blue-50/40'}`}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    {tier === 'gold' ? <Crown className="w-5 h-5 text-amber-500" /> : <Star className="w-5 h-5 text-blue-500" />}
+                    <h3 className="font-semibold text-gray-900">{PROMOTION_TIERS[tier].label}</h3>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">{PROMOTION_TIERS[tier].description}</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {PROMOTION_DURATIONS.map((d) => (
+                      <div key={d} className="bg-white rounded-lg border border-gray-100 py-2 text-center">
+                        <div className="text-sm font-bold text-gray-900">{PROMOTION_PRICES[tier][d].toLocaleString('sr-RS')} RSD</div>
+                        <div className="text-xs text-gray-400">{d} dana</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Hitno info */}

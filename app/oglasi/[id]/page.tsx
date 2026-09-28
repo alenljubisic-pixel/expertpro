@@ -179,21 +179,39 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             <div className="bg-white rounded-xl border border-gray-100 p-6">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className={`text-xs px-3 py-1 rounded-full border font-medium ${typeConfig.bg} ${typeConfig.color} ${typeConfig.border}`}>
                       {typeConfig.label}
                     </span>
+                    {listing.is_gold && (
+                      <span className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full border border-amber-300 bg-amber-50 text-amber-700 font-medium">
+                        🏆 Gold
+                      </span>
+                    )}
+                    {!listing.is_gold && listing.is_featured && (
+                      <span className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full border border-blue-200 bg-blue-50 text-blue-700 font-medium">
+                        ⭐ Istaknut
+                      </span>
+                    )}
                     {category && <span className="text-lg">{category.icon}</span>}
                   </div>
                   <h1 className="text-xl font-bold text-gray-900">{listing.title}</h1>
                 </div>
                 {isOwner && (
-                  <Link
-                    href={`/oglasi/${listing.id}/uredi`}
-                    className="flex-shrink-0 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Uredi
-                  </Link>
+                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                    <Link
+                      href={`/oglasi/${listing.id}/uredi`}
+                      className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Uredi
+                    </Link>
+                    <Link
+                      href={`/oglasi/${listing.id}/istakni`}
+                      className="text-xs text-amber-700 hover:text-amber-800 border border-amber-200 bg-amber-50 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors whitespace-nowrap"
+                    >
+                      🏆 Istakni oglas
+                    </Link>
+                  </div>
                 )}
               </div>
 
