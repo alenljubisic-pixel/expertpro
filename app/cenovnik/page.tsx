@@ -20,13 +20,13 @@ const PLANS = [
     badge: null,
     description: 'Za radnike i privatne osobe koje traže ili nude usluge.',
     features: [
-      { text: '1 aktivan oglas po tipu posla', ok: true },
+      { text: '1 besplatan aktivan oglas', ok: true },
       { text: 'Profil sa ocenama i referencama', ok: true },
       { text: 'Poruke i kontakt', ok: true },
       { text: 'Hitna berza (kreditni oglas)', ok: true },
       { text: 'Oglas aktivan 15 dana (standardni)', ok: true },
       { text: 'Oglas aktivan 30 dana (dugoročni)', ok: true },
-      { text: 'Više od 1 oglasa po tipu posla', ok: false },
+      { text: 'Dodatni oglasi (1 kredit po oglasu)', ok: true },
     ],
     cta: 'Registruj se besplatno',
     ctaHref: '/register',
@@ -41,12 +41,13 @@ const PLANS = [
     badge: null,
     description: 'Za firme i agencije koje tek počinju ili povremeno traže radnike.',
     features: [
-      { text: '1 aktivan oglas ukupno', ok: true },
+      { text: '1 besplatan aktivan oglas', ok: true },
       { text: 'Firmski profil (PIB, naziv)', ok: true },
       { text: 'Poruke i kontakt', ok: true },
       { text: 'Oglas aktivan 15 dana (standardni)', ok: true },
       { text: 'Oglas aktivan 30 dana (dugoročni)', ok: true },
-      { text: 'Neograničen broj oglasa', ok: false },
+      { text: 'Dodatni oglasi (1 kredit po oglasu)', ok: true },
+      { text: 'Neograničen broj oglasa bez kredita', ok: false },
       { text: 'Istaknut / Gold oglas (jednokratna uplata)', ok: true },
     ],
     cta: 'Registruj firmu',
@@ -237,8 +238,8 @@ export default function CenovnikPage() {
             <div className="space-y-5">
               {[
                 {
-                  q: 'Mogu li kao fizičko lice imati više oglasa?',
-                  a: 'Fizičko lice može imati 1 aktivan oglas po tipu posla/poziciji. Na primer, možete imati oglas za molerske radove i oglas za selidbe istovremeno, ali ne dva oglasa za molere.',
+                  q: 'Mogu li imati više oglasa?',
+                  a: 'Prvi aktivan oglas je uvek besplatan (bilo koja rubrika, fizičko lice ili firma). Svaki dodatni aktivan oglas — u istoj ili drugoj rubrici — košta 1 kredit, koji se kupuje na stranici Krediti.',
                 },
                 {
                   q: 'Kako se aktivira puno članstvo za firmu?',

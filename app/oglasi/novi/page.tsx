@@ -73,6 +73,7 @@ function NewListingForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [profile, setProfile] = useState<any>(null)
+  const [activeListingCount, setActiveListingCount] = useState<number | null>(null)
 
   const router = useRouter()
   const supabase = createClient()
@@ -85,8 +86,17 @@ function NewListingForm() {
           setProfile(p)
           if (p?.city) setCity(p.city)
         })
+      supabase.from('listings').select('id', { count: 'exact', head: true })
+        .eq('user_id', data.user.id).eq('status', 'active').neq('type', 'urgent')
+        .then(({ count }) => setActiveListingCount(count || 0))
     })
   }, [])
+
+  // Free plan: 1st non-urgent active listing is free, every one after that
+  // costs 1 credit (paid subscription_tier accounts are unaffected — the
+  // server enforces the real rule regardless of this client-side estimate).
+  const isPaidTier = profile?.subscription_tier && profile.subscription_tier !== 'free'
+  const willCostCredit = type !== 'urgent' && !isPaidTier && (activeListingCount || 0) >= 1
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -97,6 +107,10 @@ function NewListingForm() {
     if (!categoryId) { setError('Izaberi kategoriju.'); return }
     if (type === 'urgent' && (profile?.credit_balance || 0) < 1) {
       setError('Nemaš dovoljno kredita za hitan oglas.')
+      return
+    }
+    if (willCostCredit && (profile?.credit_balance || 0) < 1) {
+      setError('Već imaš 1 besplatan aktivan oglas. Za dodatni oglas potreban je 1 kredit.')
       return
     }
 
@@ -181,6 +195,18 @@ function NewListingForm() {
                   </div>
                 ) : (
                   <p className="text-xs text-gray-400">Trenutno stanje: {profile.credit_balance} kredita.</p>
+                )}
+              </div>
+            )}
+
+            {type !== 'urgent' && willCostCredit && (
+              <div className="mt-3 flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-xs text-amber-800">
+                  Već imaš 1 besplatan aktivan oglas — ovaj dodatni će koštati 1 kredit
+                  {' '}({profile?.credit_balance || 0} na stanju).
+                </p>
+                {(profile?.credit_balance || 0) < 1 && (
+                  <Link href="/krediti" className="text-xs font-medium text-amber-800 underline whitespace-nowrap">Kupi kredite →</Link>
                 )}
               </div>
             )}

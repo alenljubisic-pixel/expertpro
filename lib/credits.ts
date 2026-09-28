@@ -1,9 +1,14 @@
-// "Krediti" (credits) power the Hitna berza (urgent listings): 1 kredit = 1
-// objavljen hitan oglas. Sold in packages (never as one tiny per-post
-// payment) via the same manual IPS/bank-transfer flow as Istaknut/Gold —
-// see supabase/migration_credits.sql. Individuals pay less per package than
-// companies/agencies; upgrading to a paid membership (subscription_tier !=
-// 'free') grants a one-time welcome bonus automatically (DB trigger).
+// "Krediti" (credits) power two things on the free plan:
+//   1) Hitna berza (urgent listings): 1 kredit = 1 objavljen hitan oglas
+//      (migration_credits.sql, enforce_urgent_credits()).
+//   2) Extra listing slots: the 1st active offer/request listing is free,
+//      every additional one (same or different category) costs 1 kredit
+//      (migration_listing_limits_v2.sql, enforce_listing_limits()).
+// Sold in packages (never as one tiny per-post payment) via the same manual
+// IPS/bank-transfer flow as Istaknut/Gold. Individuals pay less per package
+// than companies/agencies; upgrading to a paid membership (subscription_tier
+// != 'free') grants a one-time welcome bonus automatically (DB trigger), and
+// every new signup gets a small free starter balance (migration_credits_signup_bonus.sql).
 //
 // Prices are a starting default set by the developer; change them here any
 // time (no DB migration needed) — nothing else in the app hardcodes a price.

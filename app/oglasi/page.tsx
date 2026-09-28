@@ -54,7 +54,8 @@ export default async function ListingsPage({
 
   if (sp.type) query = query.eq('type', sp.type)
   if (sp.city) query = query.eq('city', sp.city)
-  if (sp.category) query = query.eq('category_slug', sp.category)
+  // Gold listings can also carry a secondary ("srodna") category — match either.
+  if (sp.category) query = query.or(`category_slug.eq.${sp.category},secondary_category_slug.eq.${sp.category}`)
   if (sp.q) query = query.ilike('title', `%${sp.q}%`)
 
   const { data: listings, count } = await query.range(offset, offset + pageSize - 1)

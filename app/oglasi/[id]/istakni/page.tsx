@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import { ArrowLeft, Star, Crown } from 'lucide-react'
+import { ArrowLeft, Star, Crown, Flame } from 'lucide-react'
 import {
   PROMOTION_TIERS,
   PROMOTION_PRICES,
@@ -12,12 +12,14 @@ import {
   type PromotionTier,
   type PromotionDuration,
 } from '@/lib/promotions'
+import { CATEGORIES_WITH_ID } from '@/lib/constants'
 
 async function createPromotionOrder(formData: FormData) {
   'use server'
   const listingId = formData.get('listingId') as string
   const tier = formData.get('tier') as PromotionTier
   const duration = Number(formData.get('duration')) as PromotionDuration
+  const secondaryCategorySlug = (formData.get('secondaryCategory') as string) || ''
 
   if (!['featured', 'gold'].includes(tier) || ![7, 15, 30].includes(duration)) {
     redirect(`/oglasi/${listingId}/istakni?error=1`)
@@ -35,6 +37,9 @@ async function createPromotionOrder(formData: FormData) {
   if (!listing || listing.user_id !== user.id) redirect('/dashboard/oglasi')
 
   const price = PROMOTION_PRICES[tier][duration]
+  const secondaryCategory = tier === 'gold'
+    ? CATEGORIES_WITH_ID.find(c => c.slug === secondaryCategorySlug)
+    : undefined
 
   let orderId: string | null = null
   for (let attempt = 0; attempt < 3 && !orderId; attempt++) {
@@ -47,6 +52,8 @@ async function createPromotionOrder(formData: FormData) {
         duration_days: duration,
         price_amount: price,
         reference_code: generateReferenceCode(),
+        secondary_category_id: secondaryCategory?.id ?? null,
+        secondary_category_slug: secondaryCategory?.slug ?? null,
       })
       .select('id')
       .single()
@@ -72,7 +79,7 @@ export default async function PromoteListingPage({
 
   const { data: listing } = await supabase
     .from('listings')
-    .select('id, title, user_id, is_featured, is_gold, featured_until, gold_until')
+    .select('id, title, user_id, category_slug, is_featured, is_gold, featured_until, gold_until')
     .eq('id', id)
     .single()
   if (!listing) notFound()
@@ -126,32 +133,74 @@ export default async function PromoteListingPage({
           </div>
         )}
 
+        <div className="bg-gradient-to-r from-red-600 to-amber-500 text-white rounded-xl p-4 mb-6 flex items-center gap-3">
+          <Flame className="w-6 h-6 flex-shrink-0" />
+          <div>
+            <p className="font-bold text-sm">🔥 Prilika da budeš viđen — izdvoji se od ostalih oglasa</p>
+            <p className="text-xs text-white/90 mt-0.5">Oglasi na vrhu liste privlače prvi pogled. Ne čekaj da te nađu — istakni se odmah.</p>
+          </div>
+        </div>
+
         <div className="space-y-6">
-          {(['featured', 'gold'] as PromotionTier[]).map(tier => (
-            <div key={tier} className="bg-white rounded-xl border border-gray-100 p-5">
+          {(['featured', 'gold'] as PromotionTier[]).map(tier => {
+            const benefits = tier === 'gold'
+              ? [
+                  '🥇 Prvo mesto na celoj /oglasi listi — iznad svih ostalih, uključujući Istaknute',
+                  '🏆 Zlatna značka i okvir koji se odmah primeti',
+                  '📂 Prikaz i u jednoj dodatnoj (srodnoj) rubrici po tvom izboru',
+                  '⚡ Prioritet i u pretrazi i u filterima',
+                ]
+              : [
+                  '⭐ Na vrhu liste u okviru svoje kategorije, grada i tipa oglasa',
+                  '🔵 Plava značka "Istaknut" na kartici oglasa',
+                  '👀 Više pregleda od običnih oglasa ispod',
+                ]
+            return (
+            <div key={tier} className={`bg-white rounded-xl border p-5 ${tier === 'gold' ? 'border-amber-300 ring-1 ring-amber-100' : 'border-gray-100'}`}>
               <div className="flex items-center gap-2 mb-1">
                 {tier === 'gold' ? <Crown className="w-5 h-5 text-amber-500" /> : <Star className="w-5 h-5 text-blue-500" />}
                 <h2 className="font-semibold text-gray-900">{PROMOTION_TIERS[tier].label}</h2>
+                {tier === 'gold' && (
+                  <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">NAJVIDLJIVIJE</span>
+                )}
               </div>
-              <p className="text-sm text-gray-500 mb-4">{PROMOTION_TIERS[tier].description}</p>
-              <div className="grid grid-cols-3 gap-3">
-                {PROMOTION_DURATIONS.map(duration => (
-                  <form key={duration} action={createPromotionOrder}>
-                    <input type="hidden" name="listingId" value={id} />
-                    <input type="hidden" name="tier" value={tier} />
-                    <input type="hidden" name="duration" value={duration} />
+              <ul className="text-sm text-gray-600 space-y-1 mb-4">
+                {benefits.map(b => <li key={b}>{b}</li>)}
+              </ul>
+
+              <form action={createPromotionOrder} className="space-y-3">
+                <input type="hidden" name="listingId" value={id} />
+                <input type="hidden" name="tier" value={tier} />
+
+                {tier === 'gold' && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Dodatna (srodna) rubrika — opciono</label>
+                    <select name="secondaryCategory" defaultValue="" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+                      <option value="">Bez dodatne rubrike</option>
+                      {CATEGORIES_WITH_ID.filter(c => c.slug !== listing.category_slug).map(c => (
+                        <option key={c.slug} value={c.slug}>{c.icon} {c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-3 gap-3">
+                  {PROMOTION_DURATIONS.map(duration => (
                     <button
+                      key={duration}
                       type="submit"
+                      name="duration"
+                      value={duration}
                       className="w-full flex flex-col items-center gap-1 border border-gray-200 rounded-lg p-3 hover:border-blue-400 hover:bg-blue-50/50 transition-colors"
                     >
                       <span className="text-sm font-semibold text-gray-800">{duration} dana</span>
                       <span className="text-xs text-gray-500">{PROMOTION_PRICES[tier][duration].toLocaleString('sr-RS')} RSD</span>
                     </button>
-                  </form>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </form>
             </div>
-          ))}
+          )})}
         </div>
 
         <p className="text-xs text-gray-400 mt-6">
