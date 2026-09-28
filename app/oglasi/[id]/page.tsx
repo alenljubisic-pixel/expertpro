@@ -1,11 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import ApplyButton from '@/components/listings/ApplyButton'
-import { MapPin, Calendar, Users, Star, Clock, ArrowLeft, CheckCircle, Eye } from 'lucide-react'
+import { MapPin, Calendar, Users, Star, Clock, ArrowLeft, CheckCircle, Eye, MessageSquare, X, Check } from 'lucide-react'
 import { safeName, safeInitial } from '@/lib/safe-name'
+import { revalidatePath } from 'next/cache'
 
 const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   offer: { label: '💼 Nudim uslugu', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200' },
@@ -46,15 +47,44 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     .order('created_at', { ascending: false })
     .limit(5)
 
-  const { data: applicationCount } = await supabase
-    .from('applications')
-    .select('id', { count: 'exact' })
-    .eq('listing_id', id)
-
   const profile = listing.profiles as any
   const category = listing.categories as any
   const typeConfig = TYPE_CONFIG[listing.type] || TYPE_CONFIG.request
   const isOwner = user?.id === listing.user_id
+
+  const { data: applicants } = isOwner
+    ? await supabase
+        .from('applications')
+        .select('id, message, proposed_price, status, created_at, applicant:profiles!applicant_id(id, name, avatar_url, rating_avg, rating_count, is_verified, phone)')
+        .eq('listing_id', id)
+        .order('created_at', { ascending: false })
+    : { data: null }
+
+  async function updateApplicationStatus(formData: FormData) {
+    'use server'
+    const applicationId = formData.get('applicationId') as string
+    const newStatus = formData.get('newStatus') as string
+    if (!applicationId || !['accepted', 'rejected'].includes(newStatus)) return
+
+    const supabase = await createClient()
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (!currentUser) redirect('/login')
+
+    // RLS already restricts this to the listing owner, but re-check defensively.
+    const { data: application } = await supabase
+      .from('applications')
+      .select('listing_id, listings!inner(user_id)')
+      .eq('id', applicationId)
+      .single()
+
+    const listingOwnerId = (application?.listings as any)?.user_id
+    if (!application || listingOwnerId !== currentUser.id) {
+      return
+    }
+
+    await supabase.from('applications').update({ status: newStatus }).eq('id', applicationId)
+    revalidatePath(`/oglasi/${id}`)
+  }
 
   const formatDate = (d: string | null) => {
     if (!d) return null
@@ -169,7 +199,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                       <div key={review.id} className="border-b border-gray-50 pb-4 last:border-0 last:pb-0">
                         <div className="flex items-center gap-2 mb-1">
                           <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
-                            {safeInitial(reviewer?.name)}
+                          {safeInitial(reviewer?.name)}
                           </div>
                           <span className="text-sm font-medium text-gray-900">{safeName(reviewer?.name)}</span>
                           <div className="flex gap-0.5 ml-1">
@@ -210,7 +240,6 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                         {profile.rating_avg.toFixed(1)} ({profile.rating_count || 0})
                       </span>
                     )}
-                  </div>
                 </div>
               </div>
 
@@ -236,9 +265,9 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
               ) : (
                 <div className="text-center py-2">
                   <p className="text-xs text-gray-400">Ovo je tvoj oglas</p>
-                  {applicationCount && (
+                  {applicants && (
                     <p className="text-sm font-semibold text-blue-600 mt-1">
-                      {applicationCount.length} prijava
+                      {applicants.length} prijava
                     </p>
                   )}
                 </div>
@@ -254,6 +283,105 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             </Link>
           </div>
         </div>
+
+        {/* Applicants (owner only) */}
+        {isOwner && (
+          <div className="mt-6 bg-white rounded-xl border border-gray-100 p-6">
+            <h2 className="font-semibold text-gray-900 mb-4">Prijave ({applicants?.length || 0})</h2>
+            {!applicants || applicants.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-6">Još uvek nema prijava na ovaj oglas.</p>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {applicants.map((app) => {
+                  const applicant = app.applicant as any
+                  return (
+                    <div key={app.id} className="py-4 first:pt-0 last:pb-0">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600 flex-shrink-0">
+                          {safeInitial(applicant?.name)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                            <Link href={`/profil/${applicant?.id}`} className="font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                              {safeName(applicant?.name)}
+                            </Link>
+                            {applicant?.is_verified && (
+                              <span className="flex items-center gap-0.5 text-xs text-green-600">
+                                <CheckCircle className="w-3 h-3" /> Verifikovan
+                              </span>
+                            )}
+                            {applicant?.rating_avg > 0 && (
+                              <span className="flex items-center gap-0.5 text-xs text-gray-400">
+                                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                                {applicant.rating_avg.toFixed(1)} ({applicant.rating_count || 0})
+                              </span>
+                            )}
+                            <span className="text-xs text-gray-300 ml-auto">
+                              {new Date(app.created_at).toLocaleDateString('sr-RS')}
+                            </span>
+                          </div>
+
+                          {app.proposed_price && (
+                            <p className="text-sm text-blue-600 font-medium mb-1">
+                              Ponuđena cena: {app.proposed_price.toLocaleString('sr-RS')} RSD
+                            </p>
+                          )}
+
+                          {app.message && (
+                            <p className="text-sm text-gray-600 mb-2 whitespace-pre-line">{app.message}</p>
+                          )}
+
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {app.status === 'pending' && (
+                              <>
+                                <form action={updateApplicationStatus}>
+                                  <input type="hidden" name="applicationId" value={app.id} />
+                                  <input type="hidden" name="newStatus" value="accepted" />
+                                  <button
+                                    type="submit"
+                                    className="flex items-center gap-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg transition-colors"
+                                  >
+                                    <Check className="w-3.5 h-3.5" /> Prihvati
+                                  </button>
+                                </form>
+                                <form action={updateApplicationStatus}>
+                                  <input type="hidden" name="applicationId" value={app.id} />
+                                  <input type="hidden" name="newStatus" value="rejected" />
+                                  <button
+                                    type="submit"
+                                    className="flex items-center gap-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+                                  >
+                                    <X className="w-3.5 h-3.5" /> Odbij
+                                  </button>
+                                </form>
+                              </>
+                            )}
+                            {app.status === 'accepted' && (
+                              <span className="text-xs font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-lg">
+                                ✓ Prihvaćeno
+                              </span>
+                            )}
+                            {app.status === 'rejected' && (
+                              <span className="text-xs font-medium text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg">
+                                Odbijeno
+                              </span>
+                            )}
+                            <Link
+                              href={`/poruke?new=${applicant?.id}`}
+                              className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors ml-auto"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" /> Poruka
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       <Footer />
