@@ -3,7 +3,7 @@ import Footer from '@/components/layout/Footer'
 import Link from 'next/link'
 import { Check, X, Zap, Star, Crown } from 'lucide-react'
 import { PROMOTION_TIERS, PROMOTION_PRICES, PROMOTION_DURATIONS, type PromotionTier } from '@/lib/promotions'
-import { CREDIT_PACKAGES, PAID_MEMBERSHIP_WELCOME_BONUS_CREDITS } from '@/lib/credits'
+import { CREDIT_PACKAGES, PAID_MEMBERSHIP_WELCOME_BONUS_CREDITS, SIGNUP_WELCOME_CREDITS } from '@/lib/credits'
 
 export const metadata = {
   title: 'Cenovnik | ExpertPro',
@@ -198,6 +198,7 @@ export default function CenovnikPage() {
                   Hitna berza je sekcija za urgentne potrebe — kvar u stanu, hitna selidba, potreban radnik danas.
                   Hitni oglasi se objavljuju putem kredita i šalju push notifikaciju svim dostupnim radnicima u vašem gradu.
                   1 kredit = 1 hitan oglas. Krediti se kupuju u paketima (uplata na tekući račun), ne pojedinačno po oglasu.
+                  Svaki novi nalog dobija {SIGNUP_WELCOME_CREDITS} besplatna kredita odmah po registraciji.
                 </p>
               </div>
             </div>

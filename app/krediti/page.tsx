@@ -83,7 +83,7 @@ export default async function CreditsPage({
           {bucket === 'business'
             ? 'Cene za firme i agencije.'
             : 'Cene za fizička lica.'}{' '}
-          Firma ili agencija sa punim članstvom dobija 10 gratis kredita jednokratno pri odobrenju.
+          Firma ili agencija sa punim članstvom dobija 10 gratis kredita jednokratno pri odobrenju. Svaki nalog dobija 2 gratis kredita odmah po registraciji.
         </p>
 
         {sp.error && (

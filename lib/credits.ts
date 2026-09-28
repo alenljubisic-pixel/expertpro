@@ -36,6 +36,11 @@ export const CREDITS_PER_URGENT_LISTING = 1
 // is approved for a company/agency). See migration_credits.sql.
 export const PAID_MEMBERSHIP_WELCOME_BONUS_CREDITS = 10
 
+// One-time bonus every new account gets right at registration (individual,
+// company or agency alike), so they can try Hitna berza before paying
+// anything. See migration_credits_signup_bonus.sql.
+export const SIGNUP_WELCOME_CREDITS = 2
+
 export function creditBucketForAccountType(type: string | null | undefined): CreditAccountBucket {
   return type === 'company' || type === 'agency' ? 'business' : 'individual'
 }
