@@ -4,10 +4,10 @@
 
 ## Trenutno stanje
 
-- Poslednje ažuriranje: 28.09.2026. (Claude, Cowork sesija)
+- Poslednje ažuriranje: 28.09.2026, kasno popodne (Claude, Cowork sesija — drugi krug istog dana).
 - Produkcioni repo: `alenljubisic-pixel/expertpro`, grana `main`.
 - Lokalni radni folder: `D:\Downloads\expertpro-code\expertpro`.
-- Poslednji deploy commit: `c0cfdaf` — Vercel status **READY** (aliasovan na www.expertpro.app, expertpro.app).
+- Poslednji deploy commit: `cb803f1` — Vercel status **READY**, live provereno (200 na `/`, `/oglasi`, `/cenovnik`), aliasovan na www.expertpro.app, expertpro.app.
 - Produkcija: `https://www.expertpro.app`.
 - Supabase projekat: ExpertPro (`fktbnoxokvbnkxfazqvu`).
 - Search Console property: `sc-domain:expertpro.app` (DNS TXT verifikacija urađena i potvrđena u konzoli — **ne brisati** taj TXT zapis).
@@ -46,21 +46,65 @@
 - `/cenovnik` — ažurirana sekcija "Hitna berza" sa stvarnim paketima i cenama (uklonjen tekst "sistem kredita je u pripremi").
 - Live provereno: `/cenovnik` prikazuje pakete kredita ispravno.
 
+## Urađeno u ovoj sesiji, drugi krug (Claude, 28.09.2026 popodne)
+
+Korisnik je tražio: (a) limit oglasa da bude 1 UKUPNO (ne po rubrici) za sve, dodatni oglasi da koštaju kredit; (b) bolji marketing/promo tekst za Istaknut/Gold; (c) Gold da sme i u jednu dodatnu srodnu rubriku; (d) da se proveri i popravi chat (rad između dvoje ljudi, čuvanje u bazi, notifikacije/popup); (e) da se proveri i popravi sistem ocenjivanja (rivju) posle komunikacije. Sve navedeno je urađeno, testirano (TypeScript + `next build` prolaze) i pušovano.
+
+**4) Jedinstven limit oglasa + Gold u dodatnoj rubrici + promo tekst** (commit `0995866`):
+- `supabase/migration_listing_limits_v2.sql` — zamenjuje stari trigger (po rubrici) novim `enforce_listing_limits()`: svako (fizičko lice i firma/agencija na `free` planu) ima **1 besplatan aktivan oglas ukupno**, bilo koje rubrike; svaki sledeći aktivan oglas (ista ili druga rubrika) troši **1 kredit** iz `profiles.credit_balance`. Firme/agencije na plaćenom `subscription_tier` i dalje bez limita. Hitni oglasi (`type='urgent'`) i dalje idu kroz svoj poseban trigger iz `migration_credits.sql` (1 kredit po hitnom oglasu) — ova migracija na njih ne utiče.
+- `supabase/migration_gold_secondary_category.sql` — Gold oglas (uz uplatu) sme da se prikaže i u jednoj dodatnoj ("srodnoj") rubrici po izboru vlasnika; dodaje `secondary_category_id/slug` na `listings` i `listing_promotions`, proširuje `admin_confirm_promotion` da to postavi pri potvrdi uplate, i `demote_expired_promotions` da to skloni kad Gold istekne.
+- `lib/constants.ts` — dodat `CATEGORIES_WITH_ID` (izvor za birač dodatne rubrike).
+- `/oglasi/[id]/istakni` — potpuno predizajniran: promo baner (crveno-žuti gradijent, "Prilika da budeš viđen"), jasne prednosti po nivou (Gold: prvo mesto na celoj listi, zlatna značka, dodatna rubrika, prioritet u pretrazi; Istaknut: vrh svoje kategorije/grada, plava značka, više pregleda), birač dodatne rubrike samo za Gold — bez izmišljenih brojki (x5/x10 namerno izostavljeno).
+- `/oglasi` — filter po rubrici sad pogađa i `secondary_category_slug`, ne samo primarnu.
+- `/oglasi/novi` — upozorenje/provera za dodatni oglas (van hitnog) sada prati novi model "1 besplatan ukupno + kredit za svaki sledeći", ne stari "po rubrici".
+- `/cenovnik` — ažurirani opisi planova i FAQ za novi model limita.
+- Odgovoreno korisniku (bez izmene koda): postavljanje oglasa je obostrano — i fizička lica/radnici i firme mogu da objave i "Nudim uslugu" i "Tražim radnika" (i hitno), limit i kredit sistem su nezavisni od tipa oglasa.
+
+**5) Notifikacije i ocenjivanje — pronađen i popravljen ozbiljan propust** (commit `cb803f1`):
+
+Nalaz pre popravke: zvonce za obaveštenja, `/obavestenja` stranica i realtime broj nepročitanih su već postojali i radili ispravno u UI-ju — **ali ništa u bazi nikad nije upisivalo red u `notifications`**. Ni nova poruka ni nova ocena nisu generisale obaveštenje — zvonce je uvek bilo prazno. Dodatno, tabela `notifications` u šemi ima kolone `body`/`data` (jsonb), dok UI (Navbar + `/obavestenja`) čita `message`/`link` — te kolone nisu ni postojale. Sistem ocenjivanja je bio još nepotpuniji: `reviews` tabela + prikaz na profilu su postojali, ali **nigde u aplikaciji nije postojala forma za ostavljanje ocene** — korisnik fizički nije mogao da nekog oceni.
+
+Popravljeno u `supabase/migration_notifications_and_reviews.sql`:
+- Dodate kolone `notifications.message`, `notifications.link` (ono što UI stvarno čita).
+- Uključen realtime za `notifications`, `conversations`, `messages` (idempotentno, `alter publication supabase_realtime add table ...` u `do $$ ... exception when duplicate_object`).
+- Trigger `notify_new_message` (AFTER INSERT na `messages`) — upisuje obaveštenje drugom učesniku razgovora (ne pošiljaocu), sa linkom na `/poruke?conv=...`.
+- Trigger `enforce_review_requires_contact` (BEFORE INSERT na `reviews`) — ocena je moguća SAMO ako postoji razgovor (`conversations`) između ocenjivača i ocenjenog; sprečava i samo-ocenjivanje.
+- Trigger `notify_new_review` (AFTER INSERT na `reviews`) — upisuje obaveštenje ocenjenom, sa linkom na njegov `/profil/[id]`.
+- Unique indeks koji sprečava više ocena iste osobe bez vezanog oglasa (`listing_id is null`).
+
+Novo u kodu (isti commit):
+- `components/reviews/ReviewForm.tsx` — nova forma (zvezdice 1-5 + opcioni komentar), ugrađena u `app/profil/[id]/page.tsx`; prikazuje se samo posetiocu koji NIJE vlasnik profila, koji je već razmenio poruke sa tom osobom i koji je još nije ocenio (provera i na serveru pre renderovanja i u samoj DB putem trigera — dupla zaštita).
+- `components/chat/ChatWindow.tsx` — dodat link "Profil / oceni" u zaglavlju razgovora ka `/profil/[id]` druge strane.
+- `components/chat/ConversationsRealtimeRefresher.tsx` — nova komponenta, montirana u `/poruke`; lista razgovora se sada osvežava uživo (realtime) kad stigne nova poruka/razgovor, ne samo pri ručnom osvežavanju stranice.
+- Chat sam po sebi (slanje/prijem poruka unutar otvorenog razgovora, čuvanje u bazi) je proveren kodom i **radio je ispravno i pre ove izmene** — problem je bio isključivo u notifikacijama van otvorenog razgovora i u nepostojanju forme za ocenjivanje.
+
+⚠️ Ni jedna od migracija iz ovog kruga (`migration_listing_limits_v2.sql`, `migration_gold_secondary_category.sql`, `migration_notifications_and_reviews.sql`) još nije pokrenuta u produkcionoj Supabase bazi.
+
 ## Preostalo — sledeći agent (redosled po prioritetu)
 
-1. **HITNO — pokrenuti obe SQL migracije** u tačno ovom redosledu (Supabase Dashboard → SQL Editor): `migration_listing_promotions.sql` pa `migration_credits.sql`. Dok se ne pokrenu: Istaknut/Gold i krediti ne rade (greške), a hitni oglasi se trenutno objavljuju bez ikakve provere/naplate kredita.
+1. **HITNO — pokrenuti SQL migracije u Supabase SQL Editoru, tačno ovim redosledom** (svaka zavisi od prethodne):
+   1. `supabase/migration_listing_promotions.sql`
+   2. `supabase/migration_credits.sql`
+   3. `supabase/migration_credits_signup_bonus.sql`
+   4. `supabase/migration_listing_limits_v2.sql`
+   5. `supabase/migration_gold_secondary_category.sql`
+   6. `supabase/migration_notifications_and_reviews.sql`
+
+   Dok se ne pokrenu: Istaknut/Gold i krediti ne rade (greške), hitni oglasi se objavljuju bez provere/naplate kredita, limit oglasa je i dalje stari (po rubrici), Gold nema dodatnu rubriku, a notifikacije/ocenjivanje ne rade uopšte (zvonce prazno, nema forme za ocenu dok se ne doda `message`/`link` kolona).
 2. **HITNO — uneti broj računa** na `/admin/uplate` (koristi se i za Istaknut/Gold i za kredite, ista tabela `payment_settings`).
 3. Nakon 1+2, uraditi bar jedan ručni test svakog toka:
-   - Istaknut/Gold: kreirati porudžbinu → `/istakni/[orderId]` → "Poslao/la sam uplatu" → admin Potvrdi na `/admin/uplate` → proveriti značku i `featured_until`/`gold_until`.
-   - Krediti: kupiti paket na `/krediti` → uplata → admin Potvrdi → proveriti da `profiles.credit_balance` poraste → objaviti hitan oglas i proveriti da se 1 kredit oduzme → proveriti da insert baca grešku kad je `credit_balance = 0`.
-   - Gratis bonus: ručno promeniti `subscription_tier` neke firme sa 'free' na npr. 'pro' u SQL editoru i proveriti da `credit_balance` poraste za 10.
+   - Istaknut/Gold: kreirati porudžbinu → `/istakni/[orderId]` → "Poslao/la sam uplatu" → admin Potvrdi na `/admin/uplate` → proveriti značku, `featured_until`/`gold_until` i dodatnu rubriku (ako je Gold).
+   - Krediti: kupiti paket na `/krediti` → uplata → admin Potvrdi → proveriti da `profiles.credit_balance` poraste → objaviti hitan oglas i dodatan (drugi) običan oglas i proveriti da se u oba slučaja oduzme 1 kredit → proveriti da insert baca grešku kad je `credit_balance = 0`.
+   - Gratis bonus: ručno promeniti `subscription_tier` neke firme sa 'free' na npr. 'pro' u SQL editoru i proveriti da `credit_balance` poraste za 10; proveriti da nova registracija dobije 2 gratis kredita.
+   - Notifikacije: sa dva test naloga — poslati poruku i proveriti da se zvonce kod primaoca upali (realtime, bez refresh-a) i da se stavka pojavi na `/obavestenja` sa linkom ka razgovoru.
+   - Ocenjivanje: sa dva test naloga koja su već razmenila poruke — otvoriti `/profil/[id]` jednog od njih (kao drugi) i proveriti da se pojavi forma za ocenu, poslati ocenu, proveriti da se pojavi na profilu, da `rating_avg`/`rating_count` porastu i da primalac dobije notifikaciju. Zatim proveriti da se BEZ prethodne poruke ocena odbija (greška iz trigera).
 4. **GSC fetch status** — ponovo proveriti da li sitemap ima "discovered pages" > 0. Ne dirati DNS TXT zapis.
 5. **Cron `expire_old_listings()` security** — i dalje SECURITY DEFINER sa javnim EXECUTE. Plan: server-only `SUPABASE_SERVICE_ROLE_KEY` u Vercelu ili bezbedan server/Edge job, zatim `search_path = ''` + revoke za `anon`/`authenticated`.
 6. **Autentifikovani E2E test** ostatka platforme (prijava, novi oglas, izmena/pauza/obnova/brisanje, prijava na oglas, poruke, admin accept/reject) — nije rađeno sa pravim nalogom.
 7. **Lint upozorenja** — preostala (uglavnom `any`, neiskorišćeni importi), rešavati postepeno.
 8. **Sledeće veće funkcionalnosti** (dogovoreno, još nije rađeno):
    - Facebook OAuth fix — pogrešan Google Client ID u Facebook provider slotu u Supabase dashboardu; zahteva ručnu akciju korisnika.
-   - Email notifikacije — ne postoji nikakva integracija.
+   - Email notifikacije — ne postoji nikakva integracija (samo in-app notifikacije, sada bar te rade).
    - Apple login — odluka korisnika (preporuka: nije neophodan za launch).
 
 ## Komande za proveru
