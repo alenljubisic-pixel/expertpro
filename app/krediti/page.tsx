@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import { Zap, ArrowLeft, Gift, Crown } from 'lucide-react'
+import { Zap, ArrowLeft, Gift, Crown, Building2 } from 'lucide-react'
 import {
   CREDIT_PACKAGES,
   creditBucketForAccountType,
@@ -78,7 +78,7 @@ export default async function CreditsPage({
         </div>
         <p className="text-sm text-gray-500 mb-4">
           Trenutni saldo: <b className="text-gray-900">{profile?.credit_balance || 0} kredita</b>
-          {' '}· {bucket === 'business' ? 'cene za firme i agencije' : 'cene za fizička lica'}.
+          {' '}· {bucket === 'agency' ? 'cene za agencije' : bucket === 'company' ? 'cene za firme' : 'cene za fizička lica'}.
         </p>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6 space-y-4 text-sm">
@@ -89,7 +89,7 @@ export default async function CreditsPage({
             <ul className="space-y-1 ml-5 list-disc text-gray-600 text-sm">
               <li>2 kredita odmah pri registraciji, bez ikakve uplate.</li>
               <li>1 aktivan oglas (bilo koje rubrike) uvek besplatno, trajno.</li>
-              {bucket === 'business' && (
+              {bucket !== 'individual' && (
                 <li>+10 kredita gratis, jednokratno, kad ti se odobri puno članstvo.</li>
               )}
             </ul>
@@ -114,6 +114,19 @@ export default async function CreditsPage({
               vrstu posla.
             </p>
           </div>
+          {bucket === 'agency' && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-lg p-3">
+              <p className="font-semibold text-gray-800 mb-1 flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-blue-600" /> Paketi za agencije
+              </p>
+              <p className="text-gray-600 leading-relaxed">
+                Agencija koja aktivno radi obično objavi 15-30 hitnih i dodatnih oglasa mesečno —
+                zato imaš veće pakete, po kreditu jeftinije što je paket veći. Jedan veći paket
+                (npr. {CREDIT_PACKAGES.agency[CREDIT_PACKAGES.agency.length - 1].credits} kredita) ti obično pokrije ceo mesec, bez
+                sitnih dopuna svake nedelje.
+              </p>
+            </div>
+          )}
         </div>
 
         {sp.error && (

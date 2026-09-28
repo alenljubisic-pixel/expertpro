@@ -2,8 +2,18 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
-import { CheckCircle, Clock, ArrowLeft } from 'lucide-react'
+import { CheckCircle, Clock, ArrowLeft, Coins, Briefcase, Wallet } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
+
+interface UserStats {
+  id: string
+  active_listings: number
+  total_listings: number
+  credits_paid_total: number
+  credits_pending_total: number
+  promotions_paid_total: number
+  promotions_pending_total: number
+}
 
 async function isAdmin(userId: string, supabase: any): Promise<boolean> {
   const { data } = await supabase.from('profiles').select('is_admin').eq('id', userId).single()
@@ -52,6 +62,18 @@ export default async function AdminUsersPage({
 
   const { data: users } = await query.limit(50)
 
+  const { data: statsRows } = await supabase.rpc('admin_get_user_stats')
+  const statsById = new Map<string, UserStats>((statsRows || []).map((s: UserStats) => [s.id, s]))
+
+  const totalPaidAll = (statsRows || []).reduce(
+    (sum: number, s: UserStats) => sum + Number(s.credits_paid_total) + Number(s.promotions_paid_total),
+    0
+  )
+  const totalPendingAll = (statsRows || []).reduce(
+    (sum: number, s: UserStats) => sum + Number(s.credits_pending_total) + Number(s.promotions_pending_total),
+    0
+  )
+
   const tabs = [
     { value: 'all', label: 'Svi' },
     { value: 'pending', label: 'Na čekanju' },
@@ -70,6 +92,22 @@ export default async function AdminUsersPage({
             <ArrowLeft className="w-5 h-5 text-gray-500" />
           </Link>
           <h1 className="text-xl font-bold text-gray-900">Korisnici</h1>
+        </div>
+
+        {/* Revenue summary */}
+        <div className="grid grid-cols-2 gap-4 mb-5">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+              <Wallet className="w-3.5 h-3.5 text-green-500" /> Ukupno uplaćeno (potvrđeno)
+            </div>
+            <p className="text-xl font-bold text-gray-900">{totalPaidAll.toLocaleString('sr-RS')} RSD</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+              <Clock className="w-3.5 h-3.5 text-amber-500" /> Na čekanju (nepotvrđeno)
+            </div>
+            <p className="text-xl font-bold text-gray-900">{totalPendingAll.toLocaleString('sr-RS')} RSD</p>
+          </div>
         </div>
 
         {/* Filter tabs */}
@@ -93,7 +131,11 @@ export default async function AdminUsersPage({
           {!users || users.length === 0 ? (
             <div className="p-8 text-center text-gray-400">Nema korisnika u ovoj kategoriji</div>
           ) : (
-            users.map((u) => (
+            users.map((u) => {
+              const stats = statsById.get(u.id)
+              const totalPaid = stats ? Number(stats.credits_paid_total) + Number(stats.promotions_paid_total) : 0
+              const totalPending = stats ? Number(stats.credits_pending_total) + Number(stats.promotions_pending_total) : 0
+              return (
               <div key={u.id} className="flex items-center gap-4 p-4">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600 flex-shrink-0">
                   {u.name?.[0]?.toUpperCase() || '?'}
@@ -111,6 +153,22 @@ export default async function AdminUsersPage({
                   <p className="text-xs text-gray-300">
                     {new Date(u.created_at).toLocaleDateString('sr-RS')}
                   </p>
+                  <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                    <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 rounded-full px-2 py-0.5">
+                      <Coins className="w-3 h-3" /> {u.credit_balance ?? 0} kredita
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-blue-700 bg-blue-50 rounded-full px-2 py-0.5">
+                      <Briefcase className="w-3 h-3" /> {stats?.active_listings ?? 0}/{stats?.total_listings ?? 0} oglasa
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 rounded-full px-2 py-0.5">
+                      <Wallet className="w-3 h-3" /> {totalPaid.toLocaleString('sr-RS')} RSD uplaćeno
+                    </span>
+                    {totalPending > 0 && (
+                      <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">
+                        {totalPending.toLocaleString('sr-RS')} RSD na čekanju
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -141,7 +199,8 @@ export default async function AdminUsersPage({
                   )}
                 </div>
               </div>
-            ))
+              )
+            })
           )}
         </div>
       </main>

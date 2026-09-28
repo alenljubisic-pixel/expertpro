@@ -4,13 +4,47 @@
 
 ## Trenutno stanje
 
-- Poslednje ažuriranje: 28.09.2026, veče (Claude, Cowork sesija — treći krug istog dana).
+- Poslednje ažuriranje: 28.09.2026, veče (Claude, Cowork sesija — četvrti krug istog dana).
 - Produkcioni repo: `alenljubisic-pixel/expertpro`, grana `main`.
 - Lokalni radni folder: `D:\Downloads\expertpro-code\expertpro`.
-- Poslednji deploy commit: `c0dd0fdb` — Vercel status **READY**, aliasovan na www.expertpro.app, expertpro.app.
+- Poslednji deploy commit: vidi krug 4 ispod — Vercel status **READY**, aliasovan na www.expertpro.app, expertpro.app.
 - Produkcija: `https://www.expertpro.app`.
 - Supabase projekat: ExpertPro (`fktbnoxokvbnkxfazqvu`).
 - Search Console property: `sc-domain:expertpro.app` (DNS TXT verifikacija urađena i potvrđena u konzoli — **ne brisati** taj TXT zapis).
+
+## Urađeno u ovoj sesiji (Claude, 28.09.2026, četvrti krug — admin pregled korisnika + pretplata za agencije)
+
+**Pitanje korisnika:** gde je admin panel koji za SVAKOG korisnika pokazuje koliko je oglasa objavio, koliko kredita ima/uplatio/potrošio; da li postoji odobravanje uplata i odobravanje naloga; da li je admin sajta (on) nešto drugo od "admina" unutar naloga firme/agencije; i da agencije dobiju veće pakete kredita jer im mali paketi ne odgovaraju.
+
+**Odgovori / šta postoji, šta je dograđeno:**
+
+1. **Admin panel postoji i pre ove izmene** — `/admin` (pregled), `/admin/users` (korisnici + odobravanje), `/admin/oglasi`, `/admin/poruke` (flagovane poruke), `/admin/uplate` (odobravanje uplata za kredite i Istaknut/Gold). Link se vidi u navbar dropdown-u i dashboard sidebar-u SAMO nalogu sa `is_admin = true` (fix iz prethodnog kruga).
+
+2. **NOVO — `/admin/users` sada pokazuje po svakom korisniku:** trenutni saldo kredita, broj aktivnih/ukupno objavljenih oglasa, i koliko je ukupno PLATIO (potvrđene uplate, kredit + Istaknuto/Gold zbirno) i koliko mu je na čekanju. Na vrhu strane su i dva zbirna broja za ceo sajt: "Ukupno uplaćeno (potvrđeno)" i "Na čekanju". Isti zbir "Ukupno uplaćeno" dodat je i kao kartica na `/admin` pregledu.
+   - Implementirano kao nova SQL funkcija `admin_get_user_stats()` (`supabase/migration_admin_user_stats.sql`, SECURITY DEFINER, iznutra proverava `is_admin` isto kao i sve ostale admin funkcije) — pokrenuta i potvrđena u produkciji. Razlog za funkciju umesto obične upita: RLS na `listings` dozvoljava ne-vlasniku da vidi samo AKTIVNE oglase drugih, pa bi običan upit kao admin pogrešno prebrojao (fale pauzirani/istekli/zatvoreni oglasi).
+
+3. **Odobravanje naloga (firma/agencija) — već postoji, nije novo:** `/admin/users` ima taster "Odobri"/"Odbij" za svaki nalog koji čeka (`is_approved = false`), i `/admin` pregled ima karticu "Čeka odobrenje" sa brzom listom. Fizička lica se odobravaju automatski (nema čekanja).
+
+4. **Odobravanje uplata (kredit i Istaknuto/Gold, uključujući IPS) — već postoji, nije novo:** `/admin/uplate` ima jedan red po porudžbini sa dugmićima "Potvrdi"/"Odbij", za obe vrste (krediti i Istaknuto/Gold), sa filterima (Na čekanju/Potvrđene/Odbijene/Sve). Napomena: platforma trenutno koristi **ručni bankovni prenos sa jedinstvenom šifrom plaćanja** (korisnik uplati na račun, klikne "Poslao/la sam uplatu", admin proveri izvod i potvrdi/odbije) — ovo pokriva i IPS uplate (IPS je samo brži način da neko pošalje na taj isti račun preko mobilnog bankarstva/QR-a svoje banke), ali sajt trenutno NE generiše sopstveni skenabilan IPS QR kod. To bi bila posebna, manja nadogradnja ako je želiš (prikaz QR koda pored broja računa na strani za uplatu) — nije urađeno u ovom krugu, javi ako da se doda.
+
+5. **Da li je "admin sajta" isto što i "admin firme/agencije" — nije, i ne treba da bude, i trenutno JESTE razdvojeno ispravno:** `is_admin` je globalno polje na `profiles`, potpuno nezavisno od `type` (`individual`/`company`/`agency`). Firma ili agencija NIKAD nije automatski admin sajta — samo nalog(-zi) kojima ti ručno postaviš `is_admin = true` u bazi imaju pristup `/admin`. Bitna napomena: **trenutno je jedan nalog = jedan login**, bez koncepta "više zaposlenih/radnika sa različitim ulogama unutar jedne agencije" (npr. da agencija ima svog "internog admina" koji upravlja samo svojim oglasima/radnicima, odvojeno od tebe kao admina sajta). Ako ti to treba (agencija ima svoj mini-panel za svoje radnike, bez pristupa tvom admin panelu), to je veća nova funkcionalnost — nije urađena, javi ako želiš da je dodam.
+
+6. **NOVO — agencije sada imaju svoje, veće pakete kredita, odvojene od firmi** (`lib/credits.ts`, `CREDIT_PACKAGES`):
+   - Fizička lica (nepromenjeno): 5/1.000 RSD, 15/2.500 RSD, 35/5.000 RSD.
+   - Firma (nepromenjeno, ranije zvano "business"): 5/2.000 RSD, 15/5.000 RSD, 40/12.000 RSD.
+   - **Agencija (novo, poseban bucket):** 60 kredita/6.000 RSD, 160/14.000 RSD, 450/33.000 RSD — cena po kreditu pada što je paket veći (100 → 87,5 → ~73 RSD/kreditu), nema "sitnog" paketa jer agencija koja aktivno radi troši mnogo (procena 15-30 hitnih/dodatnih oglasa mesečno), a najveći paket je pozicioniran kao "mesečni paket" da se ne mora dopunjavati svake nedelje. Logika: 5.000-10.000 RSD za firmu je normalan trošak (jedna stavka u budžetu), a veći paket po jedinici jeftiniji = agencija ima razlog da kupi veći umesto da štedi na malom.
+   - `/krediti` stranica sad prikazuje posebnu plavu kutiju sa objašnjenjem SAMO agencijskim nalozima ("Paketi za agencije — zašto su veći").
+   - `/cenovnik` sad prikazuje tri kolone (Fizička lica / Firma / Agencija) umesto dve.
+   - Napomena o profitabilnosti: ovo su startne cene koje sam ja procenio kao razuman prvi model (veći paket = niža cena po kreditu, ali i dalje profitabilnija po jedinici od paketa za fizička lica) — nemam tvoje stvarne troškove/marže, pa slobodno promeni brojeve u `lib/credits.ts` (jedino mesto gde su cene, nema migracije potrebne za promenu cena).
+
+**Provereno:** `npx tsc --noEmit` čisto, `eslint` samo pre-postojeća upozorenja (bez grešaka), SQL funkcija pokrenuta i potvrđena u produkcionoj bazi upitom na `information_schema.routines`.
+
+⚠️ **I dalje važi iz prethodnog kruga (nepromenjeno):**
+- `is_admin` je i dalje `false` za alenljubisic@gmail.com — provereno ponovo uživo u ovom krugu. Bez ovoga se ništa iz tačaka 1-4 iznad ne može ni videti ni testirati uživo. Komanda za pokretanje (mora korisnik sam, u Supabase SQL Editoru):
+  ```sql
+  update public.profiles set is_admin = true where email = 'alenljubisic@gmail.com';
+  ```
+- `payment_settings` (broj računa) je i dalje prazan — mora se popuniti na `/admin/uplate` čim je pristup omogućen.
 
 ## Urađeno u ovoj sesiji (Claude, 28.09.2026, treći krug)
 

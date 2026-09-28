@@ -203,7 +203,7 @@ export default function CenovnikPage() {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">Fizička lica</h3>
                 <div className="grid grid-cols-3 gap-2">
@@ -216,9 +216,20 @@ export default function CenovnikPage() {
                 </div>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Firma / Agencija</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Firma</h3>
                 <div className="grid grid-cols-3 gap-2">
-                  {CREDIT_PACKAGES.business.map(pkg => (
+                  {CREDIT_PACKAGES.company.map(pkg => (
+                    <div key={pkg.key} className="bg-white rounded-lg border border-gray-100 py-2 text-center">
+                      <div className="text-sm font-bold text-gray-900">{pkg.price.toLocaleString('sr-RS')} RSD</div>
+                      <div className="text-xs text-gray-400">{pkg.credits} kredita</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Agencija</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {CREDIT_PACKAGES.agency.map(pkg => (
                     <div key={pkg.key} className="bg-white rounded-lg border border-gray-100 py-2 text-center">
                       <div className="text-sm font-bold text-gray-900">{pkg.price.toLocaleString('sr-RS')} RSD</div>
                       <div className="text-xs text-gray-400">{pkg.credits} kredita</div>
@@ -228,6 +239,7 @@ export default function CenovnikPage() {
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-4">
+              Agencije rade sa mnogo većim obimom oglasa pa imaju svoje, veće pakete — po kreditu jeftinije što je paket veći, tako da jedan paket obično pokrije ceo mesec aktivnog oglašavanja bez ponovnog kupovanja svake nedelje.
               Firma ili agencija sa punim članstvom dobija {PAID_MEMBERSHIP_WELCOME_BONUS_CREDITS} gratis kredita jednokratno pri odobrenju punog članstva.
             </p>
           </div>

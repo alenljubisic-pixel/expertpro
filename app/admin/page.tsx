@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
-import { Users, Briefcase, MessageSquare, AlertTriangle, CheckCircle, Clock, TrendingUp, Shield } from 'lucide-react'
+import { Users, Briefcase, MessageSquare, AlertTriangle, CheckCircle, Clock, TrendingUp, Shield, Wallet } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 
 async function approveUser(formData: FormData) {
@@ -43,6 +43,7 @@ export default async function AdminPage() {
     { data: recentUsers },
     { data: pendingCompanies },
     { data: flaggedMsgs },
+    { data: statsRows },
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_approved', false).in('type', ['company', 'agency']),
@@ -53,7 +54,13 @@ export default async function AdminPage() {
     supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(5),
     supabase.from('profiles').select('*').eq('is_approved', false).in('type', ['company', 'agency']).limit(10),
     supabase.from('messages').select('*, conversations(participant_1_id, participant_2_id, listing_id)').eq('flagged_contact_share', true).order('created_at', { ascending: false }).limit(10),
+    supabase.rpc('admin_get_user_stats'),
   ])
+
+  const totalRevenue = (statsRows || []).reduce(
+    (sum: number, s: any) => sum + Number(s.credits_paid_total) + Number(s.promotions_paid_total),
+    0
+  )
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -102,6 +109,7 @@ export default async function AdminPage() {
             { icon: <Briefcase className="w-5 h-5 text-green-600" />, label: 'Aktivnih oglasa', value: activeListings || 0, bg: 'bg-green-50', href: '/admin/oglasi' },
             { icon: <AlertTriangle className="w-5 h-5 text-red-600" />, label: 'Flagovane poruke', value: flaggedMessages || 0, bg: 'bg-red-50', href: '/admin/poruke', urgent: (flaggedMessages || 0) > 0 },
             { icon: <Clock className="w-5 h-5 text-amber-600" />, label: 'Uplate na čekanju', value: pendingPayments || 0, bg: 'bg-amber-50', href: '/admin/uplate', urgent: (pendingPayments || 0) > 0 },
+            { icon: <Wallet className="w-5 h-5 text-emerald-600" />, label: 'Ukupno uplaćeno (RSD)', value: totalRevenue.toLocaleString('sr-RS'), bg: 'bg-emerald-50', href: '/admin/users' },
           ].map((stat) => (
             <Link
               key={stat.label}
