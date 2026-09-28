@@ -15,8 +15,9 @@ const SKILLS = [
 export default async function WorkersPage({
   searchParams,
 }: {
-  searchParams: { city?: string; skill?: string; q?: string }
+  searchParams: Promise<{ city?: string; skill?: string; q?: string }>
 }) {
+  const sp = await searchParams
   const supabase = await createClient()
 
   let query = supabase
@@ -26,9 +27,9 @@ export default async function WorkersPage({
     .eq('is_active', true)
     .order('rating_avg', { ascending: false })
 
-  if (searchParams.city) query = query.eq('city', searchParams.city)
-  if (searchParams.skill) query = query.contains('skills', [searchParams.skill])
-  if (searchParams.q) query = query.ilike('name', `%${searchParams.q}%`)
+  if (sp.city) query = query.eq('city', sp.city)
+  if (sp.skill) query = query.contains('skills', [sp.skill])
+  if (sp.q) query = query.ilike('name', `%${sp.q}%`)
 
   const { data: workers, count } = await query.limit(24)
 
@@ -45,7 +46,7 @@ export default async function WorkersPage({
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ime</label>
                 <input
                   name="q"
-                  defaultValue={searchParams.q}
+                  defaultValue={sp.q}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Pretraži radnike"
                 />
@@ -55,7 +56,7 @@ export default async function WorkersPage({
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Grad</label>
                 <select
                   name="city"
-                  defaultValue={searchParams.city || ''}
+                  defaultValue={sp.city || ''}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   <option value="">Svi gradovi</option>
@@ -67,12 +68,12 @@ export default async function WorkersPage({
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Oblast rada</label>
                 <div className="space-y-1">
                   <label className="flex items-center gap-2">
-                    <input type="radio" name="skill" value="" defaultChecked={!searchParams.skill} />
+                    <input type="radio" name="skill" value="" defaultChecked={!sp.skill} />
                     <span className="text-sm text-gray-700">Sve oblasti</span>
                   </label>
                   {SKILLS.map(s => (
                     <label key={s} className="flex items-center gap-2">
-                      <input type="radio" name="skill" value={s} defaultChecked={searchParams.skill === s} />
+                      <input type="radio" name="skill" value={s} defaultChecked={sp.skill === s} />
                       <span className="text-sm text-gray-700">{s}</span>
                     </label>
                   ))}

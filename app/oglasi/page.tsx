@@ -143,16 +143,17 @@ const DUMMY_LISTINGS = [
 export default async function ListingsPage({
   searchParams,
 }: {
-  searchParams: {
+  searchParams: Promise<{
     type?: string
     city?: string
     category?: string
     q?: string
     page?: string
-  }
+  }>
 }) {
+  const sp = await searchParams
   const supabase = await createClient()
-  const page = parseInt(searchParams.page || '1')
+  const page = parseInt(sp.page || '1')
   const pageSize = 12
   const offset = (page - 1) * pageSize
 
@@ -162,16 +163,16 @@ export default async function ListingsPage({
     .eq('status', 'active')
     .order('created_at', { ascending: false })
 
-  if (searchParams.type) query = query.eq('type', searchParams.type)
-  if (searchParams.city) query = query.eq('city', searchParams.city)
-  if (searchParams.category) query = query.eq('category_slug', searchParams.category)
-  if (searchParams.q) query = query.ilike('title', `%${searchParams.q}%`)
+  if (sp.type) query = query.eq('type', sp.type)
+  if (sp.city) query = query.eq('city', sp.city)
+  if (sp.category) query = query.eq('category_slug', sp.category)
+  if (sp.q) query = query.ilike('title', `%${sp.q}%`)
 
   const { data: listings, count } = await query.range(offset, offset + pageSize - 1)
   const totalPages = Math.ceil((count || 0) / pageSize)
 
-  const isUrgent = searchParams.type === 'urgent'
-  const hasFilters = !!(searchParams.type || searchParams.city || searchParams.category || searchParams.q)
+  const isUrgent = sp.type === 'urgent'
+  const hasFilters = !!(sp.type || sp.city || sp.category || sp.q)
   const hasRealListings = listings && listings.length > 0
   const displayListings = hasRealListings ? listings : (!hasFilters ? DUMMY_LISTINGS : [])
   const isDemoMode = !hasRealListings && !hasFilters
@@ -205,7 +206,7 @@ export default async function ListingsPage({
                   <input
                     name="q"
                     type="text"
-                    defaultValue={searchParams.q}
+                    defaultValue={sp.q}
                     className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Šta tražiš?"
                   />
@@ -226,7 +227,7 @@ export default async function ListingsPage({
                         type="radio"
                         name="type"
                         value={opt.value}
-                        defaultChecked={searchParams.type === opt.value || (!searchParams.type && opt.value === '')}
+                        defaultChecked={sp.type === opt.value || (!sp.type && opt.value === '')}
                         className="text-blue-600"
                       />
                       <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${opt.dot}`} />
@@ -240,7 +241,7 @@ export default async function ListingsPage({
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Grad</label>
                 <select
                   name="city"
-                  defaultValue={searchParams.city || ''}
+                  defaultValue={sp.city || ''}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   <option value="">Svi gradovi</option>
@@ -252,7 +253,7 @@ export default async function ListingsPage({
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Kategorija</label>
                 <div className="space-y-1 max-h-48 overflow-y-auto">
                   <label className="flex items-center gap-2 cursor-pointer py-0.5">
-                    <input type="radio" name="category" value="" defaultChecked={!searchParams.category} className="text-blue-600" />
+                    <input type="radio" name="category" value="" defaultChecked={!sp.category} className="text-blue-600" />
                     <span className="text-sm text-gray-700">Sve kategorije</span>
                   </label>
                   {CATEGORIES.map(cat => (
@@ -261,7 +262,7 @@ export default async function ListingsPage({
                         type="radio"
                         name="category"
                         value={cat.slug}
-                        defaultChecked={searchParams.category === cat.slug}
+                        defaultChecked={sp.category === cat.slug}
                         className="text-blue-600"
                       />
                       <span className="text-sm text-gray-700">{cat.icon} {cat.name}</span>
@@ -288,7 +289,7 @@ export default async function ListingsPage({
               <div>
                 <p className="text-sm text-gray-500">
                   {hasRealListings ? `${count} oglasa` : isDemoMode ? `${DUMMY_LISTINGS.length} primera oglasa` : 'Nema oglasa'}
-                  {searchParams.city ? ` u gradu ${searchParams.city}` : ''}
+                  {sp.city ? ` u gradu ${sp.city}` : ''}
                 </p>
                 {isDemoMode && (
                   <p className="text-xs text-amber-600 mt-0.5">📋 Prikazani su primeri oglasa. Budi prvi koji postavlja pravi oglas!</p>
@@ -380,7 +381,7 @@ export default async function ListingsPage({
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                   <Link
                     key={p}
-                    href={`/oglasi?${new URLSearchParams({ ...searchParams, page: p.toString() }).toString()}`}
+                    href={`/oglasi?${new URLSearchParams({ ...sp, page: p.toString() }).toString()}`}
                     className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
                       p === page
                         ? 'bg-blue-600 text-white'
