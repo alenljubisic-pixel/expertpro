@@ -1,27 +1,46 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Send, AlertTriangle } from 'lucide-react'
+import { safeInitial, safeName } from '@/lib/safe-name'
+import type { Message, Profile } from '@/types'
+
+interface ConversationSummary {
+  id: string
+  participant_1_id: string
+  user1?: Pick<Profile, 'name'> | null
+  user2?: Pick<Profile, 'name'> | null
+  listing?: { title: string } | null
+}
 
 interface Props {
   conversationId: string
   currentUserId: string
-  conversations: any[]
+  conversations: ConversationSummary[]
 }
 
 export default function ChatWindow({ conversationId, currentUserId, conversations }: Props) {
-  const [messages, setMessages] = useState<any[]>([])
+  const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const conv = conversations.find(c => c.id === conversationId)
   const other = conv?.participant_1_id === currentUserId ? conv?.user2 : conv?.user1
 
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
+
   useEffect(() => {
-    loadMessages()
+    void supabase
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true })
+      .then(({ data }) => setMessages((data as Message[] | null) || []))
 
     // Real-time subscription
     const channel = supabase
@@ -35,8 +54,7 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          setMessages(prev => [...prev, payload.new])
-          scrollToBottom()
+          setMessages(prev => [...prev, payload.new as Message])
         }
       )
       .subscribe()
@@ -44,24 +62,11 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [conversationId])
+  }, [conversationId, supabase])
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
-
-  const loadMessages = async () => {
-    const { data } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
-    setMessages(data || [])
-  }
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  }, [messages, scrollToBottom])
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -101,17 +106,15 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
     return d.toLocaleDateString('sr-RS')
   }
 
-  let lastDate = ''
-
   return (
     <div className="flex-1 flex flex-col min-w-0">
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-gray-100">
         <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600">
-          {other?.name?.[0]?.toUpperCase() || '?'}
+          {safeInitial(other?.name)}
         </div>
         <div>
-          <p className="font-medium text-gray-900 text-sm">{other?.name}</p>
+          <p className="font-medium text-gray-900 text-sm">{safeName(other?.name)}</p>
           {conv?.listing && (
             <p className="text-xs text-gray-400">
               Re: {conv.listing.title}
@@ -130,10 +133,10 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map((msg) => {
+        {messages.map((msg, index) => {
           const msgDate = formatDate(msg.created_at)
-          const showDateSep = msgDate !== lastDate
-          lastDate = msgDate
+          const previousDate = index > 0 ? formatDate(messages[index - 1].created_at) : ''
+          const showDateSep = msgDate !== previousDate
           const isMe = msg.sender_id === currentUserId
 
           return (

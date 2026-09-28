@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -37,13 +37,6 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/login'
       return NextResponse.redirect(url)
     }
-    // Check admin role via profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('type')
-      .eq('id', user.id)
-      .single()
-    // Admin check would be a separate field, simplified here
   }
 
   return supabaseResponse

@@ -1,6 +1,6 @@
 export type UserType = 'individual' | 'company' | 'agency'
 export type ListingType = 'offer' | 'request' | 'urgent'
-export type ListingStatus = 'active' | 'filled' | 'expired' | 'cancelled' | 'pending_review'
+export type ListingStatus = 'active' | 'paused' | 'filled' | 'expired' | 'cancelled' | 'pending_review'
 export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn'
 export type SubscriptionTier = 'free' | 'basic' | 'pro' | 'premium' | 'agency_starter' | 'agency_pro'
 

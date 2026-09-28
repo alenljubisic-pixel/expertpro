@@ -88,7 +88,7 @@ export default function PrivatnostPage() {
               <ul className="list-disc list-inside text-sm text-gray-600 space-y-1.5">
                 <li>Pristup vašim podacima</li>
                 <li>Ispravku netačnih podataka</li>
-                <li>Brisanje podataka ("pravo na zaborav")</li>
+                <li>Brisanje podataka (&quot;pravo na zaborav&quot;)</li>
                 <li>Prenosivost podataka</li>
                 <li>Prigovor na obradu podataka</li>
               </ul>
