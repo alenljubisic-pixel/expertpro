@@ -81,7 +81,7 @@ const STATUS_LABEL: Record<string, { label: string; bg: string }> = {
 export default async function AdminPaymentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>
+  searchParams: Promise<{ filter?: string; q?: string }>
 }) {
   const sp = await searchParams
   const supabase = await createClient()
@@ -90,6 +90,7 @@ export default async function AdminPaymentsPage({
   if (!(await isAdmin(user.id, supabase))) redirect('/dashboard')
 
   const filter = sp.filter || 'pending'
+  const q = (sp.q || '').trim().toLowerCase()
 
   let query = supabase
     .from('listing_promotions')
@@ -110,6 +111,19 @@ export default async function AdminPaymentsPage({
   else if (filter !== 'all') creditQuery = creditQuery.eq('status', filter)
 
   const { data: creditOrders } = await creditQuery.limit(200)
+
+  // Client-side match on the "šifra"/poziv na broj, the payer's name, or
+  // their email — this is what an admin has in hand while going through a
+  // bank statement with many pending payments, so it needs to be findable
+  // without scrolling through everything.
+  const matchesQuery = (o: any) =>
+    !q ||
+    o.reference_code?.toLowerCase().includes(q) ||
+    o.profiles?.name?.toLowerCase().includes(q) ||
+    o.profiles?.email?.toLowerCase().includes(q)
+
+  const filteredOrders = (orders || []).filter(matchesQuery)
+  const filteredCreditOrders = (creditOrders || []).filter(matchesQuery)
 
   const { data: settings } = await supabase
     .from('payment_settings')
@@ -170,11 +184,11 @@ export default async function AdminPaymentsPage({
           </form>
         </div>
 
-        <div className="flex gap-2 mb-5 border-b border-gray-200 overflow-x-auto">
+        <div className="flex gap-2 mb-3 border-b border-gray-200 overflow-x-auto">
           {tabs.map(tab => (
             <Link
               key={tab.value}
-              href={`/admin/uplate?filter=${tab.value}`}
+              href={`/admin/uplate?filter=${tab.value}${q ? `&q=${encodeURIComponent(q)}` : ''}`}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap -mb-px ${
                 filter === tab.value ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
@@ -184,12 +198,32 @@ export default async function AdminPaymentsPage({
           ))}
         </div>
 
+        {/* Search — bitno kad ima puno porudžbina na čekanju: admin kuca
+            šifru sa izvoda (ili ime/email) i odmah nalazi tačnu porudžbinu
+            umesto da skroluje kroz sve. */}
+        <form method="get" className="mb-5">
+          <input type="hidden" name="filter" value={filter} />
+          <input
+            type="text"
+            name="q"
+            defaultValue={q}
+            placeholder="Pretraži po šifri, imenu ili emailu…"
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+          />
+        </form>
+        {q && (
+          <p className="text-xs text-gray-400 -mt-3 mb-4">
+            Prikazano {filteredOrders.length + filteredCreditOrders.length} od {(orders?.length || 0) + (creditOrders?.length || 0)} porudžbina za &quot;{q}&quot; —{' '}
+            <Link href={`/admin/uplate?filter=${filter}`} className="underline">obriši pretragu</Link>
+          </p>
+        )}
+
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Istaknuto / Gold</h2>
         <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 mb-8">
-          {!orders || orders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
             <div className="p-8 text-center text-gray-400">Nema porudžbina u ovoj kategoriji</div>
           ) : (
-            orders.map((o: any) => {
+            filteredOrders.map((o: any) => {
               const status = STATUS_LABEL[o.status] || STATUS_LABEL.pending_payment
               const tierInfo = PROMOTION_TIERS[o.tier as PromotionTier]
               const canAct = o.status === 'pending_payment' || o.status === 'user_confirmed'
@@ -237,10 +271,10 @@ export default async function AdminPaymentsPage({
 
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Kupovina kredita</h2>
         <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
-          {!creditOrders || creditOrders.length === 0 ? (
+          {filteredCreditOrders.length === 0 ? (
             <div className="p-8 text-center text-gray-400">Nema porudžbina u ovoj kategoriji</div>
           ) : (
-            creditOrders.map((o: any) => {
+            filteredCreditOrders.map((o: any) => {
               const status = STATUS_LABEL[o.status] || STATUS_LABEL.pending_payment
               const canAct = o.status === 'pending_payment' || o.status === 'user_confirmed'
               return (

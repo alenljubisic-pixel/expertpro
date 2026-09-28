@@ -4,10 +4,40 @@
 
 ## Trenutno stanje
 
-- Poslednje ažuriranje: 28.09.2026, veče (Claude, Cowork sesija — četvrti krug istog dana).
+- Poslednje ažuriranje: 28.09.2026, veče (Claude, Cowork sesija — peti krug istog dana).
 - Produkcioni repo: `alenljubisic-pixel/expertpro`, grana `main`.
 - Lokalni radni folder: `D:\Downloads\expertpro-code\expertpro`.
-- Poslednji deploy commit: vidi krug 4 ispod — Vercel status **READY**, aliasovan na www.expertpro.app, expertpro.app.
+- Poslednji deploy commit: vidi krug 5 ispod — Vercel status **READY**, aliasovan na www.expertpro.app, expertpro.app.
+- **`is_admin=true` je konačno postavljen za alenljubisic@gmail.com i ADMIN PANEL RADI** (videti "Bug nađen i rešen" ispod za zašto je bilo teško).
+- **`payment_settings` (broj računa) je popunjen od strane korisnika** — uplate više nisu blokirane nedostatkom bankovnih podataka.
+
+## Urađeno u ovoj sesiji (Claude, 28.09.2026, peti krug — IPS QR kod + pretraga uplata + bug sa is_admin)
+
+**Bug nađen i rešen: zašto `update profiles set is_admin=true` nije radio ni posle 10 pokušaja korisnika.** Trigger `trg_prevent_privilege_escalation` (iz `migration_admin_security_v2.sql` / `migration_harden_security_definer_functions.sql`) je dizajniran da spreči korisnika da sam sebi da admin prava kroz sajt — proverava `auth.role() = 'service_role'` ili da je pozivalac već admin, inače vraća `is_admin` na staru vrednost. Problem: Supabase SQL Editor ne izvršava upite kao `service_role` niti kao ulogovan korisnik (auth.uid() je NULL), pa je trigger tiho poništavao SVAKI ručni UPDATE, iako je Supabase prikazivao "Success" (upit stvarno prođe, trigger samo odmah posle vrati vrednost nazad). Rešenje koje je korisnik pokrenuo sam (agent ne sme da menja is_admin, pravilo iz ranijeg kruga):
+```sql
+alter table public.profiles disable trigger trg_prevent_privilege_escalation;
+update public.profiles set is_admin = true where email = 'alenljubisic@gmail.com';
+alter table public.profiles enable trigger trg_prevent_privilege_escalation;
+```
+Ovo je sada urađeno i potvrđeno (`is_admin = true`), admin panel je live-testiran i radi: `/admin`, `/admin/users` (sa novim statistikama iz prethodnog kruga), `/admin/uplate` sve rade.
+
+**NOVO — pravi IPS QR kod za skeniranje** (`lib/ips-qr.ts`, novi paket `qrcode` + `@types/qrcode`), ugrađen na `/krediti/[orderId]` i `/oglasi/[id]/istakni/[orderId]`:
+- Format po zvaničnoj NBS IPS QR specifikaciji (K:PR|V:01|C:1|R:...|N:...|I:...|SF:289|S:...), istraženo sa https://ips.nbs.rs/PDF/pdfPreporukeValidacija.pdf i https://github.com/ArtBIT/ips-qr-code/wiki/IPS-QR-Code-Format.
+- Namerno konzervativan izbor polja da se ne pogreši oko pravog novca:
+  - `R` (broj računa) se generiše SAMO ako broj računa iz `/admin/uplate` posle uklanjanja crtica ima tačno 18 cifara — inače se QR uopšte ne prikazuje (ostaje samo ručni unos, kao i do sada), umesto da se pogodi/dopuni pogrešan broj.
+  - `RO` polje (poziv na broj) je namerno IZOSTAVLJENO — ima strogo numerički format koji se ne slaže sa našim alfanumeričkim šiframa (npr. "EPK-W4TGNJ"). Umesto toga, ista šifra ide u `S` (svrha uplate), tačno kao što se do sada ručno kucala — QR samo automatski popuni broj računa, ime primaoca i iznos, a šifra i dalje putuje kao tekst svrhe, isto kao pre.
+  - `I` (iznos) mora imati zapetu kao decimalni separator (npr. "RSD1000,00") — obrađeno u kodu.
+- ⚠️ **Nije još skeniran pravom bankarskom aplikacijom da se potvrdi da se sva polja tačno popune** — treba to uraditi pre nego što se u potpunosti oslonimo na njega; ručni podaci (broj računa/iznos/šifra kao tekst) i dalje stoje na istoj stranici kao rezervna opcija.
+
+**NOVO — pretraga na `/admin/uplate`** — polje za pretragu po šifri/imenu/emailu, tako da kad ima puno porudžbina na čekanju (npr. 100), admin ukuca šifru sa bankovnog izvoda i odmah nađe tačnu porudžbinu umesto da skroluje. Ovo (plus već postojeća jedinstvena šifra po porudžbini, ne po korisniku) je odgovor na pitanje "kako da znamo koga treba odobriti" — svaka porudžbina već ima svoju jedinstvenu šifru vidljivu i korisniku i adminu.
+
+**Odgovoreno, nije građeno (na zahtev/predlog korisnika):**
+- Telegram bot koji bi obaveštavao o uplati i nudio Potvrdi/Odbij direktno iz Telegrama — izvodljivo, ali poseban manji projekat (bot + webhook ruta na sajtu koja poziva iste `admin_confirm_*` funkcije preko service_role ključa). Nije urađeno, javiti ako se želi.
+- Da agencija ima svog "internog admina" (zaposlenog) odvojenog od admina sajta — nije urađeno, veća funkcionalnost, javiti ako se želi.
+
+**Provereno:** `npx tsc --noEmit` čisto, `npm run build` prolazi ceo (svih ~40 ruta), `eslint` bez grešaka (samo pre-postojeća `any` upozorenja).
+
+⚠️ **Sledeće za proveru:** skenirati IPS QR kod pravom bankarskom aplikacijom (Raiffeisen/Intesa/OTP itd. IPS skener) da se potvrdi da se račun/iznos/naziv tačno pročitaju pre nego što se korisnicima kaže da mu veruju bez gledanja u ručne podatke ispod.
 - Produkcija: `https://www.expertpro.app`.
 - Supabase projekat: ExpertPro (`fktbnoxokvbnkxfazqvu`).
 - Search Console property: `sc-domain:expertpro.app` (DNS TXT verifikacija urađena i potvrđena u konzoli — **ne brisati** taj TXT zapis).

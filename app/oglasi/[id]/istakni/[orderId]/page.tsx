@@ -3,9 +3,11 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import { ArrowLeft, Copy, CheckCircle, Clock, XCircle } from 'lucide-react'
+import { ArrowLeft, Copy, CheckCircle, Clock, XCircle, QrCode } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 import { PROMOTION_TIERS, type PromotionTier } from '@/lib/promotions'
+import QRCode from 'qrcode'
+import { buildIpsQrPayload } from '@/lib/ips-qr'
 
 async function markUserConfirmed(formData: FormData) {
   'use server'
@@ -52,6 +54,23 @@ export default async function PromotionPaymentPage({
   const bankReady = settings?.account_number && settings?.account_holder
   const tierInfo = PROMOTION_TIERS[order.tier as PromotionTier]
 
+  let ipsQrDataUrl: string | null = null
+  if (bankReady) {
+    const payload = buildIpsQrPayload({
+      accountNumber: settings!.account_number!,
+      accountHolder: settings!.account_holder!,
+      amountRsd: Number(order.price_amount),
+      purposeText: order.reference_code,
+    })
+    if (payload) {
+      try {
+        ipsQrDataUrl = await QRCode.toDataURL(payload, { margin: 1, width: 220 })
+      } catch {
+        ipsQrDataUrl = null
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -97,6 +116,14 @@ export default async function PromotionPaymentPage({
               </div>
             ) : (
               <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6 space-y-4">
+                {ipsQrDataUrl && (
+                  <div className="flex flex-col items-center gap-2 pb-4 mb-2 border-b border-gray-50">
+                    <img src={ipsQrDataUrl} alt="IPS QR kod za uplatu" width={180} height={180} className="rounded-lg" />
+                    <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                      <QrCode className="w-3.5 h-3.5" /> Skeniraj u aplikaciji svoje banke — popuniće se svi podaci
+                    </p>
+                  </div>
+                )}
                 <Row label="Primalac" value={settings!.account_holder!} />
                 {settings?.bank_name && <Row label="Banka" value={settings.bank_name} />}
                 <Row label="Broj računa" value={settings!.account_number!} mono />
