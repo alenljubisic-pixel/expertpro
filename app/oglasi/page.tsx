@@ -159,7 +159,7 @@ export default async function ListingsPage({
 
   let query = supabase
     .from('listings')
-    .select('*, profiles(name, avatar_url, rating_avg, is_verified), categories(name, icon)', { count: 'exact' })
+    .select('*, profiles!user_id(name, avatar_url, rating_avg, is_verified), categories(icon)', { count: 'exact' })
     .eq('status', 'active')
     .order('created_at', { ascending: false })
 
