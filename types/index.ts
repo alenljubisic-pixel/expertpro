@@ -20,6 +20,7 @@ export interface Profile {
   is_verified: boolean
   is_approved: boolean
   is_active: boolean
+  is_admin?: boolean
   rating_avg: number
   rating_count: number
   completed_jobs: number

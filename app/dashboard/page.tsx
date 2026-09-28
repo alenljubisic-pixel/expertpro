@@ -187,7 +187,7 @@ export default async function DashboardPage() {
                   <Bell className="w-4 h-4" />
                   Obaveštenja
                 </Link>
-                {profile?.type === 'individual' && (
+                {profile?.is_admin && (
                   <Link
                     href="/admin"
                     className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"

@@ -187,7 +187,7 @@ export default function Navbar() {
                           </span>
                         )}
                       </Link>
-                      {profile?.is_verified && profile?.type === 'individual' && (
+                      {profile?.is_admin && (
                         <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>
                           <Settings className="w-4 h-4" /> Admin panel
                         </Link>
