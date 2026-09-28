@@ -199,7 +199,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                       <div key={review.id} className="border-b border-gray-50 pb-4 last:border-0 last:pb-0">
                         <div className="flex items-center gap-2 mb-1">
                           <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
-                          {safeInitial(reviewer?.name)}
+                            {safeInitial(reviewer?.name)}
                           </div>
                           <span className="text-sm font-medium text-gray-900">{safeName(reviewer?.name)}</span>
                           <div className="flex gap-0.5 ml-1">
@@ -240,6 +240,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                         {profile.rating_avg.toFixed(1)} ({profile.rating_count || 0})
                       </span>
                     )}
+                  </div>
                 </div>
               </div>
 
