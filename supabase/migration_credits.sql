@@ -44,15 +44,18 @@ create index if not exists credit_purchases_user_idx on public.credit_purchases(
 
 alter table public.credit_purchases enable row level security;
 
+drop policy if exists "Users can view own credit purchases" on public.credit_purchases;
 create policy "Users can view own credit purchases" on public.credit_purchases
   for select using (
     auth.uid() = user_id
     or exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
   );
 
+drop policy if exists "Users can create own credit purchases" on public.credit_purchases;
 create policy "Users can create own credit purchases" on public.credit_purchases
   for insert with check (auth.uid() = user_id);
 
+drop policy if exists "Owner can mark as paid, admin can manage" on public.credit_purchases;
 create policy "Owner can mark as paid, admin can manage" on public.credit_purchases
   for update using (
     auth.uid() = user_id

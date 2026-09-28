@@ -41,8 +41,10 @@ insert into public.payment_settings (id) values (1) on conflict (id) do nothing;
 
 alter table public.payment_settings enable row level security;
 -- Anyone signed in can read the bank details (needed to pay) — no secrets here.
+drop policy if exists "Payment settings readable by authenticated users" on public.payment_settings;
 create policy "Payment settings readable by authenticated users" on public.payment_settings
   for select using (auth.role() = 'authenticated');
+drop policy if exists "Only admins can update payment settings" on public.payment_settings;
 create policy "Only admins can update payment settings" on public.payment_settings
   for update using (exists (select 1 from public.profiles where id = auth.uid() and is_admin = true));
 
@@ -71,12 +73,14 @@ create index if not exists listing_promotions_user_idx on public.listing_promoti
 
 alter table public.listing_promotions enable row level security;
 
+drop policy if exists "Users can view own promotion orders" on public.listing_promotions;
 create policy "Users can view own promotion orders" on public.listing_promotions
   for select using (
     auth.uid() = user_id
     or exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
   );
 
+drop policy if exists "Users can create promotion orders for own listings" on public.listing_promotions;
 create policy "Users can create promotion orders for own listings" on public.listing_promotions
   for insert with check (
     auth.uid() = user_id
@@ -86,6 +90,7 @@ create policy "Users can create promotion orders for own listings" on public.lis
 -- Only the owner marking "I sent the payment" (pending_payment -> user_confirmed),
 -- or an admin doing anything (confirm/reject/note), may update a row.
 -- Enforced in the app layer too, but this is the DB-level backstop.
+drop policy if exists "Owner can mark as paid, admin can manage" on public.listing_promotions;
 create policy "Owner can mark as paid, admin can manage" on public.listing_promotions
   for update using (
     auth.uid() = user_id
