@@ -27,119 +27,6 @@ const TYPE_LABELS: Record<string, { label: string; color: string; bg: string }> 
   urgent: { label: '🚨 Hitno', color: 'text-red-700', bg: 'bg-red-50 border-red-200' },
 }
 
-const DUMMY_LISTINGS = [
-  {
-    id: 'd1',
-    type: 'request',
-    title: 'Tražim iskusnog molera za stan od 60m² u Beogradu',
-    description: 'Potreban moler za farbanje 3 sobe, hodnika i kupatila. Stanovanje obezbeđeno. Početak rada odmah.',
-    city: 'Beograd',
-    price_amount: 800,
-    price_type: 'daily',
-    profiles: { name: 'Stefan M.', rating_avg: 0, is_verified: false },
-    categories: { icon: '🔨' },
-  },
-  {
-    id: 'd2',
-    type: 'offer',
-    title: 'Vodoinstalater — nudim usluge popravke i montaže',
-    description: 'Popravka curenja, montaža sanitarija, zamena cevi. 10 godina iskustva. Dostupan vikendom.',
-    city: 'Novi Sad',
-    price_amount: 1500,
-    price_type: 'fixed',
-    profiles: { name: 'Dragan P.', rating_avg: 4.8, is_verified: true },
-    categories: { icon: '🔨' },
-  },
-  {
-    id: 'd3',
-    type: 'urgent',
-    title: 'HITNO — potrebni utovartivači za selidbu danas u 14h',
-    description: 'Potrebna 2-3 radnika za selidbu nameštaja iz stana u Zemunu. Posao traje 3-4 sata.',
-    city: 'Beograd',
-    price_amount: 1200,
-    price_type: 'fixed',
-    profiles: { name: 'Marina T.', rating_avg: 0, is_verified: false },
-    categories: { icon: '🚛' },
-  },
-  {
-    id: 'd4',
-    type: 'offer',
-    title: 'Čišćenje stanova, kancelarija i poslovnih prostora',
-    description: 'Profesionalno čišćenje sa sopstvenom opremom i sredstvima. Beograd i okolina. Tačnost zagarantovana.',
-    city: 'Beograd',
-    price_amount: 600,
-    price_type: 'hourly',
-    profiles: { name: 'Jelena K.', rating_avg: 4.9, is_verified: true },
-    categories: { icon: '🧹' },
-  },
-  {
-    id: 'd5',
-    type: 'request',
-    title: 'Potreban kuvar za porodičnu proslavu — 50 osoba',
-    description: 'Tražim kuvara koji može da pripremi srpsku trpezu za 50 osoba. Datum: naredni vikend. Nis.',
-    city: 'Niš',
-    price_amount: 5000,
-    price_type: 'fixed',
-    profiles: { name: 'Slobodan V.', rating_avg: 0, is_verified: false },
-    categories: { icon: '🍴' },
-  },
-  {
-    id: 'd6',
-    type: 'offer',
-    title: 'IT podrška za firme — mrežna administracija i helpdesk',
-    description: 'Nudim IT podršku za mala preduzeća: postavljanje mreže, održavanje računara, backup sistemi.',
-    city: 'Novi Sad',
-    price_amount: 1200,
-    price_type: 'hourly',
-    profiles: { name: 'Aleksa Đ.', rating_avg: 5.0, is_verified: true },
-    categories: { icon: '💻' },
-  },
-  {
-    id: 'd7',
-    type: 'offer',
-    title: 'Čuvanje dece uzrasta 1-7 godina — iskusna dadilja',
-    description: 'Medicinska sestra sa 8 godina iskustva u radu sa decom. Reference dostupne. Kragujevac.',
-    city: 'Kragujevac',
-    price_amount: 700,
-    price_type: 'hourly',
-    profiles: { name: 'Ana B.', rating_avg: 4.7, is_verified: true },
-    categories: { icon: '👶' },
-  },
-  {
-    id: 'd8',
-    type: 'request',
-    title: 'Potrebni radnici za magacin — pakovanje robe, noćna smena',
-    description: 'Firma traži 5 radnika za rad u magacinu (noćna smena). Iskustvo nije potrebno. Subotica.',
-    city: 'Subotica',
-    price_amount: 1800,
-    price_type: 'daily',
-    profiles: { name: 'ProLogistika d.o.o.', rating_avg: 4.2, is_verified: true },
-    categories: { icon: '📦' },
-  },
-  {
-    id: 'd9',
-    type: 'urgent',
-    title: 'HITNO — elektricar za zamenu osigurica i instalacija',
-    description: 'Izgorele osigurace u stanu, deca bez struje. Potreban elektricar sto pre. Vracar, Beograd.',
-    city: 'Beograd',
-    price_amount: 2500,
-    price_type: 'fixed',
-    profiles: { name: 'Mirko O.', rating_avg: 0, is_verified: false },
-    categories: { icon: '🔨' },
-  },
-  {
-    id: 'd10',
-    type: 'offer',
-    title: 'Administrativna podrška i data entry — rad od kuće',
-    description: 'Nudim usluge administrativne podrške: unos podataka, priprema dokumenata, email korespondencija.',
-    city: 'Novi Sad',
-    price_amount: 500,
-    price_type: 'hourly',
-    profiles: { name: 'Tamara L.', rating_avg: 4.6, is_verified: true },
-    categories: { icon: '📋' },
-  },
-]
-
 export default async function ListingsPage({
   searchParams,
 }: {
@@ -173,9 +60,7 @@ export default async function ListingsPage({
 
   const isUrgent = sp.type === 'urgent'
   const hasFilters = !!(sp.type || sp.city || sp.category || sp.q)
-  const hasRealListings = listings && listings.length > 0
-  const displayListings = hasRealListings ? listings : (!hasFilters ? DUMMY_LISTINGS : [])
-  const isDemoMode = !hasRealListings && !hasFilters
+  const displayListings = listings || []
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -288,12 +173,9 @@ export default async function ListingsPage({
             <div className="flex items-center justify-between mb-5">
               <div>
                 <p className="text-sm text-gray-500">
-                  {hasRealListings ? `${count} oglasa` : isDemoMode ? `${DUMMY_LISTINGS.length} primera oglasa` : 'Nema oglasa'}
+                  {displayListings.length > 0 ? `${count} oglasa` : 'Nema oglasa'}
                   {sp.city ? ` u gradu ${sp.city}` : ''}
                 </p>
-                {isDemoMode && (
-                  <p className="text-xs text-amber-600 mt-0.5">📋 Prikazani su primeri oglasa. Budi prvi koji postavlja pravi oglas!</p>
-                )}
               </div>
               <Link
                 href="/oglasi/novi"
@@ -307,8 +189,14 @@ export default async function ListingsPage({
             {displayListings.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
                 <p className="text-4xl mb-4">🔍</p>
-                <p className="text-gray-500 mb-2">Nema oglasa koji odgovaraju pretrazi</p>
-                <Link href="/oglasi" className="text-sm text-blue-600 hover:text-blue-700">Poništi filtere</Link>
+                <p className="text-gray-500 mb-2">
+                  {hasFilters ? 'Nema oglasa koji odgovaraju pretrazi' : 'Trenutno nema aktivnih oglasa'}
+                </p>
+                {hasFilters ? (
+                  <Link href="/oglasi" className="text-sm text-blue-600 hover:text-blue-700">Poništi filtere</Link>
+                ) : (
+                  <Link href="/oglasi/novi" className="text-sm text-blue-600 hover:text-blue-700">Budi prvi koji postavlja oglas →</Link>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -316,11 +204,10 @@ export default async function ListingsPage({
                   const typeInfo = TYPE_LABELS[listing.type] || TYPE_LABELS.request
                   const profile = listing.profiles as any
                   const category = listing.categories as any
-                  const isDemo = isDemoMode
                   return (
                     <Link
                       key={listing.id}
-                      href={isDemo ? '/register' : `/oglasi/${listing.id}`}
+                      href={`/oglasi/${listing.id}`}
                       className={`block bg-white rounded-xl border hover:shadow-md transition-all overflow-hidden ${
                         listing.type === 'urgent' ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-100'
                       }`}

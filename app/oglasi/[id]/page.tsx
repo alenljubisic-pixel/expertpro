@@ -14,6 +14,29 @@ const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; bo
   urgent: { label: '🚨 Hitno', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200' },
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data: listing } = await supabase
+    .from('listings')
+    .select('title, description, city, status')
+    .eq('id', id)
+    .single()
+
+  if (!listing) return {}
+
+  const title = `${listing.title} — ${listing.city} | ExpertPro`
+  const description = (listing.description || `Oglas na ExpertPro platformi u gradu ${listing.city}.`).slice(0, 160)
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/oglasi/${id}` },
+    openGraph: { title, description, url: `/oglasi/${id}`, type: 'website' },
+    robots: listing.status === 'active' ? { index: true, follow: true } : { index: false, follow: true },
+  }
+}
+
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
@@ -91,8 +114,45 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     return new Date(d).toLocaleDateString('sr-RS', { day: 'numeric', month: 'long', year: 'numeric' })
   }
 
+  const jobPostingJsonLd = listing.type !== 'offer' ? {
+    '@context': 'https://schema.org/',
+    '@type': 'JobPosting',
+    title: listing.title,
+    description: listing.description || listing.title,
+    datePosted: listing.created_at,
+    validThrough: listing.expires_at || undefined,
+    employmentType: 'CONTRACTOR',
+    hiringOrganization: {
+      '@type': profile?.type === 'individual' ? 'Person' : 'Organization',
+      name: safeName(profile?.name),
+    },
+    jobLocation: {
+      '@type': 'Place',
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: listing.city,
+        addressCountry: 'RS',
+      },
+    },
+    baseSalary: listing.price_amount ? {
+      '@type': 'MonetaryAmount',
+      currency: 'RSD',
+      value: {
+        '@type': 'QuantitativeValue',
+        value: listing.price_amount,
+        unitText: listing.price_type === 'hourly' ? 'HOUR' : listing.price_type === 'daily' ? 'DAY' : undefined,
+      },
+    } : undefined,
+  } : null
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+      {jobPostingJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPostingJsonLd) }}
+        />
+      )}
       <Navbar />
 
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
