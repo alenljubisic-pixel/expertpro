@@ -25,6 +25,7 @@ export interface Profile {
   completed_jobs: number
   subscription_tier: SubscriptionTier
   active_listing_count: number
+  credit_balance?: number
   created_at: string
 }
 

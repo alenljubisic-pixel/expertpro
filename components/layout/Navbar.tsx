@@ -8,7 +8,7 @@ import type { User } from '@supabase/supabase-js'
 import type { Profile } from '@/types'
 import {
   Menu, X, Bell, MessageSquare, Plus, LogOut,
-  User as UserIcon, Settings, ChevronDown, Zap
+  User as UserIcon, Settings, ChevronDown, Zap, Coins
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -116,6 +116,15 @@ export default function Navbar() {
             {user ? (
               <>
                 <Link
+                  href="/krediti"
+                  title="Tvoji krediti — klikni da dopuniš"
+                  className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-amber-100 transition-colors"
+                >
+                  <Coins className="w-4 h-4" />
+                  {profile?.credit_balance ?? 0}
+                </Link>
+
+                <Link
                   href="/oglasi/novi"
                   className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
                 >
@@ -161,6 +170,13 @@ export default function Navbar() {
                       </Link>
                       <Link href="/dashboard/oglasi" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>
                         <Settings className="w-4 h-4" /> Moji oglasi
+                      </Link>
+                      <Link href="/krediti" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>
+                        <Coins className="w-4 h-4 text-amber-500" />
+                        Krediti
+                        <span className="ml-auto text-xs font-semibold text-amber-700 bg-amber-50 rounded-full px-1.5 py-0.5">
+                          {profile?.credit_balance ?? 0}
+                        </span>
                       </Link>
                       <Link href="/obavestenja" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>
                         <Bell className="w-4 h-4" />
@@ -220,6 +236,11 @@ export default function Navbar() {
           {user ? (
             <>
               <Link href="/oglasi/novi" className="block bg-blue-600 text-white text-center py-2 rounded-lg text-sm font-medium" onClick={() => setMenuOpen(false)}>+ Novi oglas</Link>
+              <Link href="/krediti" className="flex items-center gap-2 text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>
+                <Coins className="w-4 h-4 text-amber-500" />
+                Krediti
+                <span className="bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full px-1.5 py-0.5">{profile?.credit_balance ?? 0}</span>
+              </Link>
               <Link href="/obavestenja" className="flex items-center gap-2 text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>
                 Obaveštenja
                 {notifCount > 0 && <span className="bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">{notifCount}</span>}

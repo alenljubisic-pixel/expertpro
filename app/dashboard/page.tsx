@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import CreditsWidget from '@/components/credits/CreditsWidget'
 import {
   Plus, Star, Briefcase, MessageSquare, Eye, CheckCircle,
   Clock, TrendingUp, Users, Settings, Bell, AlertCircle, Award
@@ -157,6 +158,9 @@ export default async function DashboardPage() {
 
           {/* Sidebar */}
           <div className="space-y-4">
+            {/* Credits */}
+            <CreditsWidget balance={profile?.credit_balance ?? 0} accountType={profile?.type} />
+
             {/* Profile card */}
             <div className="bg-white rounded-xl border border-gray-100 p-5">
               <div className="flex items-center gap-3 mb-4">

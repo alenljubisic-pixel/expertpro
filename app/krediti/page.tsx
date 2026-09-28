@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import { Zap, ArrowLeft } from 'lucide-react'
+import { Zap, ArrowLeft, Gift, Crown } from 'lucide-react'
 import {
   CREDIT_PACKAGES,
   creditBucketForAccountType,
@@ -74,17 +74,47 @@ export default async function CreditsPage({
 
         <div className="flex items-center gap-2 mb-1">
           <Zap className="w-6 h-6 text-red-500" />
-          <h1 className="text-2xl font-bold text-gray-900">Krediti za Hitnu berzu</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Krediti</h1>
         </div>
-        <p className="text-sm text-gray-500 mb-2">
-          1 kredit = 1 objavljen hitan oglas. Trenutni saldo: <b className="text-gray-900">{profile?.credit_balance || 0} kredita</b>.
+        <p className="text-sm text-gray-500 mb-4">
+          Trenutni saldo: <b className="text-gray-900">{profile?.credit_balance || 0} kredita</b>
+          {' '}· {bucket === 'business' ? 'cene za firme i agencije' : 'cene za fizička lica'}.
         </p>
-        <p className="text-xs text-gray-400 mb-6">
-          {bucket === 'business'
-            ? 'Cene za firme i agencije.'
-            : 'Cene za fizička lica.'}{' '}
-          Firma ili agencija sa punim članstvom dobija 10 gratis kredita jednokratno pri odobrenju. Svaki nalog dobija 2 gratis kredita odmah po registraciji.
-        </p>
+
+        <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6 space-y-4 text-sm">
+          <div>
+            <p className="font-semibold text-gray-800 mb-1.5 flex items-center gap-1.5">
+              <Gift className="w-4 h-4 text-green-500" /> Šta dobijaš gratis
+            </p>
+            <ul className="space-y-1 ml-5 list-disc text-gray-600 text-sm">
+              <li>2 kredita odmah pri registraciji, bez ikakve uplate.</li>
+              <li>1 aktivan oglas (bilo koje rubrike) uvek besplatno, trajno.</li>
+              {bucket === 'business' && (
+                <li>+10 kredita gratis, jednokratno, kad ti se odobri puno članstvo.</li>
+              )}
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold text-gray-800 mb-1.5 flex items-center gap-1.5">
+              <Zap className="w-4 h-4 text-blue-500" /> Kad se troši 1 kredit
+            </p>
+            <ul className="space-y-1 ml-5 list-disc text-gray-600 text-sm">
+              <li>Svaki hitan oglas na Hitnoj berzi.</li>
+              <li>Svaki dodatni oglas preko prvog besplatnog — ista ili druga rubrika.</li>
+            </ul>
+          </div>
+          <div className="bg-gradient-to-r from-amber-50 to-red-50 border border-amber-100 rounded-lg p-3">
+            <p className="font-semibold text-gray-800 mb-1 flex items-center gap-1.5">
+              <Crown className="w-4 h-4 text-amber-500" /> Zašto da uplatiš
+            </p>
+            <p className="text-gray-600 leading-relaxed">
+              Poslodavci i klijenti prvo zovu one koje prvo vide. Dopunom kredita brže i češće
+              objavljuješ — a ako uz to platiš Istaknut ili Gold (<Link href="/cenovnik" className="underline font-medium text-amber-700">pogledaj cene</Link>),
+              ideš na vrh liste, dobijaš značku i ulaziš u uži izbor kad neko traži baš tvoju
+              vrstu posla.
+            </p>
+          </div>
+        </div>
 
         {sp.error && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 mb-5">

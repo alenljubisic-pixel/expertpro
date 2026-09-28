@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import CreditsWidget from '@/components/credits/CreditsWidget'
 import { SERBIAN_CITIES } from '@/types'
 import { ArrowLeft, Save, Upload, User } from 'lucide-react'
 
@@ -122,6 +123,9 @@ export default function ProfileEditPage() {
         </div>
 
         <div className="space-y-6">
+          {/* Credits */}
+          <CreditsWidget balance={profile?.credit_balance ?? 0} accountType={profile?.type} />
+
           {/* Avatar section */}
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <div className="flex items-center gap-5">
