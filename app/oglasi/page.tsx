@@ -320,7 +320,7 @@ export default async function ListingsPage({
                   return (
                     <Link
                       key={listing.id}
-                      href={isDemo ? '/oglasi/novi' : `/oglasi/${listing.id}`}
+                      href={isDemo ? '/register' : `/oglasi/${listing.id}`}
                       className={`block bg-white rounded-xl border hover:shadow-md transition-all overflow-hidden ${
                         listing.type === 'urgent' ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-100'
                       }`}
