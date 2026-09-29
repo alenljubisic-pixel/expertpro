@@ -120,6 +120,24 @@ Trenutno: `is_verified` postoji i prikazuje se kao značka, ali ga NIKO ne posta
 7. Poseban "interni admin" nalog za firme/agencije, odvojen od tvog admin naloga za ceo sajt (već ranije pomenuto, nije građeno).
 
 **Sledeći korak:** čekam da pokreneš 2 SQL fixa i potvrdiš da Odobri/Obriši dugmad rade, pa mi reci kojim redosledom da idem kroz stavke iz "finalna verzija" liste (predlažem prvo životni ciklus oglasa, pošto direktno utiče na to da li se ponuda "čisti" od popunjenih poslova).
+
+## Krug 7 (29.09.2026) — SQL fix pokrenut i testiran, ALI nađen NOVI, dublji bag na `/admin/oglasi`
+
+Alen je pokrenuo oba SQL fixa iz Kruga 6. Testirao sam odmah uživo:
+
+✅ **`/admin/users` "Odobri" POTVRĐENO RADI** — kliknuo sam na `z.eh.ova.levih.4.2@gmail.com` (Firma, bio na čekanju), nestao je sa liste čekanja i status mu je sada "Odobren". RLS pravilo je potvrđeno i u bazi (`select * from pg_policies` pokazuje sve 3 nove admin polise: profiles UPDATE, listings UPDATE, listings DELETE).
+
+🔴 **`/admin/oglasi` Pauziraj/Obriši i DALJE NE RADE — ali NIJE RLS problem (to je potvrđeno ispravno), nego novi, drugačiji bag.** Testirao sam 4 puta zaredom (klik na "Pauziraj" na tuđem oglasu) — svaki put server vraća grešku **503 (Service Unavailable)** umesto da promeni status. Ovo NIJE isti uzrok kao ranije (RLS polisa postoji i tačna je), nešto se lomi u samoj akciji na serveru kad se stvarno pozove.
+
+**Ne mogu da vidim tačnu grešku** jer je Vercel integracija u ovoj sesiji izgubila pristup tvom nalogu (dobijam "You must re-authenticate to this scope" na svaki pokušaj čitanja logova/deployment-a). Ovo mora ili ti da provendbeš ili treba da mi ponovo povežeš Vercel pristup.
+
+**Šta TI možeš da uradiš da nastavimo:**
+1. Idi na vercel.com → projekat `expertpro` → tab **Logs** (ili **Observability**), filtriraj po `/admin/oglasi`, i pošalji mi screenshot/tekst greške koja se pojavi kad klikneš Pauziraj na nekom oglasu. To će mi dati tačan uzrok za par minuta.
+2. Ako imaš vremena, probaj ponovo da odobriš Vercel MCP pristup u ovoj sesiji (ili u novoj) da mogu sam da čitam logove.
+
+**Napomena — ovo NE blokira normalne korisnike**, samo admin dugmad na `/admin/oglasi` (Pauziraj/Obriši tuđi oglas). Obični korisnici i dalje mogu normalno da objavljuju/pauziraju SVOJE oglase (to ide kroz drugu putanju, `app/dashboard/oglasi/page.tsx`, nisam primetio da je i to pogođeno, ali treba i to potvrditi).
+
+Usput sam primetio i da poziv za broj nepročitanih obaveštenja (`notifications` upit u Navbar-u) povremeno vraća 503 — nije hitno (samo brojčić na zvoncetu), ali vredi pomenuti ako se Vercel/Supabase log pregleda, možda je isti koren problema.
 - Produkcija: `https://www.expertpro.app`.
 - Supabase projekat: ExpertPro (`fktbnoxokvbnkxfazqvu`).
 - Search Console property: `sc-domain:expertpro.app` (DNS TXT verifikacija urađena i potvrđena u konzoli — **ne brisati** taj TXT zapis).
