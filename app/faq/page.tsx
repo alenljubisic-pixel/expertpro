@@ -62,7 +62,7 @@ const FAQ_SECTIONS = [
       },
       {
         q: 'Šta je "Hitno!" oglas?',
-        a: '"Hitno!" je posebna kategorija za poslove koji počinju odmah ili isti dan. Ovi oglasi su istaknuti na vrhu pretrage i dobijaju prioritetni prikaz. Radnici koji imaju uključene notifikacije odgovaraju u roku od minuta.',
+        a: '"Hitno!" je posebna kategorija za poslove koji počinju odmah ili isti dan. Ovi oglasi su posebno označeni i istaknuti u pretrazi. Brzina odgovora zavisi od dostupnosti radnika.',
       },
       {
         q: 'Koliko dugo traje oglas?',
@@ -70,7 +70,7 @@ const FAQ_SECTIONS = [
       },
       {
         q: 'Kako kontaktiram radnika ili poslodavca?',
-        a: 'Kada pronađete oglas ili profil koji vas zanima, kliknite "Pošalji poruku" i koristite ugrađeni sistem poruka. Sve komunikacije se odvijaju unutar platforme radi sigurnosti.',
+        a: 'Na oglas se prijavite uz kratku poruku. Razgovor se otvara tek kada vlasnik oglasa izabere kandidata i kandidat potvrdi angažman. Kod oglasa "Nudim uslugu", razgovor se otvara kada majstor prihvati vaš upit. Po završetku posla razgovor se zatvara.',
       },
     ],
   },
@@ -87,7 +87,7 @@ const FAQ_SECTIONS = [
       },
       {
         q: 'Šta da radim ako imam problem sa korisnikom?',
-        a: 'Koristite dugme "Prijavi korisnika" na svakom profilu ili oglasu. Naš tim pregleda sve prijave u roku od 24 sata i preduzima odgovarajuće mere.',
+        a: 'Pošaljite žalbu preko stranice "Žalbe i podrška". Možete prijaviti spornu ocenu, oglas ili problem sa saradnjom; admin razmatra prijavu.',
       },
     ],
   },
@@ -117,11 +117,11 @@ const FAQ_SECTIONS = [
     items: [
       {
         q: 'Kako funkcioniše ocenjivanje?',
-        a: 'Po završetku posla, obe strane mogu ostaviti ocenu (1–5 zvezdica) i komentar. Prosečna ocena je vidljiva na profilu i utiče na rangiranje u pretrazi.',
+        a: 'Kada obe strane potvrde završetak dodeljenog posla, svaka može ostaviti ocenu (1–5 zvezdica) i komentar za tu saradnju. Prosečna ocena je vidljiva na profilu.',
       },
       {
         q: 'Mogu li obrisati lošu recenziju?',
-        a: 'Ne možete brisati recenzije, ali možete javno odgovoriti na njih. Naš tim uklanja recenzije koje su lažne, uvredljive ili krše naša pravila.',
+        a: 'Ne možete sami brisati recenzije. Spornu ocenu možete prijaviti preko stranice "Žalbe i podrška"; admin je može skloniti nakon pregleda.',
       },
       {
         q: 'Kako da poboljšam ocenu?',
@@ -161,8 +161,8 @@ export default function FAQPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Česta pitanja</h1>
           <p className="text-gray-500">
             Sve što treba da znate o ExpertPro platformi, registraciji, oglasima i bezbednosti.
-            Nije pronašli odgovor?{' '}
-            <Link href="/poruke" className="text-blue-600 hover:underline">Kontaktirajte nas</Link>.
+            Niste pronašli odgovor?{' '}
+            <Link href="/kontakt" className="text-blue-600 hover:underline">Kontaktirajte nas</Link>.
           </p>
         </div>
       </div>
