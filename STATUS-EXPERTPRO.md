@@ -46,7 +46,8 @@ Detaljno objašnjenje svega iznad (zašto, kako je testirano, koji fajlovi) je u
 - Poslednje ažuriranje: 29.09.2026 (Claude, Cowork sesija — deseti krug).
 - **`/admin/oglasi` Pauziraj/Obriši 503 greška: NAĐEN uzrok, čeka se da Alen pokrene fix SQL** — videti Krug 9 ispod, `supabase/migration_fix_listings_admin_rls.sql`.
 - **Krug 10:** dodata `overflow-x: hidden` odbrana na `html`/`body` (globals.css) posle Alenovog screenshota gde je sadržaj na mobilnom bio uzak/isečen sa crnim prostorom desno — Alen je potvrdio da sad radi dobro na mobilnom (uzrok je bio na strani telefona/Chrome podešavanja, ne sajt, ali odbrambeni fix ostaje). Takođe pojačan tekst PWA banera za instalaciju (crveno, "⚠️ Ne propusti poruke i poslove!").
-- **Krug 11 — NOVO, čeka Alena:** izgrađen upload profilne slike za korisnike koji se nisu ulogovali preko Google/Facebook (email/lozinka nalozi) — kod je gotov i pušovan (`app/dashboard/profil/page.tsx`), ali **ne radi dok Alen ne pokrene `supabase/migration_avatar_storage.sql`** (pravi Supabase Storage bucket "avatars" + RLS politike — agent ne sme sam da pravi storage bucket/RLS na produkciji, isto pravilo kao za sve ostalo).
+- **Krug 13 — NOVO, PLAN spreman za pregled:** `PLAN-EXPERTPRO.md` je pronađen (postojao je samo lokalno, nikad pušovan) i pušovan na GitHub, plus dopunjen novom Sekcijom 13 — detaljna razrada modela "izbor jednog ponuđača" (prijava → dopisivanje → vlasnik bira jednog → ostali otpadaju → oglas se skida) koji je Alen tražio da se osmisli, sa otvorenim pitanjima koja čekaju njegovu odluku pre građenja. **Ništa još nije građeno — ovo je samo plan, kako je Alen i tražio.**
+- **Krug 11 — čeka Alena:** izgrađen upload profilne slike za korisnike koji se nisu ulogovali preko Google/Facebook (email/lozinka nalozi) — kod je gotov i pušovan (`app/dashboard/profil/page.tsx`), ali **ne radi dok Alen ne pokrene `supabase/migration_avatar_storage.sql`** (pravi Supabase Storage bucket "avatars" + RLS politike — agent ne sme sam da pravi storage bucket/RLS na produkciji, isto pravilo kao za sve ostalo).
 - Produkcioni repo: `alenljubisic-pixel/expertpro`, grana `main`.
 - Lokalni radni folder: `D:\Downloads\expertpro-code\expertpro`.
 - Poslednji deploy commit: vidi krug 5 ispod — Vercel status **READY**, aliasovan na www.expertpro.app, expertpro.app.
@@ -534,3 +535,18 @@ Fajl: `supabase/migration_verify_oauth_backfill.sql` — isključi trigger, dopu
 2. Javiti agentu, pa agent proverava da su postojeći Google/Facebook nalozi sada prikazani kao verifikovani (zelena kvačica) na `/oglasi`, `/radnici`, `/profil/[id]`.
 
 Provereno pre push-a: `npx tsc --noEmit` čisto.
+
+## Krug 13 (29.09.2026) — Plan za "izbor jednog ponuđača" (životni ciklus oglasa, konačno razrađeno)
+
+Alen je opisao model: kandidati se prijavljuju na oglas → dopisuju se sa vlasnikom (problem/rešenje/cena) → vlasnik bira JEDNOG ponuđača → samo taj nastavlja komunikaciju i može da bude ocenjen → oglas se skida iz svih aktivnih listi jer je posao dodeljen. Isto za Hitno i za obične oglase. Radnici za jednostavne usluge (spremačica, čuvanje dece, šetanje pasa) treba da mogu unapred da upišu cenu ("Fiverr model"). Naplata kredita objema stranama pri uspešnom dodeljivanju. Agencije — "obrnut model", skuplje po kreditu.
+
+**Usput pronađen važan fajl:** `PLAN-EXPERTPRO.md` je postojao SAMO lokalno na Alenovom računaru (napravljen 27.09.2026 u drugom razgovoru, nikad pušovan na GitHub) — sadrži opširan strateški plan (monetizacija, rangiranje, obaveštenja, tok posla, agencije) koji uveliko preklapa sa ovim novim zahtevom (Sekcija 9 "Tok posla" već je skicirala vrlo sličan model). Pušovan je sada zajedno sa novom Sekcijom 13.
+
+**Analiza (u `PLAN-EXPERTPRO.md`, Sekcija 13, pročitati u celosti pre građenja):**
+- Proverio sam šemu i kod — **90% infrastrukture već postoji**: `applications` tabela, `conversations.listing_id` (chat već vezan za oglas), `listings.status='filled'` (već u šemi, nikad iskorišćeno, i sve javne liste već filtriraju `status='active'` pa `filled` oglas automatski nestaje svuda bez ikakve dodatne izmene), UI za vlasnika sa Prihvati/Odbij po prijavi. Fiverr-model cena za proste usluge takođe već postoji (`price_type`/`price_amount` na "Nudim uslugu" oglasima) — samo nije istaknuto/ohrabreno.
+- **Šta stvarno nedostaje:** "Prihvati" dugme ne kaskadira (ne odbija ostale, ne menja status oglasa, ne šalje notifikacije, ne naplaćuje kredit); nema zaključavanja chata za izgubljene kandidate; ocenjivanje nije ograničeno na pobednički par; nema naplate kredita pri dodeljivanju; agencijska varijanta nije razrađena.
+- **Nema sukoba sa postojećim funkcijama** — potvrđeno proverom (Hitno koristi istu infrastrukturu pa se model automatski primenjuje i tamo; jedina vidljiva promena ponašanja za korisnike je da odbijeni kandidati gube mogućnost daljeg dopisivanja ZA TAJ oglas, što je tačno ono što je traženo).
+- **5 otvorenih pitanja čekaju Alenovu odluku** pre nego što se bilo šta gradi (detaljno u fajlu): da li izabrani kandidat mora da potvrdi izbor ili je odmah konačno; tačan broj kredita za obe strane; šta ako izabrani kandidat nema dovoljno kredita; tačno značenje "obrnutog modela" za agencije; da li naplata važi i za "Nudim uslugu" oglase gde su uloge obrnute.
+- Predložen redosled građenja (6 koraka) na kraju Sekcije 13, čeka Alenovo "idi" posle odgovora na otvorena pitanja.
+
+**Ništa od ovoga nije još građeno — ovo je isključivo plan, kako je Alen tražio ("prvo napravi plan pa onda da vidimo").**
