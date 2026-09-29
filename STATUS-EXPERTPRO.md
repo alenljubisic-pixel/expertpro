@@ -6,11 +6,13 @@
 
 Alen prelazi na drugog agenta (npr. ChatGPT/Codex) da nastavi rad. Ovo je čist "handoff": šta je gotovo, šta tačno čeka na Alena, i STROGA pravila da se ništa ne pokvari na produkciji.
 
-### 1) Tri stvari koje čekaju Alena da pokrene SQL u Supabase-u (agent to ne sme sam)
+### 1) Tri produkcione SQL migracije su završene (Codex, 29.09.2026)
 
-1. `/admin/oglasi` dugmad Pauziraj/Obriši na tuđem oglasu i dalje bacaju grešku. Uzrok je nađen i fix je napisan (Krug 9 ispod). Alen treba: Supabase Dashboard → SQL Editor → nalepiti ceo sadržaj fajla `supabase/migration_fix_listings_admin_rls.sql` → Run. Zatim javiti agentu da testira Pauziraj/Obriši uživo na `/admin/oglasi`.
-2. Upload profilne slike (Krug 11) — kod je gotov, ali ne radi dok Alen ne pokrene `supabase/migration_avatar_storage.sql` (pravi Storage bucket + RLS politike). Zatim javiti agentu da testira upload na `/dashboard/profil` uživo.
-3. Verifikacija za postojeće Google/Facebook naloge (Krug 12, novo) — SVI NOVI Google/Facebook nalozi od sada automatski dobijaju "verifikovan" bedž (kod je pušovan), ali naloge koji su napravljeni PRE ove izmene treba jednokratno dopuniti: pokrenuti `supabase/migration_verify_oauth_backfill.sql`.
+1. `migration_fix_listings_admin_rls.sql` — pokrenut; privatna admin funkcija i tri RLS politike postoje.
+2. `migration_avatar_storage.sql` — pokrenut; javni `avatars` bucket (3 MB, JPEG/PNG/WebP) i četiri vlasničke politike postoje.
+3. `migration_verify_oauth_backfill.sql` — pokrenut; svi postojeći Google/Facebook identiteti su dopunjeni (`oauth_still_unverified = 0`), a zaštitni trigger je potvrđeno ponovo uključen.
+
+Migracije su pre pokretanja ojačane: admin helper je u neizloženoj `private` šemi sa praznim `search_path`, avatar UPDATE ima eksplicitni `WITH CHECK`, a OAuth backfill koristi stvarne `auth.identities` zapise. Zbirna SQL provera vratila je: `admin_fn_ok=true`, `admin_policies_ok=true`, `avatar_bucket_ok=true`, `avatar_policies_ok=true`, `guard_trigger_enabled=true`, `oauth_still_unverified=0`.
 
 Sve ostalo opisano u ovom fajlu (sažetak ispod) trenutno RADI i live je na `www.expertpro.app`.
 
@@ -28,9 +30,9 @@ Sve ostalo opisano u ovom fajlu (sažetak ispod) trenutno RADI i live je na `www
 
 ### 3) Predloženi redosled sledećih koraka (ali Alen odlučuje prioritet)
 
-1. **[Čeka Alena]** Pokrenuti `migration_fix_listings_admin_rls.sql` → agent testira `/admin/oglasi`.
-2. **[Čeka Alena]** Pokrenuti `migration_avatar_storage.sql` → agent testira upload slike na `/dashboard/profil`.
-3. **[Čeka Alena]** Pokrenuti `migration_verify_oauth_backfill.sql` → agent proverava da su postojeći Google/Facebook nalozi sada verifikovani.
+1. **[SQL završen]** Uživo testirati Pauziraj/Obriši na `/admin/oglasi`.
+2. **[SQL završen]** Uživo testirati upload slike na `/dashboard/profil` sa email/lozinka nalogom.
+3. **[SQL završen]** Vizuelno proveriti bedž na postojećem Google/Facebook nalogu.
 4. Pun uživo test tokova plaćanja (Istaknut/Gold + krediti, sa dva naloga) i notifikacija (poruka + ocena, da zvonce upali kod primaoca).
 5. Skenirati IPS QR kod pravom bankarskom aplikacijom (Raiffeisen/Intesa/OTP i sl.) da se potvrdi da su polja tačna.
 6. "Platio je" i posebna značka po oceni — ostaje kao ideja iz Kruga 6, još nije rađeno.

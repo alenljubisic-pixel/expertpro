@@ -26,25 +26,31 @@
 -- Pokreni OVO RUČNO u Supabase Dashboard -> SQL Editor.
 -- =============================================
 
+begin;
+
 -- 1) Pomoćna funkcija: da li je TRENUTNI korisnik (auth.uid()) admin.
---    SECURITY DEFINER + "set search_path" (obavezno iz bezbednosnih razloga
---    za security definer funkcije) da zaobiđe RLS na profiles i vrati
---    pouzdan boolean.
-create or replace function public.is_current_user_admin()
+--    Držimo je u neizloženoj "private" šemi, sa praznim search_path-om i
+--    potpuno kvalifikovanim imenima. Funkcija zaobilazi RLS samo da pročita
+--    admin flag trenutnog korisnika; ne prima user id od klijenta.
+create schema if not exists private;
+revoke all on schema private from public;
+grant usage on schema private to authenticated;
+
+create or replace function private.is_current_user_admin()
 returns boolean
 language sql
 security definer
 stable
-set search_path = public
+set search_path = ''
 as $$
   select exists (
     select 1 from public.profiles
-    where id = auth.uid() and is_admin = true
+    where id = (select auth.uid()) and is_admin = true
   );
 $$;
 
-revoke all on function public.is_current_user_admin() from public;
-grant execute on function public.is_current_user_admin() to authenticated;
+revoke all on function private.is_current_user_admin() from public, anon, authenticated;
+grant execute on function private.is_current_user_admin() to authenticated;
 
 -- 2) Zameni politike na "listings" da koriste ovu funkciju umesto
 --    inline EXISTS podupita, i dodaj EKSPLICITAN with check (ne oslanjaj
@@ -53,14 +59,16 @@ drop policy if exists "Admins can update any listing" on public.listings;
 create policy "Admins can update any listing"
   on public.listings
   for update
-  using (public.is_current_user_admin())
-  with check (public.is_current_user_admin());
+  to authenticated
+  using ((select private.is_current_user_admin()))
+  with check ((select private.is_current_user_admin()));
 
 drop policy if exists "Admins can delete any listing" on public.listings;
 create policy "Admins can delete any listing"
   on public.listings
   for delete
-  using (public.is_current_user_admin());
+  to authenticated
+  using ((select private.is_current_user_admin()));
 
 -- 3) Isto uradi i za "profiles" admin update politiku, radi doslednosti
 --    (koristi istu funkciju umesto duplikata EXISTS podupita).
@@ -68,8 +76,11 @@ drop policy if exists "Admins can update any profile" on public.profiles;
 create policy "Admins can update any profile"
   on public.profiles
   for update
-  using (public.is_current_user_admin())
-  with check (public.is_current_user_admin());
+  to authenticated
+  using ((select private.is_current_user_admin()))
+  with check ((select private.is_current_user_admin()));
+
+commit;
 
 -- Provera posle pokretanja (očekuje se da se pojave update+delete politike
 -- na listings i update na profiles, sve sa "is_current_user_admin" u qual):

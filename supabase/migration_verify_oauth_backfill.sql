@@ -20,20 +20,27 @@
 --      Zato se ovde, isto kao i tada, trigger privremeno isključuje.
 -- =============================================
 
+begin;
+
 alter table public.profiles disable trigger trg_prevent_privilege_escalation;
 
 update public.profiles p
 set is_verified = true
-from auth.users u
-where p.id = u.id
-  and p.is_verified = false
-  and (u.raw_app_meta_data ->> 'provider') in ('google', 'facebook');
+where p.is_verified = false
+  and exists (
+    select 1
+    from auth.identities i
+    where i.user_id = p.id
+      and i.provider in ('google', 'facebook')
+  );
 
 alter table public.profiles enable trigger trg_prevent_privilege_escalation;
 
+commit;
+
 -- Provera posle pokretanja — treba da vrati listu naloga koji su sada verifikovani:
--- select p.id, p.email, p.name, p.is_verified, u.raw_app_meta_data->>'provider' as provider
+-- select p.id, p.email, p.name, p.is_verified, i.provider
 -- from public.profiles p
--- join auth.users u on u.id = p.id
--- where (u.raw_app_meta_data->>'provider') in ('google','facebook')
--- order by u.created_at desc;
+-- join auth.identities i on i.user_id = p.id
+-- where i.provider in ('google','facebook')
+-- order by p.created_at desc;
