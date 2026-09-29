@@ -6,11 +6,10 @@
 
 Alen prelazi na drugog agenta (npr. ChatGPT/Codex) da nastavi rad. Ovo je čist "handoff": šta je gotovo, šta tačno čeka na Alena, i STROGA pravila da se ništa ne pokvari na produkciji.
 
-### 1) Jedina stvar koja trenutno blokira nešto — čeka Alena, ne agenta
+### 1) Dve stvari koje čekaju Alena da pokrene SQL u Supabase-u (agent to ne sme sam)
 
-`/admin/oglasi` dugmad Pauziraj/Obriši na tuđem oglasu i dalje bacaju grešku. Uzrok je nađen i fix je napisan (Krug 9 ispod), ali **agent ne sme sam da pokreće SQL koji menja RLS politike/prava u produkcionoj bazi** — to mora Alen ručno:
-1. Supabase Dashboard → SQL Editor → nalepiti ceo sadržaj fajla `supabase/migration_fix_listings_admin_rls.sql` → Run.
-2. Javiti agentu da je pokrenuto, pa agent testira Pauziraj/Obriši uživo na `/admin/oglasi`.
+1. `/admin/oglasi` dugmad Pauziraj/Obriši na tuđem oglasu i dalje bacaju grešku. Uzrok je nađen i fix je napisan (Krug 9 ispod). Alen treba: Supabase Dashboard → SQL Editor → nalepiti ceo sadržaj fajla `supabase/migration_fix_listings_admin_rls.sql` → Run. Zatim javiti agentu da testira Pauziraj/Obriši uživo na `/admin/oglasi`.
+2. Upload profilne slike (Krug 11, novo) — kod je gotov, ali ne radi dok Alen ne pokrene `supabase/migration_avatar_storage.sql` (pravi Storage bucket + RLS politike). Zatim javiti agentu da testira upload na `/dashboard/profil` uživo.
 
 Sve ostalo opisano u ovom fajlu (sažetak ispod) trenutno RADI i live je na `www.expertpro.app`.
 
@@ -28,14 +27,15 @@ Sve ostalo opisano u ovom fajlu (sažetak ispod) trenutno RADI i live je na `www
 
 ### 3) Predloženi redosled sledećih koraka (ali Alen odlučuje prioritet)
 
-1. **[Blokira samo ovo]** Alen pokreće `migration_fix_listings_admin_rls.sql` → agent testira `/admin/oglasi`.
-2. Pun uživo test tokova plaćanja (Istaknut/Gold + krediti, sa dva naloga) i notifikacija (poruka + ocena, da zvonce upali kod primaoca).
-3. Skenirati IPS QR kod pravom bankarskom aplikacijom (Raiffeisen/Intesa/OTP i sl.) da se potvrdi da su polja tačna.
-4. Upload profilne slike za korisnike koji se nisu ulogovali preko Google/Facebook (email/lozinka nalozi) — trenutno nemaju nikakav način da postave sliku; treba Supabase Storage bucket + dugme za upload. Izolovan, bezbedan zadatak za samostalan rad.
-5. Email notifikacije (Resend, besplatno do 3000 mejlova/mesec) — ne postoji ništa osim Supabase-ovih auto-mejlova za registraciju/reset lozinke.
-6. Prave push notifikacije (PWA preduslov je već ugrađen — manifest, ikonice, install banner) — zahteva VAPID ključeve + service worker, veći zadatak.
-7. Životni ciklus oglasa (kad vlasnik prihvati prijavu → oglas postaje "popunjen" i nestaje iz javne liste, sa potvrdom izvođača) — **čeka odluku Alena** o roku za potvrdu pre nego što se počne graditi.
-8. "Hitno majstor nudi sebe" oglas (majstor se sam nudi, orijentaciona cena, format dogovoren u Krugu 8) + radno vreme majstora (pre podne/posle podne/24h) — mehanizam gašenja oglasa namerno ostavljen kao otvorena ideja, ne graditi dok Alen ne kaže tačno kako.
+1. **[Čeka Alena]** Pokrenuti `migration_fix_listings_admin_rls.sql` → agent testira `/admin/oglasi`.
+2. **[Čeka Alena]** Pokrenuti `migration_avatar_storage.sql` → agent testira upload slike na `/dashboard/profil`.
+3. Pun uživo test tokova plaćanja (Istaknut/Gold + krediti, sa dva naloga) i notifikacija (poruka + ocena, da zvonce upali kod primaoca).
+4. Skenirati IPS QR kod pravom bankarskom aplikacijom (Raiffeisen/Intesa/OTP i sl.) da se potvrdi da su polja tačna.
+5. Automatska verifikacija (email potvrđen → značka) sad kad slika postoji za sve — sledeći logičan korak posle #2.
+6. Email notifikacije (Resend, besplatno do 3000 mejlova/mesec) — ne postoji ništa osim Supabase-ovih auto-mejlova za registraciju/reset lozinke.
+7. Prave push notifikacije (PWA preduslov je već ugrađen — manifest, ikonice, install banner) — zahteva VAPID ključeve + service worker, veći zadatak.
+8. Životni ciklus oglasa (kad vlasnik prihvati prijavu → oglas postaje "popunjen" i nestaje iz javne liste, sa potvrdom izvođača) — **čeka odluku Alena** o roku za potvrdu pre nego što se počne graditi.
+9. "Hitno majstor nudi sebe" oglas (majstor se sam nudi, orijentaciona cena, format dogovoren u Krugu 8) + radno vreme majstora (pre podne/posle podne/24h) — mehanizam gašenja oglasa namerno ostavljen kao otvorena ideja, ne graditi dok Alen ne kaže tačno kako.
 
 Detaljno objašnjenje svega iznad (zašto, kako je testirano, koji fajlovi) je u sažetku odmah ispod i u odgovarajućim krugovima dalje u fajlu.
 
@@ -43,7 +43,8 @@ Detaljno objašnjenje svega iznad (zašto, kako je testirano, koji fajlovi) je u
 
 - Poslednje ažuriranje: 29.09.2026 (Claude, Cowork sesija — deseti krug).
 - **`/admin/oglasi` Pauziraj/Obriši 503 greška: NAĐEN uzrok, čeka se da Alen pokrene fix SQL** — videti Krug 9 ispod, `supabase/migration_fix_listings_admin_rls.sql`.
-- **Krug 10:** dodata `overflow-x: hidden` odbrana na `html`/`body` (globals.css) posle Alenovog screenshota gde je sadržaj na mobilnom bio uzak/isečen sa crnim prostorom desno — test na produkciji u mobilnoj emulaciji (Playwright, Pixel 7) NIJE reprodukovao problem (širina strane se tačno poklapala sa širinom ekrana), pa je ovo odbrambeni fix za svaki slučaj, ne potvrđeni uzrok — ako se i dalje javlja, proveriti da li je na Alenovom telefonu u Chrome-u uključeno "Zahtevaj desktop sajt" ili je zumiran taj sajt posebno. Takođe pojačan tekst PWA banera za instalaciju (crveno, "⚠️ Ne propusti poruke i poslove!", jasnije objašnjeno da bez instalacije obaveštenja ne stižu dok sam ne otvoriš sajt).
+- **Krug 10:** dodata `overflow-x: hidden` odbrana na `html`/`body` (globals.css) posle Alenovog screenshota gde je sadržaj na mobilnom bio uzak/isečen sa crnim prostorom desno — Alen je potvrdio da sad radi dobro na mobilnom (uzrok je bio na strani telefona/Chrome podešavanja, ne sajt, ali odbrambeni fix ostaje). Takođe pojačan tekst PWA banera za instalaciju (crveno, "⚠️ Ne propusti poruke i poslove!").
+- **Krug 11 — NOVO, čeka Alena:** izgrađen upload profilne slike za korisnike koji se nisu ulogovali preko Google/Facebook (email/lozinka nalozi) — kod je gotov i pušovan (`app/dashboard/profil/page.tsx`), ali **ne radi dok Alen ne pokrene `supabase/migration_avatar_storage.sql`** (pravi Supabase Storage bucket "avatars" + RLS politike — agent ne sme sam da pravi storage bucket/RLS na produkciji, isto pravilo kao za sve ostalo).
 - Produkcioni repo: `alenljubisic-pixel/expertpro`, grana `main`.
 - Lokalni radni folder: `D:\Downloads\expertpro-code\expertpro`.
 - Poslednji deploy commit: vidi krug 5 ispod — Vercel status **READY**, aliasovan na www.expertpro.app, expertpro.app.
@@ -487,3 +488,30 @@ Fajl: **`supabase/migration_fix_listings_admin_rls.sql`** (kod je pušovan, ali 
 1. Otvoriti Supabase → SQL Editor → nalepiti sadržaj `supabase/migration_fix_listings_admin_rls.sql` → Run.
 2. Javiti da je pokrenuto, pa test Pauziraj/Obriši na `/admin/oglasi` uživo (agent testira posle potvrde).
 3. Ako i dalje puca ista greška i posle ovog fix-a — to bi značilo da uzrok nije ono što mislimo, i treba dalja istraga (malo verovatno na osnovu do sada urađenih testova, ali nije 100% isključeno jer poslednji test sa `using(true)/with check(true)` hardkodovano nije stigao da se izvrši — sesijski auto-mode klasifikator je to blokirao kao direktnu izmenu šeme/prava od strane agenta).
+
+## Krug 10 (29.09.2026) — mobilni prikaz potvrđen ispravan, pojačan tekst PWA banera
+
+Alen je poslao screenshot gde je sadržaj na mobilnom Chrome-u bio uzak/isečen sa crnim prostorom sa desne strane. Testirano na produkciji u mobilnoj emulaciji (Playwright, Pixel 7 dimenzije) — `window.innerWidth` se tačno poklapao sa `scrollWidth` (579px = 579px), znači nema stvarnog horizontalnog overflow-a u kodu. Dodata je odbrambena `overflow-x: hidden` + `max-width: 100%` na `html`/`body` (`app/globals.css`) za svaki slučaj, i Alen je posle toga potvrdio da se sajt na mobilnom sad otvara ispravno — najverovatnije je uzrok bio na strani telefona (zoom po sajtu ili "Zahtevaj desktop sajt" u Chrome-u), ne u kodu.
+
+Usput pojačan tekst i stil banera za instalaciju PWA (`components/layout/InstallPrompt.tsx`) na zahtev Alena — sada crveno, "⚠️ Ne propusti poruke i poslove!", jasnije piše da bez instalacije obaveštenja ne stižu dok korisnik sam ne otvori sajt.
+
+Provereno: `npx tsc --noEmit` čisto.
+
+## Krug 11 (29.09.2026) — Upload profilne slike (email/lozinka nalozi)
+
+Izgrađen feature iz "nedostaje potpuno" liste: korisnici koji se nisu ulogovali preko Google/Facebook (dakle registrovani email/lozinkom) do sada nisu imali NIKAKAV način da postave profilnu sliku (`avatar_url` se popunjavao samo iz OAuth podataka).
+
+**Kod (pušovan, live na Vercelu):**
+- `app/dashboard/profil/page.tsx` — dugme "Promeni sliku" sad stvarno radi: klik otvara file picker (samo JPG/PNG/WEBP, do 3MB provereno na klijentu), upload ide u Supabase Storage bucket `avatars` na putanju `{user_id}/avatar-{timestamp}.{ext}`, posle uspešnog upload-a se ažurira `profiles.avatar_url` i odmah prikazuje nova slika. Greške (loš format, prevelika slika, mrežni problem) se prikazuju korisniku ispod dugmeta, ne rušе stranicu.
+
+**⚠️ NE RADI dok Alen ne pokrene SQL (agent ne sme sam da pravi storage bucket/RLS na produkciji):**
+
+Fajl: `supabase/migration_avatar_storage.sql` — pravi:
+1. Storage bucket `avatars` (javno čitljiv — profilne slike su i do sada bile javne kad dolaze sa Google/Facebook, tako da ovo ne menja ništa bezbednosno; limit 3MB po fajlu, samo JPG/PNG/WEBP).
+2. RLS politike na `storage.objects`: svako može da VIDI slike (select), ali korisnik sme da upload-uje/menja/briše SAMO fajlove u svom sopstvenom folderu (prvi deo putanje = njegov user id) — ne može da dira tuđe slike.
+
+**Sledeći koraci za Alena:**
+1. Supabase Dashboard → SQL Editor → nalepiti sadržaj `supabase/migration_avatar_storage.sql` → Run.
+2. Javiti agentu da je pokrenuto, pa agent testira uživo upload slike na `/dashboard/profil` (probaj sa pravim nalogom, proveri da se slika pojavi i na `/profil/[id]` i u Navbar-u).
+
+Provereno pre push-a: `npx tsc --noEmit` čisto, `npm run build` prolazi ceo (svih 40 ruta).
