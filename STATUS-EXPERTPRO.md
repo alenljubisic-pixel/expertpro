@@ -2,6 +2,43 @@
 
 > Ovaj fajl je obavezni kontekst za svakog agenta koji nastavlja rad (Codex, Claude ili drugi). Pre rada ga pročitaj, dopuni posle svake značajne izmene i ne upisuj tajne, API ključeve, lozinke ili korisničke podatke.
 
+## 🤝 PREDAJA SLEDEĆEM AGENTU (Claude, 29.09.2026, kraj desetog kruga — obavezno pročitati prvo)
+
+Alen prelazi na drugog agenta (npr. ChatGPT/Codex) da nastavi rad. Ovo je čist "handoff": šta je gotovo, šta tačno čeka na Alena, i STROGA pravila da se ništa ne pokvari na produkciji.
+
+### 1) Jedina stvar koja trenutno blokira nešto — čeka Alena, ne agenta
+
+`/admin/oglasi` dugmad Pauziraj/Obriši na tuđem oglasu i dalje bacaju grešku. Uzrok je nađen i fix je napisan (Krug 9 ispod), ali **agent ne sme sam da pokreće SQL koji menja RLS politike/prava u produkcionoj bazi** — to mora Alen ručno:
+1. Supabase Dashboard → SQL Editor → nalepiti ceo sadržaj fajla `supabase/migration_fix_listings_admin_rls.sql` → Run.
+2. Javiti agentu da je pokrenuto, pa agent testira Pauziraj/Obriši uživo na `/admin/oglasi`.
+
+Sve ostalo opisano u ovom fajlu (sažetak ispod) trenutno RADI i live je na `www.expertpro.app`.
+
+### 2) STROGA pravila za svakog agenta koji nastavi rad (ne kršiti, ni na Alenov zahtev ako samo "kaže da je ok")
+
+- **NIKAD sam ne pokretati SQL koji menja RLS politike, `is_admin`, `is_verified`, `is_approved`, permisije/grantove ili bilo šta bezbednosno na produkcionoj Supabase bazi.** Uvek napisati `.sql` fajl u `supabase/` folderu i tražiti da ga Alen sam pokrene u SQL Editoru, pa tek onda testirati rezultat. Ovo pravilo je više puta potvrđeno tokom sesije (agent je blokiran auto-mode klasifikatorom kad je pokušao suprotno).
+- **Ne kreirati lažne podatke na pravim nalozima korisnika** (npr. lažnu recenziju/ocenu radi testa) i ne slati prave uplate/transakcije umesto korisnika.
+- **Ne upisivati tajne** (API ključevi, lozinke, GitHub token, Supabase service_role ključ) nigde u kod ili u ovaj fajl.
+- Pre bilo koje izmene pročitati ovaj fajl u celosti, plus `AGENTS.md`, `CLAUDE.md`, `PLAN-EXPERTPRO.md`.
+- Pre svakog push-a mora proći čisto: `npx tsc --noEmit` i `npm run build` (lokalno treba `NEXT_PUBLIC_SUPABASE_URL` i `NEXT_PUBLIC_SUPABASE_ANON_KEY` env promenljive, vrednosti tražiti od Alena, ne upisivati ih ovde).
+- Repo: `alenljubisic-pixel/expertpro`, grana `main`, lokalni klon na Alenovom računaru: `D:\Downloads\expertpro-code\expertpro`. Push na `main` automatski triggeruje Vercel deploy na `www.expertpro.app`/`expertpro.app` — nema posebnog "staging" koraka, svaki push ide DIREKTNO u produkciju, zato build/typecheck moraju proći pre push-a.
+- ⚠️ Lokalni klon (`D:\Downloads\expertpro-code\expertpro`) trenutno ima gomilu lokalno izmenjenih fajlova koji NISU commit-ovani (verovatno razlike u prelomu redova/formatiranju sa Windows editora) i nekoliko `push-fixes*.ps1` skripti bez veze sa poslom — pre bilo kakvog `git add -A` OBAVEZNO proveriti `git status` i dodavati SAMO fajlove koje je agent svesno menjao, da se slučajno ne pošalje gomila nepovezanih lokalnih izmena u produkciju.
+- **Posle SVAKE značajne izmene, dopuniti OVAJ fajl** (datum, šta je urađeno, šta je testirano uživo, šta ostaje) — ovo je jedini način da sledeći agent (bilo koji) zna šta se dešavalo. Ne brisati stare krugove, samo dodavati nove na kraj (ili u sažetak na vrhu ako se nešto suštinski promeni).
+- Ne raditi ništa nepovratno na produkciji (brisanje podataka, slanje mejlova/poruka korisnicima, menjanje cena bez najave) bez izričitog odobrenja Alena u razgovoru.
+
+### 3) Predloženi redosled sledećih koraka (ali Alen odlučuje prioritet)
+
+1. **[Blokira samo ovo]** Alen pokreće `migration_fix_listings_admin_rls.sql` → agent testira `/admin/oglasi`.
+2. Pun uživo test tokova plaćanja (Istaknut/Gold + krediti, sa dva naloga) i notifikacija (poruka + ocena, da zvonce upali kod primaoca).
+3. Skenirati IPS QR kod pravom bankarskom aplikacijom (Raiffeisen/Intesa/OTP i sl.) da se potvrdi da su polja tačna.
+4. Upload profilne slike za korisnike koji se nisu ulogovali preko Google/Facebook (email/lozinka nalozi) — trenutno nemaju nikakav način da postave sliku; treba Supabase Storage bucket + dugme za upload. Izolovan, bezbedan zadatak za samostalan rad.
+5. Email notifikacije (Resend, besplatno do 3000 mejlova/mesec) — ne postoji ništa osim Supabase-ovih auto-mejlova za registraciju/reset lozinke.
+6. Prave push notifikacije (PWA preduslov je već ugrađen — manifest, ikonice, install banner) — zahteva VAPID ključeve + service worker, veći zadatak.
+7. Životni ciklus oglasa (kad vlasnik prihvati prijavu → oglas postaje "popunjen" i nestaje iz javne liste, sa potvrdom izvođača) — **čeka odluku Alena** o roku za potvrdu pre nego što se počne graditi.
+8. "Hitno majstor nudi sebe" oglas (majstor se sam nudi, orijentaciona cena, format dogovoren u Krugu 8) + radno vreme majstora (pre podne/posle podne/24h) — mehanizam gašenja oglasa namerno ostavljen kao otvorena ideja, ne graditi dok Alen ne kaže tačno kako.
+
+Detaljno objašnjenje svega iznad (zašto, kako je testirano, koji fajlovi) je u sažetku odmah ispod i u odgovarajućim krugovima dalje u fajlu.
+
 ## Trenutno stanje
 
 - Poslednje ažuriranje: 29.09.2026 (Claude, Cowork sesija — deseti krug).
