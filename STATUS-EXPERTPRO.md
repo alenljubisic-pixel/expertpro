@@ -4,8 +4,9 @@
 
 ## Trenutno stanje
 
-- Poslednje ažuriranje: 29.09.2026 (Claude, Cowork sesija — deveti krug).
+- Poslednje ažuriranje: 29.09.2026 (Claude, Cowork sesija — deseti krug).
 - **`/admin/oglasi` Pauziraj/Obriši 503 greška: NAĐEN uzrok, čeka se da Alen pokrene fix SQL** — videti Krug 9 ispod, `supabase/migration_fix_listings_admin_rls.sql`.
+- **Krug 10:** dodata `overflow-x: hidden` odbrana na `html`/`body` (globals.css) posle Alenovog screenshota gde je sadržaj na mobilnom bio uzak/isečen sa crnim prostorom desno — test na produkciji u mobilnoj emulaciji (Playwright, Pixel 7) NIJE reprodukovao problem (širina strane se tačno poklapala sa širinom ekrana), pa je ovo odbrambeni fix za svaki slučaj, ne potvrđeni uzrok — ako se i dalje javlja, proveriti da li je na Alenovom telefonu u Chrome-u uključeno "Zahtevaj desktop sajt" ili je zumiran taj sajt posebno. Takođe pojačan tekst PWA banera za instalaciju (crveno, "⚠️ Ne propusti poruke i poslove!", jasnije objašnjeno da bez instalacije obaveštenja ne stižu dok sam ne otvoriš sajt).
 - Produkcioni repo: `alenljubisic-pixel/expertpro`, grana `main`.
 - Lokalni radni folder: `D:\Downloads\expertpro-code\expertpro`.
 - Poslednji deploy commit: vidi krug 5 ispod — Vercel status **READY**, aliasovan na www.expertpro.app, expertpro.app.
