@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -8,7 +8,10 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import CreditsWidget from '@/components/credits/CreditsWidget'
 import { SERBIAN_CITIES } from '@/types'
-import { ArrowLeft, Save, Upload, User } from 'lucide-react'
+import { ArrowLeft, Save, Upload, User, Loader2 } from 'lucide-react'
+
+const MAX_AVATAR_BYTES = 3 * 1024 * 1024 // 3MB, mora se poklapati sa file_size_limit u migraciji
+const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 const SKILLS_OPTIONS = [
   'Građevina', 'Vodoinstalacije', 'Elektrika', 'Molerski radovi',
@@ -35,6 +38,11 @@ export default function ProfileEditPage() {
   const [pib, setPib] = useState('')
   const [typeChangeRequested, setTypeChangeRequested] = useState(false)
 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarError, setAvatarError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const router = useRouter()
   const supabase = createClient()
 
@@ -56,11 +64,74 @@ export default function ProfileEditPage() {
         setLanguages(p.languages || ['Srpski'])
         setUserType(p.type || 'individual')
         setPib(p.pib || '')
+        setAvatarUrl(p.avatar_url || null)
       }
       setLoading(false)
     }
     load()
   }, [])
+
+  const handleAvatarClick = () => {
+    if (!avatarUploading) fileInputRef.current?.click()
+  }
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // da isti fajl može ponovo da se izabere posle greške
+    if (!file) return
+
+    setAvatarError('')
+
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      setAvatarError('Podržane su samo JPG, PNG i WEBP slike.')
+      return
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      setAvatarError('Slika je prevelika — maksimum je 3MB.')
+      return
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    setAvatarUploading(true)
+    try {
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true, cacheControl: '3600' })
+
+      if (uploadError) {
+        // Najčešći uzrok dok ne bude pokrenuta migracija: bucket "avatars" ne postoji.
+        setAvatarError('Upload nije uspeo. Probaj ponovo malo kasnije.')
+        setAvatarUploading(false)
+        return
+      }
+
+      const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(path)
+      const newUrl = publicUrlData.publicUrl
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: newUrl, updated_at: new Date().toISOString() })
+        .eq('id', user.id)
+
+      if (updateError) {
+        setAvatarError('Slika je otpremljena, ali čuvanje nije uspelo. Probaj ponovo.')
+        setAvatarUploading(false)
+        return
+      }
+
+      setAvatarUrl(newUrl)
+      setProfile((prev: any) => prev ? { ...prev, avatar_url: newUrl } : prev)
+    } catch {
+      setAvatarError('Nešto nije uspelo. Probaj ponovo.')
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
 
   const toggleSkill = (skill: string) => {
     setSkills(prev =>
@@ -129,15 +200,46 @@ export default function ProfileEditPage() {
           {/* Avatar section */}
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <div className="flex items-center gap-5">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-3xl font-bold text-blue-600">
-                {name ? name[0].toUpperCase() : <User className="w-8 h-8" />}
-              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={handleAvatarClick}
+                disabled={avatarUploading}
+                className="relative w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-3xl font-bold text-blue-600 overflow-hidden flex-shrink-0 group"
+                title="Promeni sliku"
+              >
+                {avatarUrl
+                  ? <img src={avatarUrl} alt="" className="w-20 h-20 rounded-full object-cover" />
+                  : (name ? name[0].toUpperCase() : <User className="w-8 h-8" />)
+                }
+                <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  {avatarUploading
+                    ? <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    : <Upload className="w-5 h-5 text-white" />
+                  }
+                </span>
+              </button>
               <div>
                 <p className="font-medium text-gray-900">{name || 'Tvoje ime'}</p>
                 <p className="text-sm text-gray-400 mt-0.5 capitalize">{profile?.type}</p>
-                <button className="mt-2 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700">
-                  <Upload className="w-3 h-3" /> Promeni sliku (uskoro)
+                <button
+                  type="button"
+                  onClick={handleAvatarClick}
+                  disabled={avatarUploading}
+                  className="mt-2 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                >
+                  <Upload className="w-3 h-3" /> {avatarUploading ? 'Otpremam...' : 'Promeni sliku'}
                 </button>
+                {avatarError && (
+                  <p className="text-xs text-red-600 mt-1">{avatarError}</p>
+                )}
+                <p className="text-xs text-gray-400 mt-1">JPG, PNG ili WEBP, do 3MB.</p>
               </div>
             </div>
           </div>
