@@ -317,3 +317,51 @@ Za build lokalno su potrebni `NEXT_PUBLIC_SUPABASE_URL` i `NEXT_PUBLIC_SUPABASE_
 - Raditi u originalnom folderu iznad; privremene klonove koristiti samo za poređenje.
 - Čuvati postojeće korisničke izmene i ne otkrivati tajne.
 - Posle izmene dopuniti ovaj fajl datumom, commitom, testovima i jasnim preostalim koracima.
+
+## Krug 8 (29.09.2026) — PWA ugrađen, avatar sa Google/Facebook popravljen, mapiranje notifikacija (in-app vs email vs push), predlog za "Hitno majstor nudi sebe" oglas
+
+### ✅ Urađeno i pušovano ovaj krug
+
+**PWA (instalacija sajta kao aplikacije)** — dodato u kod (`manifest.json`, ikonice 192/512/maskable/apple-touch, `InstallPrompt.tsx` komponenta):
+- Sajt se sada može "instalirati" na telefon/desktop (Android/Chrome nudi to odmah, iOS zahteva ručno Deli → Dodaj na početni ekran — iOS ne podržava automatski prompt, ugrađeno uputstvo za to u komponenti).
+- Nova komponenta pokazuje baner posle par sekundi na sajtu, objašnjava KORISNIKU zašto da instalira ("dobijaš trenutna obaveštenja o novim poslovima"), pamti ako je korisnik kliknuo "Kasnije" (ne dosađuje 14 dana), i nikad se ne prikazuje ako je već instalirano.
+- **Zašto je ovo preduslov za sve ostalo**: prave push notifikacije (da stignu na telefon i kad sajt nije otvoren) pouzdano rade SAMO ako je sajt instaliran kao aplikacija, pogotovo na iPhone-u. PWA ne postoji, ali još UVEK ne postoje ni same push notifikacije (vidi ispod) — ovo je prvi korak od dva.
+
+**Popravljeno: slika profila sa Google/Facebook naloga** — kod je već postojao (`app/auth/callback/route.ts`) ali je imao bag: sliku je preuzimao SAMO prvi put kad se profil pravi. Ako je korisnik napravio nalog email/lozinkom pa se KASNIJE ulogovao i preko Google/Facebook sa istim mejlom, ili je profil postojao bez slike iz nekog drugog razloga, slika se nikad nije naknadno povukla. Sad se, ako korisnik nema sliku a Google/Facebook je da, ona automatski dopuni — i nikad se ne prepisuje slika koju je korisnik sam ručno postavio.
+
+### 📋 Mapiranje notifikacija — šta postoji, šta ne (odgovor na pitanje "jel rade email notifikacije")
+
+Postoje TRI potpuno različita sistema, i trenutno radi samo prvi:
+
+1. **In-app notifikacije (zvonce na sajtu)** — RADI. Kad neko pošalje poruku ili ostavi ocenu, upiše se red u bazu i zvonce se upali u realnom vremenu — ALI SAMO ako korisnik u tom trenutku ima otvoren sajt u browseru.
+2. **Email notifikacije** — NE POSTOJE (osim Supabase-ovih ugrađenih mejlova za potvrdu registracije/reset lozinke, koji dolaze automatski ali su često spori/idu u spam na besplatnom Supabase planu). Nema koda koji šalje mejl kad stigne poruka, kad neko oceni, kad oglas ističe itd. — nula od toga. Da bi ovo radilo treba: registrovati se na Resend (besplatno do 3000 mejlova/mesec, ~10 min), dodati par redova koda koji šalju mejl na ključne događaje.
+3. **Prave push notifikacije (na telefon, i kad sajt nije otvoren)** — NE POSTOJE. Ovo je ono što bi trebalo za "hitno" da ima smisla (mајстор da sazna za 2 sekunde, ne kad sledeći put otvori sajt). Sad kad PWA postoji (iznad), ovo je sledeći logičan korak.
+
+**Predlog šta bi trebalo da bude podesivo u profilu korisnika** (Alen je tražio da korisnik sam bira za šta želi notifikacije): checkbox lista tipa "Nova poruka", "Nova ocena", "Odobren/odbijen nalog", "Uplata potvrđena", "Oglas ističe za 3 dana", "Novi hitan posao u mom gradu/struci" — svaki sa 3 kanala (u aplikaciji / email / push), korisnik čekira šta hoće. Nije još građeno, samo predlog za kad se pređe na ovaj deo.
+
+**Pitanje "kad ističe oglas — da li se automatski produžava, stoji dok neko ne klikne, ili vremenski"** — ovo ostaje otvoreno pitanje za odluku, nije nešto što se "testira" jer zavisi od poslovne odluke. Trenutno: obični oglasi imaju `expires_at` (vremensko isticanje), i kad istekne samo promeni status na "expired" i nestane iz ponude — korisnik mora ručno da ga obnovi (dugme "Obnovi" postoji na `/dashboard/oglasi`). Ovo je najjednostavniji i najčešći model (kao na svim oglasnim sajtovima) i predlažem da ostane tako za obične oglase; pitanje "dok neko ne klikne" ima smisla samo za NOVI "hitno mајстор" tip oglasa (vidi ispod), ne za obične.
+
+### 💡 Predlog — primer kako treba da izgleda "Hitno mајстор nudi sebe" oglas (Alen se složio sa idejom, mehanizam brisanja ostaje TBD ideja za sad)
+
+Alen je pojasnio: oglas ne treba da se gasi na svaki klik/pregled — samo kad se POSAO STVARNO PRODA (majstor i klijent se dogovore posle dopisivanja, pa se to na neki način potvrdi/kupi). Tačan mehanizam za TO "da se skine" ostaje otvorena ideja za kasnije (nije još dizajniran do kraja, namerno).
+
+Ono što Alen JESTE tražio da se skicira sada: **obavezna polja pri kreiranju ovakvog oglasa**, konkretno:
+- Kratak opis usluge (obavezno) — npr. "Menjanje grejača na bojleru"
+- Orijentaciona cena (obavezno, ali jasno označeno kao ORIJENTACIONA, ne fiksna — da izbegnemo sporove) — npr. "3000 din"
+- Dodatni uslovi (opciono) — npr. "Dolazak besplatan do 5km, iznad toga +100 din/km"
+- Grad/opština + da li radi van svog grada
+- Vreme dostupnosti (vezano za sledeću stavku ispod)
+
+Primer kompletnog oglasa kako bi trebalo da izgleda: *"🔧 Menjanje grejača bojlera — 3.000 din (orijentaciono, zavisi od modela). Dolazak besplatan do 5km, iznad toga +100 din/km. Dostupan: danas do 22h. Beograd i okolina."*
+
+Šta je dobro u ovom pristupu: cena unapred smanjuje broj "praznih" poruka (ljudi koji samo pitaju cenu pa odustanu), jasno "orijentaciono" štiti majstora od spora ako se na licu mesta ispostavi da treba više rada. Šta paziti: ne terati majstora da unese cenu ako je posao takav da zaista ne može unapred da proceni (npr. "zavisi od kvara") — dati opciju "cena po dogovoru" kao alternativu strogom unosu broja.
+
+### 💡 Predlog — radno vreme/dostupnost mајстора (povezano sa gornjim)
+
+Dodati na profil (ili direktno na "hitno" oglas) izbor: Pre podne / Posle podne /Ceo dan (24h) / Prilagođeno (unese sam opseg sati). Prikazuje se kao bedž ("Dostupan: 24h" ili "Dostupan do 22h") na profilu i na listi radnika, tako klijent odmah zna šta da očekuje kad klikne. Nije još građeno — čeka se da se prvo reši osnovni mehanizam "hitno mајстор" oglasa gore.
+
+### ⏳ I dalje čeka
+
+- Vercel log za `/admin/oglasi` 503 grešku (Pauziraj/Obriši dugmad) — Vercel MCP pristup u sesiji je izgubljen (403 re-authenticate), treba Alen da proveri Vercel Logs sam ili da ponovo poveže pristup.
+- Životni ciklus oglasa (dodeljen/popunjen), verifikacija (foto+email→verifikovan, plaćeni korisnik značka), sistem značaka po oceni — sve iz Kruga 6, još nije građeno.
+- Email notifikacije (Resend) i prave push notifikacije — sad kad PWA postoji, ovo je sledeći logičan blok posla kad Alen da zeleno svetlo.
