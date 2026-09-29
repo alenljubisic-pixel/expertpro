@@ -32,21 +32,37 @@ export async function GET(request: NextRequest) {
     if (sessionData?.user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('type, name')
+        .select('type, name, avatar_url')
         .eq('id', sessionData.user.id)
         .single()
+
+      const oauthAvatar =
+        sessionData.user.user_metadata?.avatar_url ||
+        sessionData.user.user_metadata?.picture ||
+        null
 
       if (!profile || !profile.type) {
         await supabase.from('profiles').upsert({
           id: sessionData.user.id,
           email: sessionData.user.email,
           name: sessionData.user.user_metadata?.full_name || sessionData.user.user_metadata?.name || '',
-          avatar_url: sessionData.user.user_metadata?.avatar_url || sessionData.user.user_metadata?.picture || null,
+          avatar_url: oauthAvatar,
           type: 'individual',
           is_approved: true,
         }, { onConflict: 'id' })
 
         return NextResponse.redirect(`${origin}/dashboard/profile?setup=true`)
+      }
+
+      // Postojeći profil (npr. napravljen pre uvođenja avatara, ili je korisnik
+      // originalno registrovan email/lozinkom pa se sada prvi put uloguje i preko
+      // Google/Facebook naloga sa istim emailom) — dopuni sliku ako je nema,
+      // ali nikad ne prepisuj sliku koju je korisnik sam ručno postavio.
+      if (!profile.avatar_url && oauthAvatar) {
+        await supabase
+          .from('profiles')
+          .update({ avatar_url: oauthAvatar })
+          .eq('id', sessionData.user.id)
       }
     }
   }
