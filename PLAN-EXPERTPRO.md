@@ -337,3 +337,109 @@ STVARNO nedostaje:
 4. Naplata kredita objema stranama pri dodeljivanju (atomska DB funkcija, po tvojoj odluci iz 13.4 tačke 2-3).
 5. Isticanje/ohrabrivanje unosa cene za jednostavne usluge (Fiverr-model) — UX izmena, bez nove šeme.
 6. Agencijska varijanta (kad razjasnimo tačno šta "obrnuto" znači) + veća cena po kreditu za agencije.
+
+> **⚠️ NAPOMENA (29.09.2026, Claude) — 13.2 tačka 4 i 13.4 tačke 2-3 i 13.5 tačka 4 su PREVAZIĐENE.**
+> Alen je pročitao ceo ovaj plan i dao FINALNU odluku — obostrana naplata kredita pri dodeljivanju
+> se NE GRADI (usporila bi rast baš kad sajt treba da privuče obe strane). Umesto toga važi model
+> iz Sekcije 14 ispod. Ostatak Sekcije 13 (13.1, 13.3, delovi 13.2 osim naplate, tačke 1-3 i 5-6 iz
+> redosleda iznad) i dalje važi bez izmena — samo mehanizam naplate iz tačke 4 otpada.
+
+---
+
+## 14. FINALNE odluke Alena o modelu "izbor jednog ponuđača" i monetizaciji (29.09.2026)
+
+Alen je pročitao `STATUS-EXPERTPRO.md` i ovaj plan (Sekcija 13) i doneo odluke ispod. Ovo je
+**dogovoreni pravac za građenje** — sledeći korak (kad Alen da "kreni") je da se ovo pretoči u
+konkretan build plan (šema, server akcije, UI), ne još sama izgradnja.
+
+### 14.1 Tok izbora kandidata — potvrđeno
+
+- Prijava i dopisivanje ostaju besplatni za obe strane.
+- Vlasnik oglasa bira JEDNOG kandidata ("Prihvati") → **izabrani kandidat mora da potvrdi**
+  angažman u aplikaciji (ovim se rešava otvoreno pitanje 13.4 #1 — potvrda OSTAJE, isto kao što
+  Sekcija 9 već predviđa).
+- **Ključna izmena u odnosu na moj originalni predlog:** ostali (neizabrani) kandidati se NE
+  odbijaju odmah kad vlasnik klikne "Prihvati" — čekaju u statusu "na čekanju" sve dok izabrani
+  kandidat ne potvrdi. Tek posle potvrde izabranog, ostali se automatski odbijaju i obaveštavaju.
+  Ako izabrani kandidat odustane/ne potvrdi na vreme, vlasnik može odmah izabrati drugog iz
+  liste koja je i dalje netaknuta (ništa nije "potrošeno" u međuvremenu).
+- Ocena je moguća tek kad je "posao završen" (ne odmah po potvrdi izbora) — usklađeno sa
+  Sekcijom 9 tačka 7.
+- Chat-zaključavanje (13.2 tačka 2) i pooštravanje ocenjivanja (13.2 tačka 3) i dalje važe, samo
+  se okidač za "ostali otpadaju" pomera sa trenutka izbora na trenutak potvrde izabranog.
+
+### 14.2 Monetizacija — NEMA naplate obema stranama, bar ne sada
+
+Razlog: naplata na oba kraja bi usporila rast baš kad sajtu trebaju i tražioci pomoći i ponuđači
+rada. Model po tipu angažmana:
+
+- **Radnički/smenski oglasi (firma traži radnike za smenu/posao)** — kandidat (radnik) se NE
+  naplaćuje NIKAD za samo dobijanje posla preko platforme, ni sad ni kasnije. Razlog: Nacionalna
+  služba za zapošljavanje (NSZ) zabranjuje naplatu posredovanja licu koje traži zaposlenje.
+  **Napomena za sledećeg agenta/programera: Alen traži da se ovo pravno proveri sa advokatom pre
+  nego što se generalizuje na sve vrste angažmana** — nije još 100% potvrđeno da li se ista
+  zabrana odnosi i na majstorske/frilenser usluge (videti tačku ispod) ili samo na klasično
+  radno angažovanje.
+- **Majstorske/frilenser usluge (npr. Sekcija 13 "Fiverr model" — spremačica, majstor, šetanje
+  pasa i sl.)** — I dodeljivanje I potvrda ostaju besplatni ZA SADA. Kasnije (posle testiranja,
+  kad tržište "oživi") planirana je MALA naplata SAMO poslovnoj/profesionalnoj strani
+  (majstoru/frilenseru), sa besplatnim mesečnim limitom pre nego što naplata počne — NE procenat
+  od vrednosti posla (eksplicitno odbijeno — Upwork Connects i TaskRabbit modeli su pomenuti kao
+  referenca ali NISU direktno prenosivi na ExpertPro, ne kopirati ih 1:1).
+- **Nikad negativno stanje kredita** — eksplicitno odbijeno kao koncept (dug/spor/knjigovodstvo
+  je previše komplikovano). Kad god se uvede bilo kakva naplata, mora biti atomska provera+naplata
+  u jednom koraku (provera stanja I skidanje kredita u istoj DB transakciji) — ako nema dovoljno
+  kredita, akcija se jednostavno ne dešava, nema duga.
+- Ovim se 13.4 pitanje #2 (tačan broj kredita) i #3 (šta ako nema kredita) više NE POSTAVLJAJU u
+  ovoj fazi — nema naplate, pa nema ni tih problema. Vratiti se na njih tek kad/ako Alen odluči
+  da uključi plaćene nivoe za majstorsku/frilenser stranu.
+- 13.4 pitanja #4 (obrnut model za agencije) i #5 (da li naplata važi i za "Nudim uslugu" oglase)
+  Alen NIJE eksplicitno adresirao u ovoj poruci — i dalje su otvorena, ali njegova opšta filozofija
+  ("besplatno dok tržište ne oživi, naplata poslovnoj strani kasnije") sugeriše da će se agencije
+  (već postoji presedan skupljih paketa u `lib/credits.ts`) naplaćivati više tek kad se uopšte
+  uvedu plaćeni nivoi — ne pre toga.
+
+### 14.3 "Berza aktivnih poslova" — prihvaćeno
+
+Odvojeno od Hitno: za NEhitne, obične zahteve (traži se električar/majstor i sl.) oglas ostaje
+otvoren i vidljiv dok neko ne bude prihvaćen i potvrđen (nema isteka po vremenu kao kod smenskih
+oglasa iz Sekcije 9). Sigurnosna mreža protiv "zombi" oglasa: posle 7 dana neaktivnosti (niko se
+nije javio / vlasnik nije reagovao) sistem šalje podsetnik i AUTOMATSKI PAUZIRA oglas (ne briše ga)
+— vlasnik ga lako vraća u aktivne kad hoće. Ovo se nadovezuje na već postojeći `listings.status`
+enum (dodaje se npr. `'paused'` ako već ne postoji ekvivalent, proveriti pre građenja).
+
+### 14.4 Program preporuke (poz drugara) — smanjeno sa 5+5 na 1+1
+
+Moj originalni predlog (5+5 kredita) je bio previše darežljiv u odnosu na cenu najmanjeg
+pojedinačnog kreditnog paketa. Finalna odluka:
+
+- **1 kredit i pozivaocu i novom korisniku** (ne 5+5).
+- Nagrada se dodeljuje TEK kad su ISPUNJENA OBA uslova: (a) novi korisnik potvrdi broj telefona
+  (SMS verifikacija, već postoji presedan u Sekciji 10 "poklon tek posle SMS verifikacije"), I
+  (b) novi korisnik ima PRVU STVARNU aktivnost na sajtu (npr. objavljen oglas, poslata prijava —
+  tačna definicija "stvarne aktivnosti" ostaje da se precizira pre građenja). Sama verifikacija
+  telefona NIJE dovoljna — mora postojati i dokaz stvarne namere korišćenja.
+- Mora postojati GORNJA GRANICA ukupnog broja nagrada po nalogu (tačan broj nije naveden od
+  Alena — pitati pre građenja, ili predložiti razuman default npr. 20 preporuka/nalog i tražiti
+  potvrdu).
+- Cilj: sprečiti prevaru tipa "upisao je samo email" — nagrada je vezana za PROVERLJIVU stvarnu
+  registraciju + aktivnost, ne za puki unos podatka.
+
+### 14.5 Status SQL migracija (za istoriju — videti STATUS-EXPERTPRO.md za najnovije)
+
+Tri migracije (`migration_fix_listings_admin_rls.sql`, `migration_avatar_storage.sql`,
+`migration_verify_oauth_backfill.sql`) su pokrenute i SQL-proverene (potvrđeno u
+STATUS-EXPERTPRO.md, dodatno ojačane i verifikovane od strane Codex agenta 29.09.2026 — pogledati
+commit `cc7d4b87`). Preostaju STVARNI test-klikovi u UI-ju: admin Pauziraj/Obriši, upload slike
+email/lozinka nalogom, prikaz OAuth bedža — videti STATUS-EXPERTPRO.md tačke 1-3 u "Predloženom
+redosledu sledećih koraka".
+
+### 14.6 Sledeći korak
+
+Ovo je i dalje SAMO plan/odluka, ništa od Sekcije 14 još nije građeno (Alen je eksplicitno tražio
+promišljen odgovor pre građenja: "Nisam sada menjao cene, kod ni produkciju"). Pre početka
+građenja treba: (1) potvrditi live-klik testove iz 14.5, (2) precizirati "stvarnu aktivnost" iz
+14.4 i gornju granicu nagrada, (3) po mogućstvu dobiti pravni odgovor o NSZ pravilu iz 14.2 pre
+nego što se odluka o besplatnoj radničkoj strani generalizuje na majstorske usluge, (4) tek onda
+tražiti od Alena eksplicitno "kreni" da se počne sa redosledom iz 13.5 (bez tačke 4/naplate,
+zamenjeno modelom iz 14.2).
