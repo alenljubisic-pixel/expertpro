@@ -32,7 +32,7 @@
 4. `supabase/migrations/20260929132906_listing_engagement_filters.sql`
 5. `supabase/migrations/20260929144442_offer_multi_client_assignment.sql`
 
-Prva četiri SQL-a su pokrenuta redom u Chrome Supabase SQL Editoru; svaki je vratio `Success. No rows returned`. Peti je primenjen preko povezanog Supabase alata. Naknadni read-only SQL potvrdio je nove kolone, funkcije, tabelu, ključne RLS politike/privilegije i peti offer RPC. **E2E sa dva test naloga nije urađen.** Produkciono su otvoreni i potvrđeni `/oglasi?type=request&mode=long`, `/podrska` i `/admin/zalbe`; nema trenutnih žalbi ni dugoročnih oglasa. Pre pune potvrde proveriti ceo tok (prijava → izbor → potvrda → razgovor → završetak → obostrane ocene → žalba → admin skloni ocenu) i offer tok sa dva klijenta, bez lažnih podataka na pravim nalozima.
+Prva četiri SQL-a su pokrenuta redom u Chrome Supabase SQL Editoru; svaki je vratio `Success. No rows returned`. Peti je primenjen preko povezanog Supabase alata. Naknadni read-only SQL potvrdio je nove kolone, funkcije, tabelu, ključne RLS politike/privilegije i peti offer RPC. Postojeći stari razgovor je proverom baze zaključan za dalje pisanje (1 istorijski razgovor, 0 sa dozvolom slanja). **E2E sa dva test naloga nije urađen.** Produkciono su otvoreni i potvrđeni `/oglasi?type=request&mode=long`, `/podrska`, `/admin/zalbe` i ažurirani FAQ; nema trenutnih žalbi ni dugoročnih oglasa. Pre pune potvrde proveriti ceo tok (prijava → izbor → potvrda → razgovor → završetak → obostrane ocene → žalba → admin skloni ocenu) i offer tok sa dva klijenta, bez lažnih podataka na pravim nalozima.
 SQL je primenjen ručno, pa pre budućeg `supabase db push` treba uskladiti CLI migracionu istoriju; ne pokretati svih pet ponovo naslepo.
 
 ## Otvoreno, po prioritetu
