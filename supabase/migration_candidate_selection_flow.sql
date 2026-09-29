@@ -139,6 +139,59 @@ create trigger trg_notify_new_application
   after insert on public.applications
   for each row execute procedure public.notify_new_application();
 
+-- 3b) Helper SECURITY DEFINER funkcije (bypass RLS).
+--     Bez ovoga bi "Active listings viewable by all" politika na listings i
+--     "Send messages in own conversations" politika na messages morale same
+--     da upitaju public.applications direktno u RLS izrazu — a to je (a)
+--     kružna zavisnost (applications SELECT politika čita listings, listings
+--     SELECT politika bi čitala applications) i (b) vidljivo samo redova koje
+--     TRENUTNI pozivalac sme da vidi po applications SELECT politici, pa npr.
+--     odbijeni kandidat ne bi video tuđu 'selected' prijavu i zaključavanje
+--     chata bi tiho promašilo. SECURITY DEFINER funkcije zaobilaze RLS na
+--     tabelama koje čitaju (isti princip kao private.is_current_user_admin()),
+--     pa daju tačan odgovor bez obzira ko poziva.
+create or replace function private.application_grants_listing_view(p_listing_id uuid)
+returns boolean as $$
+  select exists (
+    select 1 from public.applications a
+    where a.listing_id = p_listing_id and a.applicant_id = auth.uid()
+  );
+$$ language sql security definer stable set search_path = '';
+
+grant execute on function private.application_grants_listing_view(uuid) to authenticated;
+
+-- Vraća true ako je razgovor zaključan ZA DATOG korisnika: oglas ima
+-- pobedničku ('selected' ili 'accepted') prijavu, korisnik nije vlasnik
+-- oglasa i nije taj pobednički kandidat. Oglasi tipa 'offer' ("Nudim
+-- uslugu") se NIKAD ne zaključavaju ovim putem — ostaju otvoreni za sve.
+create or replace function private.is_conversation_locked_for(p_conversation_id uuid, p_user_id uuid)
+returns boolean as $$
+  select coalesce(
+    (
+      select true
+      from public.conversations c
+      join public.listings l on l.id = c.listing_id
+      where c.id = p_conversation_id
+        and c.listing_id is not null
+        and l.type <> 'offer'
+        and l.user_id <> p_user_id
+        and exists (
+          select 1 from public.applications a
+          where a.listing_id = l.id and a.status in ('selected', 'accepted')
+        )
+        and not exists (
+          select 1 from public.applications a
+          where a.listing_id = l.id
+            and a.applicant_id = p_user_id
+            and a.status in ('selected', 'accepted')
+        )
+    ),
+    false
+  );
+$$ language sql security definer stable set search_path = '';
+
+grant execute on function private.is_conversation_locked_for(uuid, uuid) to authenticated;
+
 -- 4) Vlasnik BIRA kandidata (status pending -> selected). Atomski: skida
 --    prethodni izbor (ako postoji) nazad na 'pending' i bira novog. Nikog ne
 --    odbija. SECURITY DEFINER jer dira tuđe redove (druge prijave) van
@@ -150,7 +203,7 @@ declare
   v_app record;
   v_prev record;
 begin
-  select a.id, a.listing_id, a.applicant_id, a.status, l.user_id as owner_id, l.title as listing_title
+  select a.id, a.listing_id, a.applicant_id, a.status, l.user_id as owner_id, l.title as listing_title, l.type as listing_type
   into v_app
   from public.applications a
   join public.listings l on l.id = a.listing_id
@@ -163,6 +216,10 @@ begin
 
   if v_app.owner_id <> auth.uid() then
     raise exception 'Samo vlasnik oglasa može da bira kandidata.';
+  end if;
+
+  if v_app.listing_type = 'offer' then
+    raise exception 'Oglas tipa "Nudim uslugu" ne koristi biranje jednog kandidata — ostaje otvoren za sve prijave.';
   end if;
 
   if v_app.status <> 'pending' then
@@ -239,7 +296,7 @@ declare
   v_owner_name text;
   v_loser record;
 begin
-  select a.id, a.listing_id, a.applicant_id, a.status, l.user_id as owner_id, l.title as listing_title
+  select a.id, a.listing_id, a.applicant_id, a.status, l.user_id as owner_id, l.title as listing_title, l.type as listing_type
   into v_app
   from public.applications a
   join public.listings l on l.id = a.listing_id
@@ -262,7 +319,13 @@ begin
   set status = 'accepted', confirmed_at = now()
   where id = p_application_id;
 
-  update public.listings set status = 'filled' where id = v_app.listing_id;
+  -- Odbrambena provera: oglas tipa 'offer' ("Nudim uslugu") ostaje otvoren
+  -- posle prvog klijenta i nikad se ne zatvara ovim tokom. U normalnom radu
+  -- select_application_candidate() ovo već sprečava (offer nikad ne dobija
+  -- 'selected' prijavu), ovo je samo dodatna sigurnosna kočnica.
+  if v_app.listing_type <> 'offer' then
+    update public.listings set status = 'filled' where id = v_app.listing_id;
+  end if;
 
   select coalesce(name, 'Korisnik') into v_owner_name
   from public.profiles where id = v_app.owner_id;
@@ -365,31 +428,7 @@ create policy "Send messages in own conversations" on public.messages for insert
     union
     select participant_2_id from public.conversations where id = conversation_id
   )
-  and (
-    not exists (
-      select 1 from public.conversations c
-      where c.id = conversation_id
-        and c.listing_id is not null
-        and exists (
-          select 1 from public.applications a
-          where a.listing_id = c.listing_id and a.status in ('selected', 'accepted')
-        )
-    )
-    or exists (
-      select 1 from public.conversations c
-      join public.listings l on l.id = c.listing_id
-      where c.id = conversation_id
-        and (
-          (select auth.uid()) = l.user_id
-          or exists (
-            select 1 from public.applications a
-            where a.listing_id = l.id
-              and a.applicant_id = (select auth.uid())
-              and a.status in ('selected', 'accepted')
-          )
-        )
-    )
-  )
+  and not private.is_conversation_locked_for(conversation_id, (select auth.uid()))
 );
 
 -- 9) Pobednički kandidat mora i dalje moći da VIDI oglas na /oglasi/[id]
@@ -404,10 +443,7 @@ create policy "Active listings viewable by all"
     status = 'active'
     or (select auth.uid()) = user_id
     or (select private.is_current_user_admin())
-    or exists (
-      select 1 from public.applications a
-      where a.listing_id = listings.id and a.applicant_id = (select auth.uid())
-    )
+    or private.application_grants_listing_view(listings.id)
   );
 
 commit;

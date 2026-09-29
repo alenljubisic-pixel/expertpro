@@ -74,6 +74,11 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const category = listing.categories as any
   const typeConfig = TYPE_CONFIG[listing.type] || TYPE_CONFIG.request
   const isOwner = user?.id === listing.user_id
+  // Oglasi tipa 'offer' ("Nudim uslugu") ostaju trajno otvoreni — ne koriste
+  // tok "biranje jednog kandidata" (select/unselect), jer bi to sugerisalo
+  // zatvaranje oglasa posle prvog klijenta. RPC funkcije ovo i same odbijaju,
+  // ovo je samo da vlasnik ne vidi dugmad koja bi mu inače bacila grešku.
+  const isOfferType = listing.type === 'offer'
 
   const { data: applicants } = isOwner
     ? await supabase
@@ -448,15 +453,17 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                           <div className="flex items-center gap-2 flex-wrap">
                             {app.status === 'pending' && (
                               <>
-                                <form action={selectApplicant}>
-                                  <input type="hidden" name="applicationId" value={app.id} />
-                                  <button
-                                    type="submit"
-                                    className="flex items-center gap-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg transition-colors"
-                                  >
-                                    <Check className="w-3.5 h-3.5" /> Prihvati
-                                  </button>
-                                </form>
+                                {!isOfferType && (
+                                  <form action={selectApplicant}>
+                                    <input type="hidden" name="applicationId" value={app.id} />
+                                    <button
+                                      type="submit"
+                                      className="flex items-center gap-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg transition-colors"
+                                    >
+                                      <Check className="w-3.5 h-3.5" /> Prihvati
+                                    </button>
+                                  </form>
+                                )}
                                 <form action={rejectApplication}>
                                   <input type="hidden" name="applicationId" value={app.id} />
                                   <button
@@ -468,7 +475,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                                 </form>
                               </>
                             )}
-                            {app.status === 'selected' && (
+                            {!isOfferType && app.status === 'selected' && (
                               <>
                                 <span className="text-xs font-medium text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg">
                                   ⏳ Čeka potvrdu kandidata
