@@ -3,6 +3,11 @@
 import { useEffect, useState } from 'react'
 import { BellRing, X, Share, PlusSquare } from 'lucide-react'
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
 const DISMISS_KEY = 'ep_install_prompt_dismissed_at'
 const DISMISS_DAYS = 14
 
@@ -28,7 +33,7 @@ function markDismissed() {
 }
 
 export default function InstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [visible, setVisible] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
 
@@ -36,24 +41,26 @@ export default function InstallPrompt() {
     // Ne prikazuj ako je već instalirano kao PWA (standalone mode)
     const isStandalone =
       window.matchMedia?.('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true
     if (isStandalone) return
     if (isDismissedRecently()) return
 
     const ua = window.navigator.userAgent
-    const iOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream
+    const iOS = /iPad|iPhone|iPod/.test(ua)
 
     const handler = (e: Event) => {
       e.preventDefault()
-      setDeferredPrompt(e)
+      setDeferredPrompt(e as BeforeInstallPromptEvent)
       setVisible(true)
     }
     window.addEventListener('beforeinstallprompt', handler)
 
     if (iOS) {
       // iOS Safari nikad ne šalje beforeinstallprompt — pokaži uputstvo posle kratke pauze
-      setIsIOS(true)
-      const t = setTimeout(() => setVisible(true), 4000)
+      const t = setTimeout(() => {
+        setIsIOS(true)
+        setVisible(true)
+      }, 4000)
       return () => {
         clearTimeout(t)
         window.removeEventListener('beforeinstallprompt', handler)
@@ -86,16 +93,16 @@ export default function InstallPrompt() {
         <BellRing className="w-5 h-5 text-white" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-gray-900">⚠️ Ne propusti poruke i poslove!</p>
+        <p className="text-sm font-bold text-gray-900">Dodaj ExpertPro na početni ekran</p>
         {isIOS ? (
           <p className="text-xs text-gray-600 mt-1 flex flex-wrap items-center gap-1">
-            Bez instalacije <b>nećeš dobijati obaveštenja</b> kad sajt nije otvoren — dodirni{' '}
+            Za brži pristup sajtu dodirni{' '}
             <Share className="w-3.5 h-3.5 inline" /> (Deli), pa{' '}
             <PlusSquare className="w-3.5 h-3.5 inline" /> &quot;Dodaj na početni ekran&quot; da ih ne propuštaš.
           </p>
         ) : (
           <p className="text-xs text-gray-600 mt-1">
-            Da bi obaveštenja o novim porukama i hitnim poslovima stizala <b>odmah na telefon</b>, dodaj aplikaciju na početni ekran. Bez toga ih vidiš tek kad sledeći put sam otvoriš sajt — dotad ih neko drugi može preuzeti.
+            Instaliraj prečicu za brži pristup oglasima i porukama. Obaveštenja za sada vidiš kada otvoriš sajt; push obaveštenja još nisu dostupna.
           </p>
         )}
         <div className="flex gap-2 mt-3">
