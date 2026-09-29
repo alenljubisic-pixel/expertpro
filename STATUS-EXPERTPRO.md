@@ -6,10 +6,11 @@
 
 Alen prelazi na drugog agenta (npr. ChatGPT/Codex) da nastavi rad. Ovo je čist "handoff": šta je gotovo, šta tačno čeka na Alena, i STROGA pravila da se ništa ne pokvari na produkciji.
 
-### 1) Dve stvari koje čekaju Alena da pokrene SQL u Supabase-u (agent to ne sme sam)
+### 1) Tri stvari koje čekaju Alena da pokrene SQL u Supabase-u (agent to ne sme sam)
 
 1. `/admin/oglasi` dugmad Pauziraj/Obriši na tuđem oglasu i dalje bacaju grešku. Uzrok je nađen i fix je napisan (Krug 9 ispod). Alen treba: Supabase Dashboard → SQL Editor → nalepiti ceo sadržaj fajla `supabase/migration_fix_listings_admin_rls.sql` → Run. Zatim javiti agentu da testira Pauziraj/Obriši uživo na `/admin/oglasi`.
-2. Upload profilne slike (Krug 11, novo) — kod je gotov, ali ne radi dok Alen ne pokrene `supabase/migration_avatar_storage.sql` (pravi Storage bucket + RLS politike). Zatim javiti agentu da testira upload na `/dashboard/profil` uživo.
+2. Upload profilne slike (Krug 11) — kod je gotov, ali ne radi dok Alen ne pokrene `supabase/migration_avatar_storage.sql` (pravi Storage bucket + RLS politike). Zatim javiti agentu da testira upload na `/dashboard/profil` uživo.
+3. Verifikacija za postojeće Google/Facebook naloge (Krug 12, novo) — SVI NOVI Google/Facebook nalozi od sada automatski dobijaju "verifikovan" bedž (kod je pušovan), ali naloge koji su napravljeni PRE ove izmene treba jednokratno dopuniti: pokrenuti `supabase/migration_verify_oauth_backfill.sql`.
 
 Sve ostalo opisano u ovom fajlu (sažetak ispod) trenutno RADI i live je na `www.expertpro.app`.
 
@@ -29,13 +30,14 @@ Sve ostalo opisano u ovom fajlu (sažetak ispod) trenutno RADI i live je na `www
 
 1. **[Čeka Alena]** Pokrenuti `migration_fix_listings_admin_rls.sql` → agent testira `/admin/oglasi`.
 2. **[Čeka Alena]** Pokrenuti `migration_avatar_storage.sql` → agent testira upload slike na `/dashboard/profil`.
-3. Pun uživo test tokova plaćanja (Istaknut/Gold + krediti, sa dva naloga) i notifikacija (poruka + ocena, da zvonce upali kod primaoca).
-4. Skenirati IPS QR kod pravom bankarskom aplikacijom (Raiffeisen/Intesa/OTP i sl.) da se potvrdi da su polja tačna.
-5. Automatska verifikacija (email potvrđen → značka) sad kad slika postoji za sve — sledeći logičan korak posle #2.
-6. Email notifikacije (Resend, besplatno do 3000 mejlova/mesec) — ne postoji ništa osim Supabase-ovih auto-mejlova za registraciju/reset lozinke.
-7. Prave push notifikacije (PWA preduslov je već ugrađen — manifest, ikonice, install banner) — zahteva VAPID ključeve + service worker, veći zadatak.
-8. Životni ciklus oglasa (kad vlasnik prihvati prijavu → oglas postaje "popunjen" i nestaje iz javne liste, sa potvrdom izvođača) — **čeka odluku Alena** o roku za potvrdu pre nego što se počne graditi.
-9. "Hitno majstor nudi sebe" oglas (majstor se sam nudi, orijentaciona cena, format dogovoren u Krugu 8) + radno vreme majstora (pre podne/posle podne/24h) — mehanizam gašenja oglasa namerno ostavljen kao otvorena ideja, ne graditi dok Alen ne kaže tačno kako.
+3. **[Čeka Alena]** Pokrenuti `migration_verify_oauth_backfill.sql` → agent proverava da su postojeći Google/Facebook nalozi sada verifikovani.
+4. Pun uživo test tokova plaćanja (Istaknut/Gold + krediti, sa dva naloga) i notifikacija (poruka + ocena, da zvonce upali kod primaoca).
+5. Skenirati IPS QR kod pravom bankarskom aplikacijom (Raiffeisen/Intesa/OTP i sl.) da se potvrdi da su polja tačna.
+6. "Platio je" i posebna značka po oceni — ostaje kao ideja iz Kruga 6, još nije rađeno.
+7. Email notifikacije (Resend, besplatno do 3000 mejlova/mesec) — ne postoji ništa osim Supabase-ovih auto-mejlova za registraciju/reset lozinke.
+8. Prave push notifikacije (PWA preduslov je već ugrađen — manifest, ikonice, install banner) — zahteva VAPID ključeve + service worker, veći zadatak.
+9. Životni ciklus oglasa (kad vlasnik prihvati prijavu → oglas postaje "popunjen" i nestaje iz javne liste, sa potvrdom izvođača) — **čeka odluku Alena** o roku za potvrdu pre nego što se počne graditi.
+10. "Hitno majstor nudi sebe" oglas (majstor se sam nudi, orijentaciona cena, format dogovoren u Krugu 8) + radno vreme majstora (pre podne/posle podne/24h) — mehanizam gašenja oglasa namerno ostavljen kao otvorena ideja, ne graditi dok Alen ne kaže tačno kako.
 
 Detaljno objašnjenje svega iznad (zašto, kako je testirano, koji fajlovi) je u sažetku odmah ispod i u odgovarajućim krugovima dalje u fajlu.
 
@@ -515,3 +517,20 @@ Fajl: `supabase/migration_avatar_storage.sql` — pravi:
 2. Javiti agentu da je pokrenuto, pa agent testira uživo upload slike na `/dashboard/profil` (probaj sa pravim nalogom, proveri da se slika pojavi i na `/profil/[id]` i u Navbar-u).
 
 Provereno pre push-a: `npx tsc --noEmit` čisto, `npm run build` prolazi ceo (svih 40 ruta).
+
+## Krug 12 (29.09.2026) — Google/Facebook nalozi automatski dobijaju "verifikovan" bedž
+
+Alen je postavio pitanje: da li nalozi napravljeni preko Google/Facebook login-a odmah dobijaju "verifikovan" bedž, pošto ta prijava već garantuje potvrđen identitet (ne treba dodatna email verifikacija). Provereno u kodu: **NE, nisu** — `is_verified` je uvek bio `false` po difoltu i ništa u kodu ga nije postavljalo osim ručnog admin klika na `/admin/users`, čak i za Google/Facebook naloge.
+
+**Fix (kod je pušovan, live na Vercelu):**
+- `app/auth/callback/route.ts` — kad se PRAVI NOVI profil preko OAuth login-a (Google ili Facebook, prepoznato preko `sessionData.user.app_metadata.provider`), sad se odmah postavlja `is_verified: true`. Ovo je bezbedno da uradi sam kod (bez potrebe za Alenovim SQL-om) jer je u pitanju INSERT novog reda, a `trg_prevent_privilege_escalation` trigger koji čuva `is_verified` od samo-dodele hvata samo UPDATE, ne INSERT.
+
+**⚠️ Postojeći Google/Facebook nalozi (napravljeni PRE ove izmene) i dalje imaju `is_verified = false` i NE mogu se dopuniti kroz obični kod** — isti razlog kao i sve ostalo u ovoj sesiji: `trg_prevent_privilege_escalation` tiho poništava svaki pokušaj da neko (pa i server-side kod u ime tog korisnika) sam sebi podigne `is_verified`, osim ako je pozivalac admin/service_role. Zato je pripremljena jednokratna migracija:
+
+Fajl: `supabase/migration_verify_oauth_backfill.sql` — isključi trigger, dopuni `is_verified = true` za sve postojeće naloge gde `auth.users.raw_app_meta_data->>'provider'` je `google` ili `facebook`, pa ponovo uključi trigger (identičan obrazac kao kad je Alen ranije ručno popravljao `is_admin`).
+
+**Sledeći koraci za Alena:**
+1. Supabase Dashboard → SQL Editor → nalepiti sadržaj `supabase/migration_verify_oauth_backfill.sql` → Run.
+2. Javiti agentu, pa agent proverava da su postojeći Google/Facebook nalozi sada prikazani kao verifikovani (zelena kvačica) na `/oglasi`, `/radnici`, `/profil/[id]`.
+
+Provereno pre push-a: `npx tsc --noEmit` čisto.
