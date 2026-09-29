@@ -83,11 +83,10 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
         .order('created_at', { ascending: false })
     : { data: null }
 
-  async function updateApplicationStatus(formData: FormData) {
+  async function rejectApplication(formData: FormData) {
     'use server'
     const applicationId = formData.get('applicationId') as string
-    const newStatus = formData.get('newStatus') as string
-    if (!applicationId || !['accepted', 'rejected'].includes(newStatus)) return
+    if (!applicationId) return
 
     const supabase = await createClient()
     const { data: { user: currentUser } } = await supabase.auth.getUser()
@@ -96,16 +95,42 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     // RLS already restricts this to the listing owner, but re-check defensively.
     const { data: application } = await supabase
       .from('applications')
-      .select('listing_id, listings!inner(user_id)')
+      .select('listing_id, status, listings!inner(user_id)')
       .eq('id', applicationId)
       .single()
 
     const listingOwnerId = (application?.listings as any)?.user_id
-    if (!application || listingOwnerId !== currentUser.id) {
+    if (!application || listingOwnerId !== currentUser.id || application.status !== 'pending') {
       return
     }
 
-    await supabase.from('applications').update({ status: newStatus }).eq('id', applicationId)
+    await supabase.from('applications').update({ status: 'rejected' }).eq('id', applicationId)
+    revalidatePath(`/oglasi/${id}`)
+  }
+
+  async function selectApplicant(formData: FormData) {
+    'use server'
+    const applicationId = formData.get('applicationId') as string
+    if (!applicationId) return
+
+    const supabase = await createClient()
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (!currentUser) redirect('/login')
+
+    await supabase.rpc('select_application_candidate', { p_application_id: applicationId })
+    revalidatePath(`/oglasi/${id}`)
+  }
+
+  async function unselectApplicant(formData: FormData) {
+    'use server'
+    const applicationId = formData.get('applicationId') as string
+    if (!applicationId) return
+
+    const supabase = await createClient()
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (!currentUser) redirect('/login')
+
+    await supabase.rpc('unselect_application_candidate', { p_application_id: applicationId })
     revalidatePath(`/oglasi/${id}`)
   }
 
@@ -171,6 +196,16 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                 <div>
                   <p className="font-bold">Hitan oglas</p>
                   <p className="text-red-100 text-sm">Radnici u ovom gradu su obavešteni. Prijave stižu brzo.</p>
+                </div>
+              </div>
+            )}
+
+            {listing.status === 'filled' && (
+              <div className="bg-green-600 text-white rounded-xl p-4 flex items-center gap-3">
+                <span className="text-2xl">✅</span>
+                <div>
+                  <p className="font-bold">Oglas je popunjen</p>
+                  <p className="text-green-100 text-sm">Kandidat je izabran i potvrđen. Oglas više nije aktivan za nove prijave.</p>
                 </div>
               </div>
             )}
@@ -413,9 +448,8 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                           <div className="flex items-center gap-2 flex-wrap">
                             {app.status === 'pending' && (
                               <>
-                                <form action={updateApplicationStatus}>
+                                <form action={selectApplicant}>
                                   <input type="hidden" name="applicationId" value={app.id} />
-                                  <input type="hidden" name="newStatus" value="accepted" />
                                   <button
                                     type="submit"
                                     className="flex items-center gap-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg transition-colors"
@@ -423,9 +457,8 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                                     <Check className="w-3.5 h-3.5" /> Prihvati
                                   </button>
                                 </form>
-                                <form action={updateApplicationStatus}>
+                                <form action={rejectApplication}>
                                   <input type="hidden" name="applicationId" value={app.id} />
-                                  <input type="hidden" name="newStatus" value="rejected" />
                                   <button
                                     type="submit"
                                     className="flex items-center gap-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
@@ -435,14 +468,40 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                                 </form>
                               </>
                             )}
+                            {app.status === 'selected' && (
+                              <>
+                                <span className="text-xs font-medium text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg">
+                                  ⏳ Čeka potvrdu kandidata
+                                </span>
+                                <form action={unselectApplicant}>
+                                  <input type="hidden" name="applicationId" value={app.id} />
+                                  <button
+                                    type="submit"
+                                    className="flex items-center gap-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+                                  >
+                                    <X className="w-3.5 h-3.5" /> Poništi izbor
+                                  </button>
+                                </form>
+                              </>
+                            )}
                             {app.status === 'accepted' && (
                               <span className="text-xs font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-lg">
-                                ✓ Prihvaćeno
+                                ✓ Potvrđeno — posao dodeljen
+                              </span>
+                            )}
+                            {app.status === 'declined' && (
+                              <span className="text-xs font-medium text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg">
+                                Kandidat je odustao
                               </span>
                             )}
                             {app.status === 'rejected' && (
                               <span className="text-xs font-medium text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg">
                                 Odbijeno
+                              </span>
+                            )}
+                            {app.status === 'withdrawn' && (
+                              <span className="text-xs font-medium text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg">
+                                Povučeno
                               </span>
                             )}
                             <Link

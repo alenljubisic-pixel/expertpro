@@ -24,6 +24,27 @@ Uživo test na `/admin/oglasi` (pravi tuđi aktivni oglasi, ne test podaci) je p
 - **Fix napisan, NIJE pokrenut** (agent ne sme sam): `supabase/migration_fix_listings_admin_pause.sql` — dodaje admina (`private.is_current_user_admin()`) u `"Active listings viewable by all"` SELECT politiku. Alen treba da ga pokrene u SQL Editoru, pa javiti agentu da ponovo testira "Pauziraj" na `/admin/oglasi`.
 - Usput primećeno (NEPOVEZANO sa RLS-om, posebno zabeleženo da se ne pomeša): tokom testiranja su viđeni POVREMENI 503 na potpuno nepovezanim GET zahtevima (`/oglasi`, `/admin/oglasi?filter=active`, `?filter=expired` itd.) — ISTI URL je čas vraćao 200 čas 503 na uzastopnim učitavanjima, bez ikakve RLS greške u Postgres logovima u tim trenucima. Ovo liči na infrastrukturnu nestabilnost (Vercel cold start / Supabase free-tier limit konekcija), NE na kod/RLS bug — vredi pratiti ako se ponavlja, ali nije deo ovog fix-a.
 
+### 1c) NOVO (29.09.2026, Claude, Krug 16) — IZGRAĐEN tok "izbor jednog kandidata" (prijava → izbor → potvrda → zaključavanje chata), čeka SQL
+
+Alen je tražio da se konačno izgradi tok iz `PLAN-EXPERTPRO.md` Sekcija 13/14 ("odabir kandidata, prijava na oglas"). Ovo NIJE više samo plan — kod je napisan, `tsc`/`npm run build` prolaze čisto, pušovano na GitHub. **NE radi dok Alen ne pokrene `supabase/migration_candidate_selection_flow.sql`** (nova SQL migracija — agent je nije i ne sme sam pokrenuti).
+
+Šta radi tok (posle SQL-a):
+- Prijava na oglas SADA ZAHTEVA tekstualnu poruku (više nije opciono) — vlasnik oglasa treba da vidi zašto se neko javlja.
+- Vlasnik oglasa dobija notifikaciju čim neko pošalje prijavu ("X se prijavio/la na tvoj oglas") — ovo RANIJE NIJE POSTOJALO uopšte, iako je tip notifikacije bio pripremljen u šemi odavno.
+- Vlasnik klikne "Prihvati" na jednog kandidata → prijava ide u status `selected` (NE odmah `accepted`). Kandidat dobija notifikaciju "Izabran/a si, potvrdi angažman". Ostale prijave OSTAJU `pending`, niko nije odbijen.
+- **Čim je neko `selected`, chat sa SVIM OSTALIM kandidatima se odmah zaključava** (po Alenovom pojašnjenju u ovom krugu — ne čeka se potvrda kandidata za OVO, samo za formalni prelazak oglasa u "popunjen"). Vlasnik i dalje može da piše SAMO sa izabranim kandidatom. Istorija poruka ostaje vidljiva svima, samo se dalje pisanje zaključava (RLS INSERT politika na `messages`).
+- Izabrani kandidat vidi na oglasu "🎉 Izabran/a si!" sa dugmićima **Potvrdi angažman** / **Odustani**.
+  - **Potvrdi** → status `accepted`, oglas prelazi u `listings.status='filled'`, i TEK SADA se sve ostale (još uvek `pending`) prijave automatski odbijaju + dobijaju notifikaciju "Izabran je drugi kandidat". Vlasnik dobija notifikaciju da je angažman potvrđen.
+  - **Odustani** → status `declined`, vlasnik dobija notifikaciju i odmah može izabrati DRUGOG kandidata sa liste (koja je netaknuta — svi ostali su i dalje `pending`).
+- Vlasnik takođe može da klikne "Poništi izbor" dok kandidat još nije potvrdio — vraća tu prijavu na `pending` (i ponovo otključava chat sa svima, jer više niko nije `selected`/`accepted`) da bi mogao da izabere nekog drugog.
+- Kad je oglas `filled`, na `/oglasi/[id]` se prikazuje zeleni baner "✅ Oglas je popunjen".
+- Pobednički kandidat i dalje može da vidi oglas na `/oglasi/[id]` posle "filled" (dodata SELECT politika na `listings` — bez ovoga bi dobio 404 čim oglas nije više `active`, isti princip kao ranije za admina).
+- Sve akcije (izbor/poništi izbor/potvrdi/odustani) idu kroz nove Postgres funkcije (`select_application_candidate`, `unselect_application_candidate`, `confirm_application`, `decline_application`) — SECURITY DEFINER sa internom proverom da pozivalac stvarno sme tu akciju, atomski (`for update` lock), po istom bezbednom obrascu kao postojeći `enforce_listing_limits()`.
+- **NIJE naplaćeno ništa nikome** (u skladu sa Sekcijom 14.2 — Alen je eksplicitno odbio obostranu naplatu).
+- **NIJE dirano ocenjivanje/rating** — ostaje otvoreno za kasnije (trebalo bi vezati mogućnost ocene za `applications.status='accepted'` po oglasu, ali UI za ocene trenutno ne prosleđuje `listing_id` uopšte — veći zadatak, nije rađen sada).
+- Izmenjeni/novi fajlovi: `supabase/migration_candidate_selection_flow.sql` (novo, čeka Alena), `app/oglasi/[id]/page.tsx`, `components/listings/ApplyButton.tsx`, `components/chat/ChatWindow.tsx`, `app/poruke/page.tsx`.
+- **Nije uživo testirano** (ne može dok SQL nije pokrenut) — sledeći korak posle SQL-a: probati sa dva test naloga ceo tok (prijava sa porukom → notifikacija vlasniku → Prihvati → chat zaključan za ostale odmah → kandidat potvrđuje → oglas filled → ostali odbijeni i notifikovani).
+
 Sve ostalo opisano u ovom fajlu (sažetak ispod) trenutno RADI i live je na `www.expertpro.app`.
 
 ### 2) STROGA pravila za svakog agenta koji nastavi rad (ne kršiti, ni na Alenov zahtev ako samo "kaže da je ok")
@@ -40,7 +61,8 @@ Sve ostalo opisano u ovom fajlu (sažetak ispod) trenutno RADI i live je na `www
 
 ### 3) Predloženi redosled sledećih koraka (ali Alen odlučuje prioritet)
 
-1. **[DELIMIČNO — Obriši radi, Pauziraj NE]** Pokrenuti `supabase/migration_fix_listings_admin_pause.sql` (novo, videti tačku 1b), pa ponovo uživo testirati Pauziraj na `/admin/oglasi`.
+0. **[NOVO — čeka Alena]** Pokrenuti `supabase/migration_candidate_selection_flow.sql` (Krug 16, videti tačku 1c) — bez ovoga ceo novi tok izbora kandidata NE RADI (RPC funkcije ne postoje, chat-lock politika nije primenjena). Posle SQL-a, uživo testirati ceo tok sa dva naloga.
+1. **[DELIMIČNO — Obriši radi, Pauziraj NE]** Pokrenuti `supabase/migration_fix_listings_admin_pause.sql` (novo, videti tačku 1b), pa ponovo uživo testirati Pauziraj na `/admin/oglasi`. (Napomena: `migration_candidate_selection_flow.sql` iz tačke 0 već sadrži i ovaj fix unutar sebe — dovoljno je pokrenuti nju, ali nije greška pokrenuti obe.)
 2. **[✅ POTVRĐENO uživo, 29.09.2026]** Upload slike na `/dashboard/profil` — radi. Testirano na pravom Alenovom nalogu (Google login, "TurboCooling GermanPro") jer nije bio dostupan poseban email/lozinka test nalog — **⚠️ Alen: tvoja profilna slika je sada test kvadrat u boji (plavo), zameni je svojom pravom slikom preko "Promeni sliku"**. Storage upload + `getPublicUrl` + update `avatar_url` sve rade ispravno (potvrđeno preko mreže: GET na `storage/v1/object/public/avatars/...` vratio 200).
 3. **[✅ POTVRĐENO uživo, 29.09.2026]** OAuth "Verifikovan" bedž — radi i javno se prikazuje na `/radnici` za više naloga (TurboCooling GermanPro, Mateja Radisic, Mat Rad su svi "Verifikovan"). `is_verified=true` potvrđeno i u bazi za Google nalog.
 4. Pun uživo test tokova plaćanja (Istaknut/Gold + krediti, sa dva naloga) i notifikacija (poruka + ocena, da zvonce upali kod primaoca).

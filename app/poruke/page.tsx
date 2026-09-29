@@ -41,17 +41,47 @@ export default async function MessagesPage({
     }
   }
 
-  const { data: conversations } = await supabase
+  const { data: rawConversations } = await supabase
     .from('conversations')
     .select(`
       *,
       user1:profiles!participant_1_id(id, name, avatar_url, is_verified),
       user2:profiles!participant_2_id(id, name, avatar_url, is_verified),
-      listing:listings(id, title, type),
+      listing:listings(id, title, type, status, user_id),
       messages(content, created_at, sender_id)
     `)
     .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`)
     .order('last_message_at', { ascending: false })
+
+  // Chat locks as soon as the listing owner picks a candidate ('selected'),
+  // even before that candidate confirms — not only once the listing is
+  // 'filled'. So we need the currently selected/accepted applicant for
+  // every listing tied to one of these conversations, not just filled ones.
+  const listingIds = Array.from(
+    new Set((rawConversations || []).map(c => (c.listing as any)?.id).filter(Boolean) as string[])
+  )
+
+  let chosenByListing: Record<string, string> = {}
+  if (listingIds.length > 0) {
+    const { data: chosen } = await supabase
+      .from('applications')
+      .select('listing_id, applicant_id, status')
+      .in('listing_id', listingIds)
+      .in('status', ['selected', 'accepted'])
+    chosenByListing = Object.fromEntries((chosen || []).map(w => [w.listing_id, w.applicant_id]))
+  }
+
+  const conversations = (rawConversations || []).map(c => {
+    const listing = c.listing as any
+    let locked = false
+    if (listing && chosenByListing[listing.id]) {
+      const chosenId = chosenByListing[listing.id]
+      const isOwner = listing.user_id === user.id
+      const isChosen = chosenId === user.id
+      locked = !isOwner && !isChosen
+    }
+    return { ...c, locked }
+  })
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
