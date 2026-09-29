@@ -8,7 +8,7 @@ import ConversationsRealtimeRefresher from '@/components/chat/ConversationsRealt
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ conv?: string; new?: string }>
+  searchParams: Promise<{ conv?: string; listing?: string; applicant?: string }>
 }) {
   const sp = await searchParams
   const supabase = await createClient()
@@ -17,27 +17,38 @@ export default async function MessagesPage({
 
   let activeConvId = sp.conv
 
-  // Coming from a "Pošalji poruku" button (?new=<otherUserId>): find or
-  // create the conversation with that user, then continue as normal.
-  if (!activeConvId && sp.new && sp.new !== user.id) {
-    const otherUserId = sp.new
-    const { data: existingConv } = await supabase
-      .from('conversations')
-      .select('id')
-      .or(
-        `and(participant_1_id.eq.${user.id},participant_2_id.eq.${otherUserId}),and(participant_1_id.eq.${otherUserId},participant_2_id.eq.${user.id})`
-      )
-      .maybeSingle()
-
-    if (existingConv) {
-      activeConvId = existingConv.id
-    } else {
-      const { data: newConv } = await supabase
+  // Only a confirmed assignment can open a listing-specific conversation.
+  if (!activeConvId && sp.listing) {
+    const { data: listing } = await supabase.from('listings')
+      .select('id, user_id, type').eq('id', sp.listing).maybeSingle()
+    const applicantId = listing?.user_id === user.id ? sp.applicant : user.id
+    const { data: accepted } = applicantId
+      ? await supabase.from('applications')
+        .select('applicant_id').eq('listing_id', sp.listing)
+        .eq('applicant_id', applicantId).eq('status', 'accepted').maybeSingle()
+      : { data: null }
+    const otherUserId = listing && accepted
+      ? (user.id === listing.user_id ? accepted.applicant_id
+        : user.id === accepted.applicant_id ? listing.user_id : null)
+      : null
+    if (otherUserId && listing && accepted) {
+      const { data: existingConv } = await supabase
         .from('conversations')
-        .insert({ participant_1_id: user.id, participant_2_id: otherUserId })
+        .select('id')
+        .eq('listing_id', sp.listing)
+        .or(`and(participant_1_id.eq.${user.id},participant_2_id.eq.${otherUserId}),and(participant_1_id.eq.${otherUserId},participant_2_id.eq.${user.id})`)
+        .maybeSingle()
+
+      if (existingConv) {
+        activeConvId = existingConv.id
+      } else {
+        const { data: newConv } = await supabase
+          .from('conversations')
+          .insert({ participant_1_id: listing.user_id, participant_2_id: accepted.applicant_id, listing_id: sp.listing })
         .select('id')
         .single()
-      if (newConv) activeConvId = newConv.id
+        if (newConv) activeConvId = newConv.id
+      }
     }
   }
 
@@ -53,32 +64,31 @@ export default async function MessagesPage({
     .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`)
     .order('last_message_at', { ascending: false })
 
-  // Chat locks as soon as the listing owner picks a candidate ('selected'),
-  // even before that candidate confirms — not only once the listing is
-  // 'filled'. So we need the currently selected/accepted applicant for
-  // every listing tied to one of these conversations, not just filled ones.
+  // Old general and pre-assignment conversations remain readable as history.
   const listingIds = Array.from(
     new Set((rawConversations || []).map(c => (c.listing as any)?.id).filter(Boolean) as string[])
   )
 
-  let chosenByListing: Record<string, string> = {}
+  let activePairs = new Set<string>()
   if (listingIds.length > 0) {
     const { data: chosen } = await supabase
       .from('applications')
-      .select('listing_id, applicant_id, status')
+      .select('listing_id, applicant_id, status, owner_finished_at, applicant_finished_at')
       .in('listing_id', listingIds)
-      .in('status', ['selected', 'accepted'])
-    chosenByListing = Object.fromEntries((chosen || []).map(w => [w.listing_id, w.applicant_id]))
+      .eq('status', 'accepted')
+    activePairs = new Set((chosen || [])
+      .filter(w => !w.owner_finished_at && !w.applicant_finished_at)
+      .map(w => `${w.listing_id}:${w.applicant_id}`))
   }
 
   const conversations = (rawConversations || []).map(c => {
     const listing = c.listing as any
-    let locked = false
-    if (listing && chosenByListing[listing.id]) {
-      const chosenId = chosenByListing[listing.id]
-      const isOwner = listing.user_id === user.id
-      const isChosen = chosenId === user.id
-      locked = !isOwner && !isChosen
+    let locked = true
+    if (listing) {
+      const applicantId = c.participant_1_id === listing.user_id
+        ? c.participant_2_id
+        : c.participant_2_id === listing.user_id ? c.participant_1_id : null
+      locked = !applicantId || !activePairs.has(`${listing.id}:${applicantId}`)
     }
     return { ...c, locked }
   })

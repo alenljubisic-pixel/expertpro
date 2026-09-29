@@ -70,6 +70,8 @@ function NewListingForm() {
   const [workersNeeded, setWorkersNeeded] = useState('1')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [engagementMode, setEngagementMode] = useState('short_job')
+  const [foreignWorkersWelcome, setForeignWorkersWelcome] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [profile, setProfile] = useState<any>(null)
@@ -105,6 +107,10 @@ function NewListingForm() {
     if (!title.trim()) { setError('Naslov je obavezan.'); return }
     if (!city) { setError('Izaberi grad.'); return }
     if (!categoryId) { setError('Izaberi kategoriju.'); return }
+    if ((engagementMode === 'multi_day' || engagementMode === 'fixed_term') && (!dateFrom || !dateTo || dateTo < dateFrom)) {
+      setError('Za višednevni angažman unesi ispravan period od–do.')
+      return
+    }
     if (type === 'urgent' && (profile?.credit_balance || 0) < 1) {
       setError('Nemaš dovoljno kredita za hitan oglas.')
       return
@@ -134,6 +140,8 @@ function NewListingForm() {
       workers_needed: parseInt(workersNeeded) || 1,
       available_from: dateFrom || null,
       available_to: dateTo || null,
+      engagement_mode: type === 'offer' ? 'short_job' : engagementMode,
+      foreign_workers_welcome: type !== 'offer' && foreignWorkersWelcome,
       status: 'active',
     }).select().single()
 
@@ -269,6 +277,27 @@ function NewListingForm() {
               </div>
             </div>
           </div>
+
+          {/* Location */}
+          {type !== 'offer' && (
+            <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+              <h2 className="font-semibold text-gray-900">Vrsta angažmana</h2>
+              <label className="block text-sm text-gray-700">Trajanje
+                <select value={engagementMode} onChange={e => setEngagementMode(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-gray-200 px-3 py-2 bg-white">
+                  <option value="short_job">Jednokratan posao</option>
+                  <option value="multi_day">Više dana</option>
+                  <option value="fixed_term">Na određeno / više meseci</option>
+                  <option value="permanent">Stalno zaposlenje</option>
+                </select>
+              </label>
+              <label className="flex items-start gap-2 text-sm text-gray-700">
+                <input type="checkbox" checked={foreignWorkersWelcome} onChange={e => setForeignWorkersWelcome(e.target.checked)} />
+                <span>Otvoreno i za strane radnike (radni status i dozvole proverava poslodavac)</span>
+              </label>
+              <p className="text-xs text-gray-500">Platforma objavljuje oglas; ne zaključuje ugovor o radu niti proverava pravo na rad.</p>
+            </div>
+          )}
 
           {/* Location */}
           <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">

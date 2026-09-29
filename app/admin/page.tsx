@@ -85,6 +85,7 @@ export default async function AdminPage() {
             { href: '/admin/users', label: 'Korisnici' },
             { href: '/admin/oglasi', label: 'Oglasi' },
             { href: '/admin/poruke', label: 'Poruke' },
+            { href: '/admin/zalbe', label: 'Žalbe' },
             { href: '/admin/uplate', label: 'Uplate' },
           ].map(tab => (
             <Link

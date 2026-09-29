@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { MessageSquare, Send, CheckCircle, XCircle } from 'lucide-react'
+import { Send, CheckCircle, XCircle } from 'lucide-react'
 
 interface Props {
   listingId: string
@@ -14,7 +14,7 @@ interface Props {
   type: string
 }
 
-export default function ApplyButton({ listingId, listingUserId, currentUserId, existingApplication, type }: Props) {
+export default function ApplyButton({ listingId, currentUserId, existingApplication, type }: Props) {
   const [applying, setApplying] = useState(false)
   const [message, setMessage] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -85,9 +85,12 @@ export default function ApplyButton({ listingId, listingUserId, currentUserId, e
             </div>
           </div>
         ) : appStatus === 'accepted' ? (
-          <div className="flex items-center justify-center gap-2 text-green-600">
-            <CheckCircle className="w-5 h-5" />
-            <span className="font-medium text-sm">Angažman potvrđen — posao je tvoj!</span>
+          <div className="space-y-2 text-center">
+            <div className="flex items-center justify-center gap-2 text-green-600">
+              <CheckCircle className="w-5 h-5" />
+              <span className="font-medium text-sm">{type === 'offer' ? 'Majstor je prihvatio tvoj upit.' : 'Angažman potvrđen — posao je tvoj!'}</span>
+            </div>
+            <Link href={`/poruke?listing=${listingId}`} className="block text-sm text-blue-600 hover:underline">Otvori razgovor</Link>
           </div>
         ) : appStatus === 'declined' ? (
           <div className="flex items-center justify-center gap-2 text-gray-500">
@@ -105,13 +108,7 @@ export default function ApplyButton({ listingId, listingUserId, currentUserId, e
               <CheckCircle className="w-4 h-4" />
               <span className="text-sm font-medium">Prijava poslata</span>
             </div>
-            <Link
-              href="/poruke"
-              className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
-            >
-              <MessageSquare className="w-4 h-4" />
-              Otvori poruke
-            </Link>
+            <p className="text-xs text-gray-500">Poruka je poslata uz prijavu. Razgovor se otvara tek kada {type === 'offer' ? 'majstor prihvati upit' : 'potvrdiš angažman'}.</p>
           </div>
         )}
       </div>
@@ -133,23 +130,6 @@ export default function ApplyButton({ listingId, listingUserId, currentUserId, e
     })
 
     if (!error) {
-      // Auto-create conversation between applicant and listing owner
-      const { data: existingConv } = await supabase
-        .from('conversations')
-        .select('id')
-        .or(
-          `and(participant_1_id.eq.${currentUserId},participant_2_id.eq.${listingUserId}),and(participant_1_id.eq.${listingUserId},participant_2_id.eq.${currentUserId})`
-        )
-        .single()
-
-      if (!existingConv) {
-        await supabase.from('conversations').insert({
-          participant_1_id: currentUserId,
-          participant_2_id: listingUserId,
-          listing_id: listingId,
-        })
-      }
-
       setApplied(true)
       setAppStatus('pending')
       setShowForm(false)
@@ -173,13 +153,7 @@ export default function ApplyButton({ listingId, listingUserId, currentUserId, e
           >
             {type === 'offer' ? '🤝 Zainteresovan/a sam' : '📩 Prijavi se'}
           </button>
-          <Link
-            href="/poruke"
-            className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
-          >
-            <MessageSquare className="w-4 h-4" />
-            Pošalji poruku
-          </Link>
+          <p className="text-xs text-gray-500 text-center">Prvu poruku napiši uz prijavu; razgovor je moguć tek kada {type === 'offer' ? 'majstor prihvati upit' : 'potvrdiš angažman'}.</p>
         </div>
       ) : (
         <div className="space-y-3">

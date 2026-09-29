@@ -3,9 +3,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import { MapPin, Star, CheckCircle, Briefcase, MessageSquare } from 'lucide-react'
+import { MapPin, Star, CheckCircle, Briefcase } from 'lucide-react'
 import { safeName, safeInitial } from '@/lib/safe-name'
-import ReviewForm from '@/components/reviews/ReviewForm'
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -38,29 +37,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const { data: { user } } = await supabase.auth.getUser()
   const isOwnProfile = user?.id === id
 
-  // Can this visitor leave a review? Only if they've messaged this person
-  // before (mirrors the DB trigger) and haven't already reviewed them.
-  let canReview = false
-  if (user && !isOwnProfile) {
-    const { data: existingConv } = await supabase
-      .from('conversations')
-      .select('id')
-      .or(
-        `and(participant_1_id.eq.${user.id},participant_2_id.eq.${id}),and(participant_1_id.eq.${id},participant_2_id.eq.${user.id})`
-      )
-      .maybeSingle()
-
-    if (existingConv) {
-      const { data: existingReview } = await supabase
-        .from('reviews')
-        .select('id')
-        .eq('reviewer_id', user.id)
-        .eq('reviewee_id', id)
-        .is('listing_id', null)
-        .maybeSingle()
-      canReview = !existingReview
-    }
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -137,13 +113,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
               )}
 
               {!isOwnProfile && user && (
-                <Link
-                  href={`/poruke?new=${id}`}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  Pošalji poruku
-                </Link>
+                <p className="text-xs text-center text-gray-500">Kontakt se otvara kroz oglas nakon potvrđenog angažmana.</p>
               )}
               {isOwnProfile && (
                 <Link
@@ -195,7 +165,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
               </div>
             )}
 
-            {canReview && <ReviewForm revieweeId={id} />}
 
             {/* Reviews */}
             {reviews && reviews.length > 0 && (
@@ -221,6 +190,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                         <p className="text-xs text-gray-300 ml-9 mt-1">
                           {new Date(review.created_at).toLocaleDateString('sr-RS')}
                         </p>
+                        {user && <Link href={`/podrska?review=${review.id}`} className="text-xs text-blue-600 ml-9 mt-1 inline-block">Prijavi ocenu</Link>}
                       </div>
                     )
                   })}
@@ -228,7 +198,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
               </div>
             )}
 
-            {(!listings || listings.length === 0) && (!reviews || reviews.length === 0) && !profile.bio && !canReview && (
+            {(!listings || listings.length === 0) && (!reviews || reviews.length === 0) && !profile.bio && (
               <div className="bg-white rounded-xl border border-gray-100 p-10 text-center">
                 <p className="text-gray-400">Profil je tek kreiran</p>
               </div>

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import ApplyButton from '@/components/listings/ApplyButton'
+import JobCompletion from '@/components/listings/JobCompletion'
 import { MapPin, Calendar, Users, Star, Clock, ArrowLeft, CheckCircle, Eye, MessageSquare, X, Check } from 'lucide-react'
 import { safeName, safeInitial } from '@/lib/safe-name'
 import { revalidatePath } from 'next/cache'
@@ -57,7 +58,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const { data: existingApplication } = user
     ? await supabase
         .from('applications')
-        .select('id, status')
+        .select('id, status, applicant_id, owner_finished_at, applicant_finished_at, completed_at')
         .eq('listing_id', id)
         .eq('applicant_id', user.id)
         .single()
@@ -83,10 +84,22 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const { data: applicants } = isOwner
     ? await supabase
         .from('applications')
-        .select('id, message, proposed_price, status, created_at, applicant:profiles!applicant_id(id, name, avatar_url, rating_avg, rating_count, is_verified, phone)')
+        .select('id, applicant_id, message, proposed_price, status, created_at, owner_finished_at, applicant_finished_at, completed_at, applicant:profiles!applicant_id(id, name, avatar_url, rating_avg, rating_count, is_verified, phone)')
         .eq('listing_id', id)
         .order('created_at', { ascending: false })
     : { data: null }
+
+  const assignedApplication = isOwner
+    ? applicants?.find(app => app.status === 'accepted')
+    : existingApplication?.status === 'accepted' ? existingApplication : null
+  const revieweeId = assignedApplication
+    ? (isOwner ? assignedApplication.applicant_id : listing.user_id)
+    : null
+  const { data: myJobReviews } = user
+    ? await supabase.from('reviews').select('reviewee_id')
+        .eq('listing_id', id).eq('reviewer_id', user.id)
+    : { data: null }
+  const reviewedUserIds = new Set((myJobReviews || []).map(review => review.reviewee_id))
 
   async function rejectApplication(formData: FormData) {
     'use server'
@@ -109,7 +122,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
       return
     }
 
-    await supabase.from('applications').update({ status: 'rejected' }).eq('id', applicationId)
+    await supabase.rpc('reject_application', { p_application_id: applicationId })
     revalidatePath(`/oglasi/${id}`)
   }
 
@@ -123,6 +136,17 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     if (!currentUser) redirect('/login')
 
     await supabase.rpc('select_application_candidate', { p_application_id: applicationId })
+    revalidatePath(`/oglasi/${id}`)
+  }
+
+  async function acceptOfferApplicant(formData: FormData) {
+    'use server'
+    const applicationId = formData.get('applicationId') as string
+    if (!applicationId) return
+    const supabase = await createClient()
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (!currentUser) redirect('/login')
+    await supabase.rpc('accept_offer_application', { p_application_id: applicationId })
     revalidatePath(`/oglasi/${id}`)
   }
 
@@ -233,6 +257,12 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                         ⭐ Istaknut
                       </span>
                     )}
+                    {listing.engagement_mode && listing.engagement_mode !== 'short_job' && (
+                      <span className="text-xs px-3 py-1 rounded-full bg-blue-50 text-blue-700">
+                        {listing.engagement_mode === 'multi_day' ? 'Više dana' : listing.engagement_mode === 'fixed_term' ? 'Na određeno' : 'Stalno zaposlenje'}
+                      </span>
+                    )}
+                    {listing.foreign_workers_welcome && <span className="text-xs px-3 py-1 rounded-full bg-teal-50 text-teal-700">Otvoreno za strane radnike</span>}
                     {category && <span className="text-lg">{category.icon}</span>}
                   </div>
                   <h1 className="text-xl font-bold text-gray-900">{listing.title}</h1>
@@ -403,6 +433,19 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
+        {user && assignedApplication && revieweeId && (!isOfferType || !isOwner) && (
+          <JobCompletion
+            applicationId={assignedApplication.id}
+            listingId={id}
+            revieweeId={revieweeId}
+            isOwner={isOwner}
+            ownerFinishedAt={assignedApplication.owner_finished_at}
+            applicantFinishedAt={assignedApplication.applicant_finished_at}
+            completedAt={assignedApplication.completed_at}
+            hasReviewed={reviewedUserIds.has(revieweeId)}
+          />
+        )}
+
         {/* Applicants (owner only) */}
         {isOwner && (
           <div className="mt-6 bg-white rounded-xl border border-gray-100 p-6">
@@ -453,17 +496,15 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                           <div className="flex items-center gap-2 flex-wrap">
                             {app.status === 'pending' && (
                               <>
-                                {!isOfferType && (
-                                  <form action={selectApplicant}>
-                                    <input type="hidden" name="applicationId" value={app.id} />
-                                    <button
-                                      type="submit"
-                                      className="flex items-center gap-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg transition-colors"
-                                    >
-                                      <Check className="w-3.5 h-3.5" /> Prihvati
-                                    </button>
-                                  </form>
-                                )}
+                                <form action={isOfferType ? acceptOfferApplicant : selectApplicant}>
+                                  <input type="hidden" name="applicationId" value={app.id} />
+                                  <button
+                                    type="submit"
+                                    className="flex items-center gap-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg transition-colors"
+                                  >
+                                    <Check className="w-3.5 h-3.5" /> {isOfferType ? 'Prihvati klijenta' : 'Prihvati'}
+                                  </button>
+                                </form>
                                 <form action={rejectApplication}>
                                   <input type="hidden" name="applicationId" value={app.id} />
                                   <button
@@ -511,13 +552,23 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                                 Povučeno
                               </span>
                             )}
-                            <Link
-                              href={`/poruke?new=${applicant?.id}`}
-                              className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors ml-auto"
-                            >
-                              <MessageSquare className="w-3.5 h-3.5" /> Poruka
-                            </Link>
+                            {app.status === 'accepted' && (
+                              <Link
+                                href={`/poruke?listing=${id}&applicant=${app.applicant_id}`}
+                                className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors ml-auto"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" /> Razgovor
+                              </Link>
+                            )}
                           </div>
+                          {isOfferType && app.status === 'accepted' && (
+                            <JobCompletion applicationId={app.id} listingId={id}
+                              revieweeId={app.applicant_id} isOwner={true}
+                              ownerFinishedAt={app.owner_finished_at}
+                              applicantFinishedAt={app.applicant_finished_at}
+                              completedAt={app.completed_at}
+                              hasReviewed={reviewedUserIds.has(app.applicant_id)} />
+                          )}
                         </div>
                       </div>
                     </div>

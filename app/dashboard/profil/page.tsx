@@ -36,6 +36,7 @@ export default function ProfileEditPage() {
   const [languages, setLanguages] = useState<string[]>(['Srpski'])
   const [userType, setUserType] = useState<'individual' | 'company' | 'agency'>('individual')
   const [pib, setPib] = useState('')
+  const [isForeignWorker, setIsForeignWorker] = useState(false)
   const [typeChangeRequested, setTypeChangeRequested] = useState(false)
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -64,6 +65,7 @@ export default function ProfileEditPage() {
         setLanguages(p.languages || ['Srpski'])
         setUserType(p.type || 'individual')
         setPib(p.pib || '')
+        setIsForeignWorker(p.is_foreign_worker || false)
         setAvatarUrl(p.avatar_url || null)
       }
       setLoading(false)
@@ -157,6 +159,7 @@ export default function ProfileEditPage() {
       experience_years: experience ? parseInt(experience) : null,
       available,
       languages,
+      is_foreign_worker: userType === 'individual' && isForeignWorker,
       type: userType,
       pib: (userType === 'company' || userType === 'agency') ? (pib || null) : null,
       is_approved: needsApproval ? false : (profile?.is_approved ?? true),
@@ -310,6 +313,12 @@ export default function ProfileEditPage() {
                   placeholder="0"
                 />
               </div>
+            )}
+            {userType === 'individual' && (
+              <label className="flex items-start gap-2 text-sm text-gray-700">
+                <input type="checkbox" checked={isForeignWorker} onChange={e => setIsForeignWorker(e.target.checked)} />
+                <span>Prikaži me u filteru „strani radnik“ (samostalna oznaka; nije potvrda prava na rad)</span>
+              </label>
             )}
           </div>
 

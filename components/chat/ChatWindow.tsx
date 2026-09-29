@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Send, AlertTriangle, Star } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { safeInitial, safeName } from '@/lib/safe-name'
 import type { Message, Profile } from '@/types'
 
@@ -26,12 +27,14 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const supabase = useMemo(() => createClient(), [])
+  const router = useRouter()
 
   const conv = conversations.find(c => c.id === conversationId)
   const other = conv?.participant_1_id === currentUserId ? conv?.user2 : conv?.user1
-  const isLocked = !!conv?.locked
+  const isLocked = !conv || !!conv.locked
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -76,20 +79,27 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
     if (!newMessage.trim() || sending || isLocked) return
 
     setSending(true)
+    setSendError('')
     const content = newMessage.trim()
     setNewMessage('')
 
-    await supabase.from('messages').insert({
+    const { error } = await supabase.from('messages').insert({
       conversation_id: conversationId,
       sender_id: currentUserId,
       content,
     })
 
-    // Update conversation preview/timestamp so it sorts to the top of the list
-    await supabase
-      .from('conversations')
-      .update({ last_message_at: new Date().toISOString(), last_message_preview: content.slice(0, 140) })
-      .eq('id', conversationId)
+    if (error) {
+      setNewMessage(content)
+      setSendError('Poruka nije poslata. Razgovor je možda zatvoren; osveži stranicu.')
+      router.refresh()
+    } else {
+      // Update conversation preview/timestamp so it sorts to the top of the list
+      await supabase
+        .from('conversations')
+        .update({ last_message_at: new Date().toISOString(), last_message_preview: content.slice(0, 140) })
+        .eq('id', conversationId)
+    }
 
     setSending(false)
   }
@@ -140,7 +150,7 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
         <div className="mx-4 mt-3 flex items-start gap-2 bg-gray-100 border border-gray-200 rounded-lg p-2.5">
           <AlertTriangle className="w-3.5 h-3.5 text-gray-500 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-gray-600">
-            Ovaj razgovor je zaključan — vlasnik oglasa je izabrao drugog kandidata. Istorija poruka ostaje vidljiva.
+            Razgovor je zatvoren: poruke su dozvoljene samo tokom potvrđenog angažmana, do označavanja posla kao završenog. Istorija ostaje vidljiva.
           </p>
         </div>
       ) : (
@@ -207,7 +217,9 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
           Razgovor je zaključan, nije moguće slati nove poruke.
         </div>
       ) : (
-        <form onSubmit={sendMessage} className="flex items-center gap-3 p-4 border-t border-gray-100">
+        <form onSubmit={sendMessage} className="p-4 border-t border-gray-100">
+          {sendError && <p role="alert" className="text-xs text-red-600 mb-2">{sendError}</p>}
+          <div className="flex items-center gap-3">
           <input
             type="text"
             value={newMessage}
@@ -223,6 +235,7 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
           >
             <Send className="w-4 h-4" />
           </button>
+          </div>
         </form>
       )}
     </div>

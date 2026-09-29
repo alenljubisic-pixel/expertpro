@@ -21,6 +21,7 @@ export interface Profile {
   is_approved: boolean
   is_active: boolean
   is_admin?: boolean
+  is_foreign_worker?: boolean
   rating_avg: number
   rating_count: number
   completed_jobs: number
@@ -53,6 +54,8 @@ export interface Listing {
   currency: string
   available_from?: string
   available_to?: string
+  engagement_mode?: 'short_job' | 'multi_day' | 'fixed_term' | 'permanent'
+  foreign_workers_welcome?: boolean
   status: ListingStatus
   is_featured: boolean
   is_urgent: boolean

@@ -15,7 +15,7 @@ const SKILLS = [
 export default async function WorkersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ city?: string; skill?: string; q?: string }>
+  searchParams: Promise<{ city?: string; skill?: string; q?: string; foreign?: string }>
 }) {
   const sp = await searchParams
   const supabase = await createClient()
@@ -30,6 +30,7 @@ export default async function WorkersPage({
   if (sp.city) query = query.eq('city', sp.city)
   if (sp.skill) query = query.contains('skills', [sp.skill])
   if (sp.q) query = query.ilike('name', `%${sp.q}%`)
+  if (sp.foreign === 'yes') query = query.eq('is_foreign_worker', true)
 
   const { data: workers, count } = await query.limit(24)
 
@@ -80,6 +81,11 @@ export default async function WorkersPage({
                 </div>
               </div>
 
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" name="foreign" value="yes" defaultChecked={sp.foreign === 'yes'} />
+                Strani radnik
+              </label>
+
               <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
                 Filtriraj
               </button>
@@ -122,6 +128,7 @@ export default async function WorkersPage({
                               {worker.rating_avg.toFixed(1)}
                             </span>
                           )}
+                          {worker.is_foreign_worker && <span className="text-teal-700">Strani radnik · samostalna oznaka</span>}
                         </div>
                       </div>
                     </div>

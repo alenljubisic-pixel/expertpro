@@ -7,9 +7,10 @@ import { Star, Loader2 } from 'lucide-react'
 
 interface Props {
   revieweeId: string
+  listingId: string
 }
 
-export default function ReviewForm({ revieweeId }: Props) {
+export default function ReviewForm({ revieweeId, listingId }: Props) {
   const [rating, setRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(0)
   const [comment, setComment] = useState('')
@@ -37,6 +38,7 @@ export default function ReviewForm({ revieweeId }: Props) {
     const { error: insertError } = await supabase.from('reviews').insert({
       reviewer_id: user.id,
       reviewee_id: revieweeId,
+      listing_id: listingId,
       rating,
       comment: comment.trim() || null,
     })
@@ -44,10 +46,10 @@ export default function ReviewForm({ revieweeId }: Props) {
     setSubmitting(false)
 
     if (insertError) {
-      if (insertError.message?.includes('razmenio')) {
-        setError('Možeš oceniti samo korisnika sa kojim si već razmenio/la poruke.')
+      if (insertError.message?.includes('obostrano')) {
+        setError('Ocena je moguća tek kada obe strane potvrde završetak posla.')
       } else if (insertError.code === '23505') {
-        setError('Već si ocenio/la ovog korisnika.')
+        setError('Već si ocenio/la saradnju na ovom poslu.')
       } else {
         setError('Došlo je do greške, pokušaj ponovo.')
       }
@@ -68,7 +70,7 @@ export default function ReviewForm({ revieweeId }: Props) {
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-5">
-      <h3 className="font-semibold text-gray-900 mb-3 text-sm">Oceni ovog korisnika</h3>
+      <h3 className="font-semibold text-gray-900 mb-3 text-sm">Oceni saradnju na ovom poslu</h3>
 
       <div className="flex gap-1 mb-3">
         {[1, 2, 3, 4, 5].map(n => (

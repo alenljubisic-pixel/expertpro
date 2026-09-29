@@ -91,6 +91,8 @@ export default function Navbar() {
             >
               🚨 Hitno
             </Link>
+            <Link href="/oglasi?type=request" className="text-sm font-medium text-blue-600 hover:text-blue-700">Berza poslova</Link>
+            <Link href="/oglasi?type=request&mode=long" className="text-sm font-medium text-gray-600 hover:text-gray-900">Dugoročno</Link>
             <Link
               href="/radnici"
               className={`text-sm font-medium transition-colors ${pathname.startsWith('/radnici') ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
@@ -187,6 +189,7 @@ export default function Navbar() {
                           </span>
                         )}
                       </Link>
+                      <Link href="/podrska" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>Žalbe i podrška</Link>
                       {profile?.is_admin && (
                         <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>
                           <Settings className="w-4 h-4" /> Admin panel
@@ -230,6 +233,8 @@ export default function Navbar() {
         <div className="md:hidden border-t border-gray-200 bg-white px-4 py-4 space-y-3">
           <Link href="/oglasi" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Oglasi</Link>
           <Link href="/oglasi?type=urgent" className="block text-sm font-medium text-red-600 py-2" onClick={() => setMenuOpen(false)}>🚨 Hitno</Link>
+          <Link href="/oglasi?type=request" className="block text-sm font-medium text-blue-600 py-2" onClick={() => setMenuOpen(false)}>Berza poslova</Link>
+          <Link href="/oglasi?type=request&mode=long" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Dugoročni poslovi</Link>
           <Link href="/radnici" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Radnici</Link>
           <Link href="/blog" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Blog</Link>
           <Link href="/faq" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>FAQ</Link>
@@ -245,6 +250,7 @@ export default function Navbar() {
                 Obaveštenja
                 {notifCount > 0 && <span className="bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">{notifCount}</span>}
               </Link>
+              <Link href="/podrska" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Žalbe i podrška</Link>
               <Link href="/dashboard" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Moj profil</Link>
               <button onClick={handleSignOut} className="block w-full text-left text-sm font-medium text-red-600 py-2">Odjavi se</button>
             </>

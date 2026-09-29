@@ -36,6 +36,8 @@ export default async function ListingsPage({
     category?: string
     q?: string
     page?: string
+    mode?: string
+    foreign?: string
   }>
 }) {
   const sp = await searchParams
@@ -53,6 +55,9 @@ export default async function ListingsPage({
     .order('created_at', { ascending: false })
 
   if (sp.type) query = query.eq('type', sp.type)
+  if (sp.mode === 'long') query = query.in('engagement_mode', ['multi_day', 'fixed_term', 'permanent'])
+  else if (['short_job', 'multi_day', 'fixed_term', 'permanent'].includes(sp.mode || '')) query = query.eq('engagement_mode', sp.mode!)
+  if (sp.foreign === 'yes') query = query.eq('foreign_workers_welcome', true)
   if (sp.city) query = query.eq('city', sp.city)
   // Gold listings can also carry a secondary ("srodna") category — match either.
   if (sp.category) query = query.or(`category_slug.eq.${sp.category},secondary_category_slug.eq.${sp.category}`)
@@ -62,7 +67,7 @@ export default async function ListingsPage({
   const totalPages = Math.ceil((count || 0) / pageSize)
 
   const isUrgent = sp.type === 'urgent'
-  const hasFilters = !!(sp.type || sp.city || sp.category || sp.q)
+  const hasFilters = !!(sp.type || sp.city || sp.category || sp.q || sp.mode || sp.foreign)
   const displayListings = listings || []
 
   return (
@@ -78,6 +83,14 @@ export default async function ListingsPage({
               <h1 className="font-bold text-lg">Hitna berza</h1>
               <p className="text-red-100 text-sm">Hitni poslovi — radnici se javljaju odmah</p>
             </div>
+          </div>
+        </div>
+      )}
+      {sp.type === 'request' && (
+        <div className="bg-blue-600 text-white py-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 className="font-bold text-lg">{sp.mode === 'long' ? 'Dugoročni poslovi' : 'Berza aktivnih poslova'}</h1>
+            <p className="text-blue-100 text-sm">Samo trenutno otvoreni oglasi koji čekaju kandidata.</p>
           </div>
         </div>
       )}
@@ -124,6 +137,23 @@ export default async function ListingsPage({
                   ))}
                 </div>
               </div>
+
+              <div>
+                <label htmlFor="engagement-mode" className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Trajanje angažmana</label>
+                <select id="engagement-mode" name="mode" defaultValue={sp.mode || ''}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white">
+                  <option value="">Sva trajanja</option>
+                  <option value="long">Svi dugoročni</option>
+                  <option value="short_job">Jednokratan posao</option>
+                  <option value="multi_day">Više dana</option>
+                  <option value="fixed_term">Više meseci / određeno</option>
+                  <option value="permanent">Stalno zaposlenje</option>
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" name="foreign" value="yes" defaultChecked={sp.foreign === 'yes'} />
+                Otvoreno za strane radnike
+              </label>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Grad</label>
@@ -228,6 +258,12 @@ export default async function ListingsPage({
                                 🏆 Gold
                               </span>
                             )}
+                            {listing.engagement_mode && listing.engagement_mode !== 'short_job' && (
+                              <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700">
+                                {listing.engagement_mode === 'multi_day' ? 'Više dana' : listing.engagement_mode === 'fixed_term' ? 'Na određeno' : 'Stalno'}
+                              </span>
+                            )}
+                            {listing.foreign_workers_welcome && <span className="text-xs px-2 py-1 rounded-full bg-teal-50 text-teal-700">Strani radnici</span>}
                             {!listing.is_gold && listing.is_featured && (
                               <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-blue-200 bg-blue-50 text-blue-700 font-medium">
                                 ⭐ Istaknut
