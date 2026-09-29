@@ -39,6 +39,23 @@ async function togglePause(formData: FormData) {
   revalidatePath('/dashboard/oglasi')
 }
 
+async function refreshRequest(formData: FormData) {
+  'use server'
+  const listingId = formData.get('listingId') as string
+  if (!listingId) return
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  const { error } = await supabase.from('listings')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', listingId)
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .in('type', ['request', 'urgent'])
+  if (error) redirect(`/dashboard/oglasi?error=${encodeURIComponent(error.message)}`)
+  revalidatePath('/dashboard/oglasi')
+}
+
 async function renewListing(formData: FormData) {
   'use server'
   const listingId = formData.get('listingId') as string
@@ -141,6 +158,9 @@ export default async function MyListingsPage({
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="text-xs text-gray-400">{typeLabel[listing.type]}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}`}>{st.label}</span>
+                      {listing.status === 'paused' && listing.inactivity_paused && (
+                        <span className="text-xs text-amber-700">Bez aktivnosti — možeš ponovo aktivirati</span>
+                      )}
                       {listing.status === 'active' && listing.expires_at && (
                         <span className="text-xs text-gray-300">do {formatDate(listing.expires_at)}</span>
                       )}
@@ -203,13 +223,25 @@ export default async function MyListingsPage({
                       </form>
                     )}
 
+                    {listing.status === 'active' && listing.type !== 'offer' && (
+                      <form action={refreshRequest}>
+                        <input type="hidden" name="listingId" value={listing.id} />
+                        <button type="submit"
+                          className="p-2 text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50 transition-colors"
+                          aria-label="Potvrdi da je oglas i dalje aktuelan"
+                          title="Potvrdi da je oglas i dalje aktuelan">
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      </form>
+                    )}
+
                     {(listing.status === 'expired' || listing.status === 'cancelled') && (
                       <form action={renewListing}>
                         <input type="hidden" name="listingId" value={listing.id} />
                         <button
                           type="submit"
                           className="p-2 text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50 transition-colors"
-                          title="Obnovi oglas (30 dana)"
+                          title={listing.type === 'offer' ? 'Obnovi oglas (30 dana)' : 'Ponovo otvori zahtev'}
                         >
                           <RotateCcw className="w-4 h-4" />
                         </button>

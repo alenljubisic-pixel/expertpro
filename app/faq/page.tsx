@@ -66,7 +66,7 @@ const FAQ_SECTIONS = [
       },
       {
         q: 'Koliko dugo traje oglas?',
-        a: 'Standardni oglas traje 30 dana, nakon čega automatski ističe. Možete ga produžiti ili ukloniti ranije ako ste pronašli radnika. Hitni oglasi su posebno označeni i istaknuti.',
+        a: 'Oglasi „Tražim radnika“ i „Hitno“ ostaju otvoreni dok ne dodelite posao. Ako 7 dana nema aktivnosti, dobijate podsetnik; nakon još 2 dana oglas se pauzira i možete ga ponovo aktivirati. Oglas „Nudim uslugu“ traje 30 dana i može se obnoviti.',
       },
       {
         q: 'Kako kontaktiram radnika ili poslodavca?',
