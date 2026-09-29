@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Download, X, Share, PlusSquare } from 'lucide-react'
+import { BellRing, X, Share, PlusSquare } from 'lucide-react'
 
 const DISMISS_KEY = 'ep_install_prompt_dismissed_at'
 const DISMISS_DAYS = 14
@@ -81,29 +81,30 @@ export default function InstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 bg-white border border-gray-200 shadow-lg rounded-xl p-4 flex gap-3">
-      <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-        <Download className="w-5 h-5 text-white" />
+    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 bg-white border-2 border-red-400 shadow-xl rounded-xl p-4 flex gap-3">
+      <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center flex-shrink-0 animate-pulse">
+        <BellRing className="w-5 h-5 text-white" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900">Instaliraj ExpertPro</p>
+        <p className="text-sm font-bold text-gray-900">⚠️ Ne propusti poruke i poslove!</p>
         {isIOS ? (
-          <p className="text-xs text-gray-500 mt-1 flex flex-wrap items-center gap-1">
-            Dodaj na početni ekran: dodirni <Share className="w-3.5 h-3.5 inline" /> (Deli) pa
-            <PlusSquare className="w-3.5 h-3.5 inline" /> &quot;Dodaj na početni ekran&quot; — dobijaš trenutna obaveštenja o novim poslovima.
+          <p className="text-xs text-gray-600 mt-1 flex flex-wrap items-center gap-1">
+            Bez instalacije <b>nećeš dobijati obaveštenja</b> kad sajt nije otvoren — dodirni{' '}
+            <Share className="w-3.5 h-3.5 inline" /> (Deli), pa{' '}
+            <PlusSquare className="w-3.5 h-3.5 inline" /> &quot;Dodaj na početni ekran&quot; da ih ne propuštaš.
           </p>
         ) : (
-          <p className="text-xs text-gray-500 mt-1">
-            Dobijaš trenutna obaveštenja o novim porukama i hitnim poslovima, čak i kad sajt nije otvoren.
+          <p className="text-xs text-gray-600 mt-1">
+            Da bi obaveštenja o novim porukama i hitnim poslovima stizala <b>odmah na telefon</b>, dodaj aplikaciju na početni ekran. Bez toga ih vidiš tek kad sledeći put sam otvoriš sajt — dotad ih neko drugi može preuzeti.
           </p>
         )}
         <div className="flex gap-2 mt-3">
           {!isIOS && (
             <button
               onClick={handleInstall}
-              className="text-xs font-medium bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700"
+              className="text-xs font-semibold bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600"
             >
-              Instaliraj
+              Instaliraj sad
             </button>
           )}
           <button
