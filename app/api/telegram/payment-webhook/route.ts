@@ -23,9 +23,9 @@ export async function POST(request: Request) {
   const telegramUserId = process.env.TELEGRAM_ADMIN_USER_ID
   const chatId = process.env.TELEGRAM_PAYMENT_CHAT_ID
   const adminProfileId = process.env.TELEGRAM_ADMIN_PROFILE_ID
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const serviceKey = process.env.SUPABASE_TELEGRAM_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  if (!secret || !telegramUserId || !chatId || !adminProfileId || !serviceKey || !supabaseUrl || !process.env.TELEGRAM_BOT_TOKEN) {
+  if (!secret || !telegramUserId || !chatId || !adminProfileId || !supabaseUrl || !process.env.TELEGRAM_BOT_TOKEN) {
     return new Response('Bot is not configured', { status: 503 })
   }
   if (!matchesSecret(request.headers.get('x-telegram-bot-api-secret-token'), secret)) {
@@ -47,6 +47,16 @@ export async function POST(request: Request) {
       String(callback.message?.chat?.id) !== chatId ||
       !['private', 'group', 'supergroup'].includes(callback.message?.chat?.type || '')) {
     await answer('Nemaš pravo na odobravanje.', true)
+    return Response.json({ ok: true })
+  }
+
+  if (callback.data === 'expertpro:test') {
+    await answer('Test uspešan. Nijedna uplata nije odobrena i nijedan kredit nije dodeljen.', true)
+    return Response.json({ ok: true })
+  }
+
+  if (!serviceKey || process.env.TELEGRAM_PAYMENT_APPROVAL_ENABLED !== 'true') {
+    await answer('Odobravanje uplata još nije podešeno. Proveri admin panel.', true)
     return Response.json({ ok: true })
   }
 

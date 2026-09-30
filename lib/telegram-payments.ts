@@ -40,6 +40,7 @@ export async function telegramApi(method: string, body: Record<string, unknown>)
 }
 
 export async function sendPaymentReview(notice: ReviewNotice): Promise<boolean> {
+  if (process.env.TELEGRAM_PAYMENT_APPROVAL_ENABLED !== 'true') return false
   const chatId = process.env.TELEGRAM_PAYMENT_CHAT_ID
   if (!chatId || !process.env.TELEGRAM_BOT_TOKEN) return false
   const callback = [notice.kind === 'credit' ? 'c' : 'p', notice.orderId, notice.reference, notice.amount].join(':')
