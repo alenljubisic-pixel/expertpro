@@ -112,6 +112,12 @@ export default async function AdminPaymentsPage({
 
   const { data: creditOrders } = await creditQuery.limit(200)
 
+  const paymentUserIds = Array.from(new Set([...(orders || []), ...(creditOrders || [])].map(o => o.user_id)))
+  const { data: paymentContacts } = paymentUserIds.length
+    ? await supabase.rpc('admin_profile_contacts', { p_user_ids: paymentUserIds })
+    : { data: [] }
+  const paymentContactById = new Map<string, { email: string | null; legal_name: string | null }>((paymentContacts || []).map((c: { id: string; email: string | null; legal_name: string | null }) => [c.id, c]))
+
   // Client-side match on the "šifra"/poziv na broj, the payer's name, or
   // their email — this is what an admin has in hand while going through a
   // bank statement with many pending payments, so it needs to be findable
@@ -120,7 +126,8 @@ export default async function AdminPaymentsPage({
     !q ||
     o.reference_code?.toLowerCase().includes(q) ||
     o.profiles?.name?.toLowerCase().includes(q) ||
-    o.profiles?.email?.toLowerCase().includes(q)
+    paymentContactById.get(o.user_id)?.email?.toLowerCase().includes(q) ||
+    paymentContactById.get(o.user_id)?.legal_name?.toLowerCase().includes(q)
 
   const filteredOrders = (orders || []).filter(matchesQuery)
   const filteredCreditOrders = (creditOrders || []).filter(matchesQuery)

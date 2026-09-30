@@ -18,10 +18,11 @@ export default async function AdminUserDetailPage({
   const { data: admin } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single()
   if (!admin?.is_admin) redirect('/dashboard')
 
-  const [{ data: profile }, { data: stats }, { data: jobs }] = await Promise.all([
-    supabase.from('profiles').select('id,name,email,phone,type,city,is_verified,is_approved,is_active,credit_balance,created_at').eq('id', id).single(),
+  const [{ data: profile }, { data: stats }, { data: jobs }, { data: contacts }] = await Promise.all([
+    supabase.from('profiles').select('id,name,username,type,city,is_verified,is_approved,is_active,credit_balance,created_at').eq('id', id).single(),
     supabase.rpc('admin_get_user_stats_monthly', { p_user_ids: [id], p_month: `${month}-01` }),
     supabase.rpc('admin_user_job_history_monthly', { p_user_id: id, p_month: `${month}-01` }),
+    supabase.rpc('admin_profile_contacts', { p_user_ids: [id] }),
   ])
   if (!profile) notFound()
   const s = stats?.[0]
@@ -30,8 +31,9 @@ export default async function AdminUserDetailPage({
     <Navbar />
     <main className="mx-auto max-w-4xl px-4 py-8">
       <Link href={`/admin/users?month=${month}`} className="text-sm text-blue-600">← Svi korisnici</Link>
-      <h1 className="mt-4 text-2xl font-bold text-gray-900">{profile.name || 'Korisnik'}</h1>
-      <p className="mt-1 text-sm text-gray-600">{profile.type} · {profile.city || 'Grad nije unet'} · {profile.email || 'Email nije unet'} · {profile.phone || 'Telefon nije unet'}</p>
+      <h1 className="mt-4 text-2xl font-bold text-gray-900">{profile.type === 'individual' ? profile.username : profile.name}</h1>
+      {profile.type === 'individual' && <p className="mt-1 text-sm text-gray-600">Ime za administraciju: {contacts?.[0]?.legal_name || 'Nije uneto'}</p>}
+      <p className="mt-1 text-sm text-gray-600">{profile.type} · {profile.city || 'Grad nije unet'} · {contacts?.[0]?.email || 'Email nije unet'} · {contacts?.[0]?.phone || 'Telefon nije unet'}</p>
       <p className="mt-1 text-sm text-gray-500">{profile.is_verified ? 'Verifikovan' : 'Nije verifikovan'} · {profile.is_approved ? 'Odobren' : 'Čeka odobrenje'} · {profile.is_active ? 'Aktivan' : 'Neaktivan'} · {profile.credit_balance ?? 0} kredita trenutno</p>
       <form method="get" className="mt-5 flex items-center gap-3 text-sm">
         <label htmlFor="detail-month">Mesec</label>

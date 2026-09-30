@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
   for (let offset = 0; ; offset += 100) {
     const { data: users, error } = await supabase.from('profiles')
-      .select('id,name,email,type,city,is_verified,is_approved,is_active,credit_balance')
+      .select('id,name,username,type,city,is_verified,is_approved,is_active,credit_balance')
       .order('id').range(offset, offset + 99)
     if (error) return NextResponse.json({ error: 'Izvoz nije uspeo.' }, { status: 500 })
     if (!users?.length) break
@@ -46,11 +46,15 @@ export async function GET(request: NextRequest) {
     })
     if (statsError) return NextResponse.json({ error: 'Izvoz statistike nije uspeo.' }, { status: 500 })
     const byId = new Map<string, MonthlyStats>((stats || []).map((s: MonthlyStats) => [s.id, s]))
+    const { data: contacts, error: contactError } = await supabase.rpc('admin_profile_contacts', { p_user_ids: users.map(u => u.id) })
+    if (contactError) return NextResponse.json({ error: 'Izvoz kontakata nije uspeo.' }, { status: 500 })
+    const contactById = new Map<string, { legal_name: string | null; email: string | null }>((contacts || []).map((c: { id: string; legal_name: string | null; email: string | null }) => [c.id, c]))
 
     for (const u of users) {
       const s = byId.get(u.id)
+      const contact = contactById.get(u.id)
       rows.push([
-        u.id, u.name ?? '', u.email ?? '', u.type ?? '', u.city ?? '',
+        u.id, u.type === 'individual' ? (contact?.legal_name ?? u.username ?? '') : (u.name ?? ''), contact?.email ?? '', u.type ?? '', u.city ?? '',
         String(!!u.is_verified), String(!!u.is_approved), String(!!u.is_active),
         String(u.credit_balance ?? 0), String(s?.listings_posted ?? 0),
         String(s?.completed_as_worker ?? 0), String(s?.completed_as_client ?? 0),

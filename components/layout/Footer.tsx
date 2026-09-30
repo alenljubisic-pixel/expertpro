@@ -26,7 +26,7 @@ export default function Footer() {
               <li><Link href="/oglasi?type=request" className="hover:text-white transition-colors">Tražim radnika</Link></li>
               <li><Link href="/oglasi?type=offer" className="hover:text-white transition-colors">Nudim uslugu</Link></li>
               <li><Link href="/oglasi?type=urgent" className="hover:text-white transition-colors">🚨 Hitna berza</Link></li>
-              <li><Link href="/radnici" className="hover:text-white transition-colors">Profili radnika</Link></li>
+              <li><Link href="/radnici" className="hover:text-white transition-colors">Pružaoci usluga</Link></li>
             </ul>
           </div>
 

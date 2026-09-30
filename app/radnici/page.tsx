@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { MapPin, Star, CheckCircle } from 'lucide-react'
 import { SERBIAN_CITIES } from '@/types'
-import { safeName, safeInitial } from '@/lib/safe-name'
+import { publicName, publicInitial } from '@/lib/safe-name'
 
 const SKILLS = [
   'Građevina', 'Čišćenje', 'Transport', 'Ugostiteljstvo',
@@ -20,31 +20,31 @@ export default async function WorkersPage({
   const sp = await searchParams
   const supabase = await createClient()
 
-  let query = supabase
-    .from('profiles')
-    .select('*', { count: 'exact' })
-    .eq('type', 'individual')
-    .eq('is_active', true)
-    .order('rating_avg', { ascending: false })
-
-  if (sp.city) query = query.eq('city', sp.city)
-  if (sp.skill) query = query.contains('skills', [sp.skill])
-  if (sp.q) query = query.ilike('name', `%${sp.q}%`)
-  if (sp.foreign === 'yes') query = query.eq('is_foreign_worker', true)
-
-  const { data: workers, count } = await query.limit(24)
+  const { data: workers } = await supabase.rpc('search_workers', {
+    p_city: sp.city || null,
+    p_skill: sp.skill || null,
+    p_query: sp.q?.trim().slice(0, 80) || null,
+    p_foreign: sp.foreign === 'yes',
+    p_limit: 24,
+    p_offset: 0,
+  })
+  const count = workers?.[0]?.total_count || 0
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Pružaoci usluga</h1>
+          <p className="text-sm text-gray-500 mt-1">Prikazani su samo korisnici sa aktivnim oglasom „Nudim uslugu“. Dogovor i poruke ostaju vezani za oglas.</p>
+        </div>
         <div className="flex flex-col md:flex-row gap-8">
           {/* Filters */}
           <aside className="w-full md:w-64 flex-shrink-0">
             <form method="GET" className="bg-white rounded-xl border border-gray-100 p-5 space-y-5 sticky top-20">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ime</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Veština ili korisničko ime</label>
                 <input
                   name="q"
                   defaultValue={sp.q}
@@ -95,15 +95,15 @@ export default async function WorkersPage({
 
           {/* Workers grid */}
           <div className="flex-1">
-            <p className="text-sm text-gray-500 mb-5">{count || 0} radnika</p>
+            <p className="text-sm text-gray-500 mb-5">{count} pružalaca usluga</p>
 
             {!workers || workers.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-10 text-center">
-                <p className="text-gray-400">Nema radnika za ovu pretragu</p>
+                <p className="text-gray-400">Nema aktivnih ponuda usluga za ovu pretragu</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {workers.map((worker) => (
+                {workers.map((worker: { id: string; username: string | null; city: string | null; bio: string | null; skills: string[] | null; avatar_url: string | null; is_verified: boolean; rating_avg: number | null; available: boolean; is_foreign_worker: boolean; total_count: number }) => (
                   <Link
                     key={worker.id}
                     href={`/profil/${worker.id}`}
@@ -111,10 +111,10 @@ export default async function WorkersPage({
                   >
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-lg font-bold text-blue-600 flex-shrink-0">
-                        {safeInitial(worker.name)}
+                        {publicInitial({ id: worker.id, username: worker.username, type: 'individual' })}
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900 text-sm">{safeName(worker.name)}</p>
+                        <p className="font-semibold text-gray-900 text-sm">{publicName({ id: worker.id, username: worker.username, type: 'individual' })}</p>
                         <div className="flex items-center gap-1.5 text-xs text-gray-400">
                           {worker.is_verified && (
                             <span className="flex items-center gap-0.5 text-green-600">
@@ -122,7 +122,7 @@ export default async function WorkersPage({
                               Verifikovan
                             </span>
                           )}
-                          {worker.rating_avg > 0 && (
+                          {worker.rating_avg != null && worker.rating_avg > 0 && (
                             <span className="flex items-center gap-0.5">
                               <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                               {worker.rating_avg.toFixed(1)}

@@ -55,10 +55,11 @@ export default function ProfileEditPage() {
       const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       if (p) {
         setProfile(p)
-        setName(p.name || '')
+        const { data: contacts } = await supabase.rpc('get_my_profile_contact')
+        setName(p.type === 'individual' ? (contacts?.[0]?.legal_name || '') : (p.name || ''))
         setBio(p.bio || '')
         setCity(p.city || '')
-        setPhone(p.phone || '')
+        setPhone(contacts?.[0]?.phone || '')
         setSkills(p.skills || [])
         setExperience(p.experience_years?.toString() || '')
         setAvailable(p.available ?? true)
@@ -150,11 +151,16 @@ export default function ProfileEditPage() {
     const typeChanged = userType !== profile?.type
     const needsApproval = typeChanged && (userType === 'company' || userType === 'agency')
 
-    await supabase.from('profiles').update({
-      name,
+    const { error: contactError } = await supabase.rpc('set_my_profile_contact', {
+      p_legal_name: userType === 'individual' ? name : null,
+      p_phone: phone || null,
+    })
+    if (contactError) { setSaving(false); return }
+
+    const { error: profileError } = await supabase.from('profiles').update({
+      name: userType === 'individual' ? profile?.username : name,
       bio,
       city: city || null,
-      phone: phone || null,
       skills,
       experience_years: experience ? parseInt(experience) : null,
       available,
@@ -165,6 +171,8 @@ export default function ProfileEditPage() {
       is_approved: needsApproval ? false : (profile?.is_approved ?? true),
       updated_at: new Date().toISOString(),
     }).eq('id', user.id)
+
+    if (profileError) { setSaving(false); return }
 
     if (typeChanged) setTypeChangeRequested(needsApproval)
 
@@ -229,7 +237,7 @@ export default function ProfileEditPage() {
                 </span>
               </button>
               <div>
-                <p className="font-medium text-gray-900">{name || 'Tvoje ime'}</p>
+                <p className="font-medium text-gray-900">{profile?.type === 'individual' ? profile?.username : (name || 'Naziv')}</p>
                 <p className="text-sm text-gray-400 mt-0.5 capitalize">{profile?.type}</p>
                 <button
                   type="button"
@@ -250,6 +258,8 @@ export default function ProfileEditPage() {
           {/* Basic info */}
           <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
             <h2 className="font-semibold text-gray-900">Osnovne informacije</h2>
+
+            {profile?.type === 'individual' && <p className="text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-2">Javno te vide kao <strong>{profile?.username}</strong>. Ime i telefon ispod vidljivi su samo tebi i administraciji.</p>}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

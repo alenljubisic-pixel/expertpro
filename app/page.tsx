@@ -4,6 +4,7 @@ import Footer from '@/components/layout/Footer'
 import HomeSearchBar from '@/components/home/HomeSearchBar'
 import { Star, Shield, Zap, Users, Briefcase, ChevronRight, MapPin, Clock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { publicName, publicInitial } from '@/lib/safe-name'
 
 const CATEGORIES = [
   { icon: '🏗️', name: 'Građevina', slug: 'gradevina' },
@@ -64,7 +65,7 @@ export default async function HomePage() {
   // Real featured listings (latest 6 active)
   const { data: featuredListings } = await supabase
     .from('listings')
-    .select('*, profile:profiles!user_id(name, rating_avg, is_verified)')
+    .select('*, profile:profiles!user_id(id, type, name, username, rating_avg, is_verified)')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(6)
@@ -211,10 +212,10 @@ export default async function HomePage() {
 
                 <div className="border-t border-gray-50 px-5 py-3 flex items-center gap-2">
                   <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600 flex-shrink-0">
-                    {profile?.name && !profile.name.includes('@') ? profile.name[0].toUpperCase() : 'K'}
+                    {publicInitial(profile)}
                   </div>
                   <span className="text-xs text-gray-600 truncate">
-                    {profile?.name && !profile.name.includes('@') ? profile.name : 'Korisnik'}
+                    {publicName(profile)}
                   </span>
                   {profile?.rating_avg > 0 && (
                     <span className="text-xs text-yellow-600 ml-auto flex-shrink-0">★ {profile.rating_avg.toFixed(1)}</span>

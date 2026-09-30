@@ -65,6 +65,10 @@ export default async function AdminUsersPage({
   if (filter === 'individuals') query = query.eq('type', 'individual')
 
   const { data: users } = await query.range((page - 1) * 50, page * 50 - 1)
+  const { data: contacts } = users?.length
+    ? await supabase.rpc('admin_profile_contacts', { p_user_ids: users.map(u => u.id) })
+    : { data: [] }
+  const contactById = new Map<string, { legal_name: string | null; email: string | null; phone: string | null }>((contacts || []).map((c: { id: string; legal_name: string | null; email: string | null; phone: string | null }) => [c.id, c]))
 
   const { data: statsRows } = users?.length
     ? await supabase.rpc('admin_get_user_stats_monthly', { p_user_ids: users.map(u => u.id), p_month: `${month}-01` })
@@ -154,7 +158,7 @@ export default async function AdminUsersPage({
                   {u.name?.[0]?.toUpperCase() || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <Link href={`/admin/users/${u.id}?month=${month}`} className="font-medium text-blue-700 hover:underline text-sm truncate">{u.name || 'N/A'} → detalji</Link>
+                  <Link href={`/admin/users/${u.id}?month=${month}`} className="font-medium text-blue-700 hover:underline text-sm truncate">{u.type === 'individual' ? (contactById.get(u.id)?.legal_name || u.username) : u.name || 'N/A'} → detalji</Link>
                   <p className="text-xs text-gray-400">
                     {u.type === 'individual' ? 'Fizičko lice'
                       : u.type === 'company' ? 'Firma'

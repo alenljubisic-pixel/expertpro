@@ -74,7 +74,7 @@ function RegisterForm() {
       password,
       options: {
         data: {
-          name: displayName,
+          full_name: displayName,
           type: userType,
           pib: pib || null,
         }
