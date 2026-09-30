@@ -61,7 +61,8 @@ export default function NotificationPreferences() {
   return (
     <section className="bg-white rounded-xl border border-gray-100 p-6" aria-labelledby="notification-preferences-title">
       <h2 id="notification-preferences-title" className="font-semibold text-gray-900">Obaveštenja</h2>
-      <p className="text-xs text-gray-500 mt-1 mb-4">Izaberi šta želiš da dobijaš. Potvrda e-mail adrese i bezbednosne poruke se uvek šalju.</p>
+      <p className="text-xs text-gray-500 mt-1 mb-4">Izaberi šta želiš da dobijaš. Potvrde e-mail adrese i bezbednosne poruke ne mogu da se isključe ovim izborom.</p>
+      <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mb-4">E-mail obaveštenja o poslovima još nisu aktivna; ovde možeš unapred sačuvati izbor.</p>
       <div className="grid grid-cols-[minmax(0,1fr)_4rem_4rem] sm:grid-cols-[minmax(0,1fr)_6rem_6rem] gap-x-2 items-center text-xs text-gray-500 border-b border-gray-100 pb-2">
         <span>Vrsta obaveštenja</span><span className="text-center">U aplikaciji</span><span className="text-center">E-mail</span>
       </div>
