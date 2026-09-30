@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache'
 import { PROMOTION_TIERS, type PromotionTier } from '@/lib/promotions'
 import QRCode from 'qrcode'
 import { buildIpsQrPayload } from '@/lib/ips-qr'
+import { buildPaymentPurpose } from '@/lib/payment-purpose'
 import { sendPaymentReview } from '@/lib/telegram-payments'
 
 async function markUserConfirmed(formData: FormData) {
@@ -23,16 +24,19 @@ async function markUserConfirmed(formData: FormData) {
   if (before?.user_id !== user.id || before.status !== 'pending_payment') return
   const { error } = await supabase.rpc('mark_my_promotion_sent', { p_promotion_id: orderId })
   if (error) return
-  const [{ data: order }, { data: contacts }] = await Promise.all([
+  const [{ data: order }, { data: contacts }, { data: profile }] = await Promise.all([
     supabase.from('listing_promotions')
       .select('status,bank_reference,reference_code,price_amount,user_confirmed_at')
       .eq('id', orderId).single(),
     supabase.rpc('get_my_profile_contact'),
+    supabase.from('profiles').select('username').eq('id', user.id).single(),
   ])
   if (order?.status === 'user_confirmed') {
     await sendPaymentReview({
       kind: 'promotion', orderId,
       reference: order.bank_reference || order.reference_code,
+      orderCode: order.reference_code,
+      userCode: profile?.username || null,
       amount: Number(order.price_amount),
       legalName: contacts?.[0]?.legal_name || null,
       phone: contacts?.[0]?.phone || null,
@@ -62,11 +66,13 @@ export default async function PromotionPaymentPage({
   if (!order) notFound()
   if (order.user_id !== user.id) redirect(`/oglasi/${id}`)
 
-  const { data: settings } = await supabase
-    .from('payment_settings')
-    .select('bank_name, account_holder, account_number, payment_reference_note')
-    .eq('id', 1)
-    .single()
+  const [{ data: settings }, { data: profile }] = await Promise.all([
+    supabase.from('payment_settings')
+      .select('bank_name, account_holder, account_number, payment_reference_note')
+      .eq('id', 1).single(),
+    supabase.from('profiles').select('username').eq('id', user.id).single(),
+  ])
+  const purpose = buildPaymentPurpose(order.reference_code, profile?.username, order.bank_reference)
 
   const bankReady = settings?.account_number && settings?.account_holder
   const tierInfo = PROMOTION_TIERS[order.tier as PromotionTier]
@@ -77,7 +83,7 @@ export default async function PromotionPaymentPage({
       accountNumber: settings!.account_number!,
       accountHolder: settings!.account_holder!,
       amountRsd: Number(order.price_amount),
-      purposeText: order.reference_code,
+      purposeText: purpose,
       bankReference: order.bank_reference,
     })
     if (payload) {
@@ -138,7 +144,7 @@ export default async function PromotionPaymentPage({
                   <div className="flex flex-col items-center gap-2 pb-4 mb-2 border-b border-gray-50">
                     <img src={ipsQrDataUrl} alt="IPS QR kod za uplatu" width={180} height={180} className="rounded-lg" />
                     <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                      <QrCode className="w-3.5 h-3.5" /> Skeniraj u aplikaciji banke i proveri račun, iznos i poziv na broj pre potvrde
+                      <QrCode className="w-3.5 h-3.5" /> Skeniraj u aplikaciji banke i proveri račun, iznos, poziv na broj i svrhu pre potvrde
                     </p>
                   </div>
                 )}
@@ -147,9 +153,9 @@ export default async function PromotionPaymentPage({
                 <Row label="Broj računa" value={settings!.account_number!} mono />
                 <Row label="Iznos" value={`${Number(order.price_amount).toLocaleString('sr-RS')} ${order.currency}`} />
                 {order.bank_reference && <Row label="Model / poziv na broj" value={`97 / ${order.bank_reference}`} mono highlight />}
-                <Row label="Šifra u svrsi uplate" value={order.reference_code} mono highlight />
+                <Row label="Svrha uplate" value={purpose} mono highlight />
                 <p className="text-xs text-gray-400 pt-2 border-t border-gray-50">
-                  {order.bank_reference ? 'Pri ručnoj uplati unesi model 97 i poziv na broj tačno kako su prikazani. Proveri podatke pre potvrde u banci.' : (settings?.payment_reference_note || 'Za ovu raniju porudžbinu unesi šifru u polje „svrha uplate“. Nije bankarski poziv na broj.')}
+                  {order.bank_reference ? 'Pri ručnoj uplati unesi model 97, poziv na broj i svrhu tačno kako su prikazani. Oznaka U: u svrsi identifikuje tvoj nalog. Proveri podatke pre potvrde u banci.' : (settings?.payment_reference_note || 'Za ovu raniju porudžbinu unesi šifru u polje „svrha uplate“. Nije bankarski poziv na broj.')}
                 </p>
               </div>
             )}
@@ -183,7 +189,7 @@ function Row({ label, value, mono, highlight }: { label: string; value: string; 
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-sm text-gray-500">{label}</span>
-      <span className={`text-sm font-medium flex items-center gap-1.5 ${mono ? 'font-mono' : ''} ${highlight ? 'text-blue-700 bg-blue-50 px-2 py-1 rounded-md' : 'text-gray-900'}`}>
+      <span className={`text-sm font-medium flex items-center gap-1.5 text-right break-all ${mono ? 'font-mono' : ''} ${highlight ? 'text-blue-700 bg-blue-50 px-2 py-1 rounded-md' : 'text-gray-900'}`}>
         {value}
         <Copy className="w-3.5 h-3.5 text-gray-300" />
       </span>

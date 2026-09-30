@@ -1,4 +1,5 @@
 import 'server-only'
+import { buildPaymentPurpose } from '@/lib/payment-purpose'
 
 export type PaymentKind = 'credit' | 'promotion'
 
@@ -10,6 +11,8 @@ type ReviewNotice = {
   kind: PaymentKind
   orderId: string
   reference: string
+  orderCode: string
+  userCode: string | null
   amount: number
   legalName: string | null
   phone: string | null
@@ -52,6 +55,7 @@ export async function sendPaymentReview(notice: ReviewNotice): Promise<boolean> 
     `E-mail: ${safeLine(notice.email, 100)}`,
     `Iznos: ${notice.amount.toLocaleString('sr-RS')} RSD`,
     `Poziv na broj: ${notice.reference}`,
+    `Svrha uplate: ${buildPaymentPurpose(notice.orderCode, notice.userCode, /^\d{12}$/.test(notice.reference) ? notice.reference : null)}`,
     `Prijavljeno: ${registeredAt}`,
     '',
     'Odobri TEK kada u bankarskom izvodu vidiš isti poziv na broj i iznos. Ime uplatioca može biti drugačije.',

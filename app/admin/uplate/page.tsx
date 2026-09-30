@@ -6,6 +6,7 @@ import { ArrowLeft, Check, X, CreditCard } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 import { safeName } from '@/lib/safe-name'
 import { PROMOTION_TIERS, type PromotionTier } from '@/lib/promotions'
+import { buildPaymentPurpose } from '@/lib/payment-purpose'
 
 async function isAdmin(userId: string, supabase: any): Promise<boolean> {
   const { data } = await supabase.from('profiles').select('is_admin').eq('id', userId).single()
@@ -137,7 +138,7 @@ export default async function AdminPaymentsPage({
 
   let query = supabase
     .from('listing_promotions')
-    .select('*, listings(title), profiles!user_id(name, email, is_approved)')
+    .select('*, listings(title), profiles!user_id(name, username, email, is_approved)')
     .order('created_at', { ascending: false })
 
   if (filter === 'review' || filter === 'unapproved_user') query = query.eq('status', 'user_confirmed')
@@ -148,7 +149,7 @@ export default async function AdminPaymentsPage({
 
   let creditQuery = supabase
     .from('credit_purchases')
-    .select('*, profiles!user_id(name, email, is_approved)')
+    .select('*, profiles!user_id(name, username, email, is_approved)')
     .order('created_at', { ascending: false })
 
   if (filter === 'review' || filter === 'unapproved_user') creditQuery = creditQuery.eq('status', 'user_confirmed')
@@ -171,6 +172,7 @@ export default async function AdminPaymentsPage({
     !q ||
     o.reference_code?.toLowerCase().includes(q) ||
     o.bank_reference?.includes(q) ||
+    o.profiles?.username?.toLowerCase().includes(q) ||
     o.profiles?.name?.toLowerCase().includes(q) ||
     paymentContactById.get(o.user_id)?.email?.toLowerCase().includes(q) ||
     paymentContactById.get(o.user_id)?.legal_name?.toLowerCase().includes(q)
@@ -283,7 +285,7 @@ export default async function AdminPaymentsPage({
         )}
 
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Istaknuto / Gold</h2>
-        <p className="text-xs text-amber-800 mb-3">Potvrdi tek kada na bankovnom izvodu vidiš primljenu uplatu sa istom šifrom i tačnim iznosom. Ako priliv još nije vidljiv, ostavi narudžbinu na čekanju; ne odbijaj je preuranjeno.</p>
+        <p className="text-xs text-amber-800 mb-3">Potvrdi tek kada na bankovnom izvodu vidiš primljenu uplatu sa istim pozivom na broj i tačnim iznosom. Ako banka prikazuje svrhu, uporedi i šifru porudžbine i oznaku korisnika U:. Svrha može biti izmenjena pri plaćanju; neslaganje proveri ručno. Ako priliv još nije vidljiv, ostavi narudžbinu na čekanju.</p>
         <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 mb-8">
           {filteredOrders.length === 0 ? (
             <div className="p-8 text-center text-gray-400">Nema porudžbina u ovoj kategoriji</div>
@@ -310,6 +312,7 @@ export default async function AdminPaymentsPage({
                       {paymentContactById.get(o.user_id)?.email && <> · {paymentContactById.get(o.user_id)?.email}</>}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">{o.price_amount} {o.currency} · {o.bank_reference ? 'model 97 / poziv ' : 'šifra '}<span className="font-mono text-gray-800">{o.bank_reference || o.reference_code}</span> · naručeno {paymentTime(o.created_at)}{o.user_confirmed_at && <> · korisnik označio uplatu {paymentTime(o.user_confirmed_at)}</>}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Očekivana svrha: <span className="font-mono text-gray-800">{buildPaymentPurpose(o.reference_code, o.profiles?.username, o.bank_reference)}</span></p>
                     {o.admin_note && <p className="text-xs text-gray-400 mt-0.5">Napomena: {o.admin_note}</p>}
                   </div>
 
@@ -363,6 +366,7 @@ export default async function AdminPaymentsPage({
                       {paymentContactById.get(o.user_id)?.email && <> · {paymentContactById.get(o.user_id)?.email}</>}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">{o.price_amount} {o.currency} · {o.bank_reference ? 'model 97 / poziv ' : 'šifra '}<span className="font-mono text-gray-800">{o.bank_reference || o.reference_code}</span> · naručeno {paymentTime(o.created_at)}{o.user_confirmed_at && <> · korisnik označio uplatu {paymentTime(o.user_confirmed_at)}</>}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Očekivana svrha: <span className="font-mono text-gray-800">{buildPaymentPurpose(o.reference_code, o.profiles?.username, o.bank_reference)}</span></p>
                     {o.admin_note && <p className="text-xs text-gray-400 mt-0.5">Napomena: {o.admin_note}</p>}
                   </div>
 
