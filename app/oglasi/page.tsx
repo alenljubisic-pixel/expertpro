@@ -27,6 +27,39 @@ const TYPE_LABELS: Record<string, { label: string; color: string; bg: string }> 
   urgent: { label: '🚨 Hitno', color: 'text-red-700', bg: 'bg-red-50 border-red-200' },
 }
 
+// Temporary, non-interactive examples. They are never stored as real jobs.
+// Set this to false when the marketplace has enough genuine listings.
+const SHOW_DEMO_LISTINGS = true
+
+type DemoListing = {
+  title: string
+  description: string
+  city: string
+  category: string
+  icon: string
+  engagement_mode: 'short_job' | 'multi_day' | 'fixed_term' | 'permanent'
+  foreign_workers_welcome?: boolean
+}
+
+const DEMO_LISTINGS: DemoListing[] = [
+  { title: 'Električar za sitne popravke u stanu', description: 'Primer jednokratnog zahteva za zamenu utičnica i pregled instalacija.', city: 'Beograd', category: 'gradevina', icon: '🔨', engagement_mode: 'short_job' },
+  { title: 'Pomoć pri selidbi nameštaja', description: 'Primer dogovora za utovar i istovar tokom jednog dana.', city: 'Novi Sad', category: 'transport', icon: '🚛', engagement_mode: 'short_job' },
+  { title: 'Čišćenje stana posle renoviranja', description: 'Primer posla za generalno čišćenje po završetku radova.', city: 'Niš', category: 'ciscenje', icon: '🧹', engagement_mode: 'short_job' },
+  { title: 'Montaža polica i kuhinjskih elemenata', description: 'Primer kratkog angažmana majstora za montažu.', city: 'Kragujevac', category: 'gradevina', icon: '🔨', engagement_mode: 'short_job' },
+  { title: 'Ispomoć na događaju tokom vikenda', description: 'Primer dnevnog angažmana za pripremu i raspremanje prostora.', city: 'Subotica', category: 'dogadjaji', icon: '🎪', engagement_mode: 'short_job' },
+  { title: 'Podešavanje kućne računarske mreže', description: 'Primer jednokratnog IT posla na lokaciji.', city: 'Beograd', category: 'it', icon: '💻', engagement_mode: 'short_job' },
+  { title: 'Pomoć pri sređivanju dvorišta', description: 'Primer kratkog fizičkog posla i odvoza zelenog otpada.', city: 'Čačak', category: 'poljoprivreda', icon: '🌾', engagement_mode: 'short_job' },
+  { title: 'Utovar robe u magacinu', description: 'Primer smenskog angažmana pomoćnog radnika.', city: 'Pančevo', category: 'magacin', icon: '📦', engagement_mode: 'short_job' },
+  { title: 'Pomoćni građevinski radnici za nekoliko dana', description: 'Primer angažmana ekipe na kraćem projektu.', city: 'Beograd', category: 'gradevina', icon: '🔨', engagement_mode: 'multi_day', foreign_workers_welcome: true },
+  { title: 'Osoblje za višednevni događaj', description: 'Primer angažmana u pripremi i organizaciji događaja.', city: 'Novi Sad', category: 'dogadjaji', icon: '🎪', engagement_mode: 'multi_day' },
+  { title: 'Pomoć u pakovanju proizvoda', description: 'Primer rada u magacinu tokom više radnih dana.', city: 'Niš', category: 'magacin', icon: '📦', engagement_mode: 'multi_day', foreign_workers_welcome: true },
+  { title: 'Sezonski rad u poljoprivredi', description: 'Primer angažmana na određeno vreme uz dogovor o trajanju.', city: 'Zrenjanin', category: 'poljoprivreda', icon: '🌾', engagement_mode: 'fixed_term', foreign_workers_welcome: true },
+  { title: 'Administrativna podrška na projektu', description: 'Primer višemesečnog angažmana na određeno vreme.', city: 'Beograd', category: 'administracija', icon: '📋', engagement_mode: 'fixed_term' },
+  { title: 'Radnik u proizvodnji na određeno', description: 'Primer oglasa za višemesečni rad po smenama.', city: 'Kragujevac', category: 'pomocni-radnici', icon: '👷', engagement_mode: 'fixed_term', foreign_workers_welcome: true },
+  { title: 'Magacinski radnik za stalni angažman', description: 'Primer stalnog zaposlenja u skladištu.', city: 'Novi Sad', category: 'magacin', icon: '📦', engagement_mode: 'permanent', foreign_workers_welcome: true },
+  { title: 'Pomoćni kuvar za stalni angažman', description: 'Primer stalnog posla u ugostiteljstvu.', city: 'Beograd', category: 'ugostiteljstvo', icon: '🍴', engagement_mode: 'permanent' },
+]
+
 export default async function ListingsPage({
   searchParams,
 }: {
@@ -69,6 +102,16 @@ export default async function ListingsPage({
   const isUrgent = sp.type === 'urgent'
   const hasFilters = !!(sp.type || sp.city || sp.category || sp.q || sp.mode || sp.foreign)
   const displayListings = listings || []
+  const demoCandidates = sp.mode === 'long'
+    ? DEMO_LISTINGS.filter(item => item.engagement_mode !== 'short_job')
+    : sp.mode && sp.mode !== 'short_job'
+      ? DEMO_LISTINGS.filter(item => item.engagement_mode === sp.mode)
+      : sp.mode === 'short_job'
+        ? DEMO_LISTINGS.filter(item => item.engagement_mode === 'short_job')
+        : [...DEMO_LISTINGS.slice(0, 4), ...DEMO_LISTINGS.slice(8, 12)]
+  const demoListings = SHOW_DEMO_LISTINGS && sp.type === 'request' && page === 1 && !sp.q && !sp.city && !sp.category && !sp.foreign
+    ? demoCandidates
+    : []
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -206,7 +249,8 @@ export default async function ListingsPage({
             <div className="flex items-center justify-between mb-5">
               <div>
                 <p className="text-sm text-gray-500">
-                  {displayListings.length > 0 ? `${count} oglasa` : 'Nema oglasa'}
+                  {displayListings.length > 0 ? `${count} aktivnih oglasa` : 'Nema aktivnih oglasa'}
+                  {demoListings.length > 0 ? ` · ${demoListings.length} primera` : ''}
                   {sp.city ? ` u gradu ${sp.city}` : ''}
                 </p>
               </div>
@@ -219,7 +263,7 @@ export default async function ListingsPage({
               </Link>
             </div>
 
-            {displayListings.length === 0 ? (
+            {displayListings.length === 0 && demoListings.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
                 <p className="text-4xl mb-4">🔍</p>
                 <p className="text-gray-500 mb-2">
@@ -231,7 +275,7 @@ export default async function ListingsPage({
                   <Link href="/oglasi/novi" className="text-sm text-blue-600 hover:text-blue-700">Budi prvi koji postavlja oglas →</Link>
                 )}
               </div>
-            ) : (
+            ) : displayListings.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {displayListings.map((listing: any) => {
                   const typeInfo = TYPE_LABELS[listing.type] || TYPE_LABELS.request
@@ -313,6 +357,36 @@ export default async function ListingsPage({
                   )
                 })}
               </div>
+            ) : null}
+
+            {demoListings.length > 0 && (
+              <section className="mt-8" aria-label="Primeri oglasa">
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 mb-5">
+                  <h2 className="font-semibold text-amber-950">Kako mogu da izgledaju oglasi u ovoj rubrici</h2>
+                  <p className="text-sm text-amber-900 mt-1">Ovo su samo primeri, nisu aktivni poslovi. Na njih nije moguće poslati prijavu. Stvarni oglasi se prikazuju iznad kada postoje, a svoj možeš odmah da objaviš.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {demoListings.map((item) => (
+                    <article key={item.title} className="bg-white rounded-xl border border-dashed border-gray-300 p-5" aria-label={`Primer oglasa: ${item.title}`}>
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="flex flex-wrap gap-1.5">
+                          <span className="text-xs px-2.5 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-800 font-medium">Primer — nije aktivan</span>
+                          {item.engagement_mode !== 'short_job' && (
+                            <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700">
+                              {item.engagement_mode === 'multi_day' ? 'Više dana' : item.engagement_mode === 'fixed_term' ? 'Na određeno' : 'Stalno'}
+                            </span>
+                          )}
+                          {item.foreign_workers_welcome && <span className="text-xs px-2 py-1 rounded-full bg-teal-50 text-teal-700">Strani radnici</span>}
+                        </div>
+                        <span aria-hidden="true" className="text-lg">{item.icon}</span>
+                      </div>
+                      <h3 className="font-semibold text-gray-900 mb-1 text-sm leading-snug">{item.title}</h3>
+                      <p className="text-xs text-gray-500 mb-3">{item.description}</p>
+                      <p className="flex items-center gap-1 text-xs text-gray-500"><MapPin className="w-3 h-3" />{item.city}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
             )}
 
             {/* Pagination */}
