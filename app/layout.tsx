@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import InstallPrompt from "@/components/layout/InstallPrompt";
 
@@ -84,6 +85,7 @@ export default function RootLayout({
         />
         {children}
         <InstallPrompt />
+        <Analytics />
       </body>
     </html>
   );
