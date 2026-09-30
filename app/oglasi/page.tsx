@@ -42,22 +42,22 @@ type DemoListing = {
 }
 
 const DEMO_LISTINGS: DemoListing[] = [
-  { title: 'Električar za sitne popravke u stanu', description: 'Primer jednokratnog zahteva za zamenu utičnica i pregled instalacija.', city: 'Beograd', category: 'gradevina', icon: '🔨', engagement_mode: 'short_job' },
-  { title: 'Pomoć pri selidbi nameštaja', description: 'Primer dogovora za utovar i istovar tokom jednog dana.', city: 'Novi Sad', category: 'transport', icon: '🚛', engagement_mode: 'short_job' },
-  { title: 'Čišćenje stana posle renoviranja', description: 'Primer posla za generalno čišćenje po završetku radova.', city: 'Niš', category: 'ciscenje', icon: '🧹', engagement_mode: 'short_job' },
-  { title: 'Montaža polica i kuhinjskih elemenata', description: 'Primer kratkog angažmana majstora za montažu.', city: 'Kragujevac', category: 'gradevina', icon: '🔨', engagement_mode: 'short_job' },
-  { title: 'Ispomoć na događaju tokom vikenda', description: 'Primer dnevnog angažmana za pripremu i raspremanje prostora.', city: 'Subotica', category: 'dogadjaji', icon: '🎪', engagement_mode: 'short_job' },
-  { title: 'Podešavanje kućne računarske mreže', description: 'Primer jednokratnog IT posla na lokaciji.', city: 'Beograd', category: 'it', icon: '💻', engagement_mode: 'short_job' },
-  { title: 'Pomoć pri sređivanju dvorišta', description: 'Primer kratkog fizičkog posla i odvoza zelenog otpada.', city: 'Čačak', category: 'poljoprivreda', icon: '🌾', engagement_mode: 'short_job' },
-  { title: 'Utovar robe u magacinu', description: 'Primer smenskog angažmana pomoćnog radnika.', city: 'Pančevo', category: 'magacin', icon: '📦', engagement_mode: 'short_job' },
-  { title: 'Pomoćni građevinski radnici za nekoliko dana', description: 'Primer angažmana ekipe na kraćem projektu.', city: 'Beograd', category: 'gradevina', icon: '🔨', engagement_mode: 'multi_day', foreign_workers_welcome: true },
-  { title: 'Osoblje za višednevni događaj', description: 'Primer angažmana u pripremi i organizaciji događaja.', city: 'Novi Sad', category: 'dogadjaji', icon: '🎪', engagement_mode: 'multi_day' },
-  { title: 'Pomoć u pakovanju proizvoda', description: 'Primer rada u magacinu tokom više radnih dana.', city: 'Niš', category: 'magacin', icon: '📦', engagement_mode: 'multi_day', foreign_workers_welcome: true },
-  { title: 'Sezonski rad u poljoprivredi', description: 'Primer angažmana na određeno vreme uz dogovor o trajanju.', city: 'Zrenjanin', category: 'poljoprivreda', icon: '🌾', engagement_mode: 'fixed_term', foreign_workers_welcome: true },
-  { title: 'Administrativna podrška na projektu', description: 'Primer višemesečnog angažmana na određeno vreme.', city: 'Beograd', category: 'administracija', icon: '📋', engagement_mode: 'fixed_term' },
-  { title: 'Radnik u proizvodnji na određeno', description: 'Primer oglasa za višemesečni rad po smenama.', city: 'Kragujevac', category: 'pomocni-radnici', icon: '👷', engagement_mode: 'fixed_term', foreign_workers_welcome: true },
-  { title: 'Magacinski radnik za stalni angažman', description: 'Primer stalnog zaposlenja u skladištu.', city: 'Novi Sad', category: 'magacin', icon: '📦', engagement_mode: 'permanent', foreign_workers_welcome: true },
-  { title: 'Pomoćni kuvar za stalni angažman', description: 'Primer stalnog posla u ugostiteljstvu.', city: 'Beograd', category: 'ugostiteljstvo', icon: '🍴', engagement_mode: 'permanent' },
+  { title: 'Električar za sitne popravke u stanu', description: 'Zamena tri utičnice i pregled instalacija u dvosobnom stanu. Termin po dogovoru.', city: 'Beograd', category: 'gradevina', icon: '🔨', engagement_mode: 'short_job' },
+  { title: 'Pomoć pri selidbi nameštaja', description: 'Utovar i istovar nameštaja tokom jednog dana; potrebna su dva radnika.', city: 'Novi Sad', category: 'transport', icon: '🚛', engagement_mode: 'short_job' },
+  { title: 'Čišćenje stana posle renoviranja', description: 'Generalno čišćenje poda, kuhinje i kupatila nakon krečenja.', city: 'Niš', category: 'ciscenje', icon: '🧹', engagement_mode: 'short_job' },
+  { title: 'Montaža polica i kuhinjskih elemenata', description: 'Montaža dve police i visećih kuhinjskih elemenata na licu mesta.', city: 'Kragujevac', category: 'gradevina', icon: '🔨', engagement_mode: 'short_job' },
+  { title: 'Ispomoć na događaju tokom vikenda', description: 'Priprema sale ujutru i raspremanje po završetku događaja.', city: 'Subotica', category: 'dogadjaji', icon: '🎪', engagement_mode: 'short_job' },
+  { title: 'Podešavanje kućne računarske mreže', description: 'Povezivanje rutera, računara i štampača u kućnoj mreži.', city: 'Beograd', category: 'it', icon: '💻', engagement_mode: 'short_job' },
+  { title: 'Pomoć pri sređivanju dvorišta', description: 'Košenje trave, orezivanje žive ograde i sakupljanje zelenog otpada.', city: 'Čačak', category: 'poljoprivreda', icon: '🌾', engagement_mode: 'short_job' },
+  { title: 'Utovar robe u magacinu', description: 'Ispomoć pri utovaru i sortiranju robe u jednoj smeni.', city: 'Pančevo', category: 'magacin', icon: '📦', engagement_mode: 'short_job' },
+  { title: 'Pomoćni građevinski radnici za nekoliko dana', description: 'Pomoć pri pripremi materijala i čišćenju gradilišta tokom radne nedelje.', city: 'Beograd', category: 'gradevina', icon: '🔨', engagement_mode: 'multi_day', foreign_workers_welcome: true },
+  { title: 'Osoblje za višednevni događaj', description: 'Postavljanje opreme, priprema prostora i rad na događaju kroz više dana.', city: 'Novi Sad', category: 'dogadjaji', icon: '🎪', engagement_mode: 'multi_day' },
+  { title: 'Pomoć u pakovanju proizvoda', description: 'Pakovanje, etiketiranje i slaganje proizvoda u magacinu.', city: 'Niš', category: 'magacin', icon: '📦', engagement_mode: 'multi_day', foreign_workers_welcome: true },
+  { title: 'Sezonski rad u poljoprivredi', description: 'Rad na sortiranju i pakovanju plodova tokom sezone.', city: 'Zrenjanin', category: 'poljoprivreda', icon: '🌾', engagement_mode: 'fixed_term', foreign_workers_welcome: true },
+  { title: 'Administrativna podrška na projektu', description: 'Unos podataka, evidencija dokumenata i komunikacija sa saradnicima.', city: 'Beograd', category: 'administracija', icon: '📋', engagement_mode: 'fixed_term' },
+  { title: 'Radnik u proizvodnji na određeno', description: 'Rad u smenama na pakovanju i kontroli gotovih proizvoda.', city: 'Kragujevac', category: 'pomocni-radnici', icon: '👷', engagement_mode: 'fixed_term', foreign_workers_welcome: true },
+  { title: 'Magacinski radnik za stalni angažman', description: 'Prijem, slaganje i izdavanje robe u skladištu.', city: 'Novi Sad', category: 'magacin', icon: '📦', engagement_mode: 'permanent', foreign_workers_welcome: true },
+  { title: 'Pomoćni kuvar za stalni angažman', description: 'Priprema namirnica i održavanje radne stanice u kuhinji.', city: 'Beograd', category: 'ugostiteljstvo', icon: '🍴', engagement_mode: 'permanent' },
 ]
 
 export default async function ListingsPage({
@@ -361,16 +361,12 @@ export default async function ListingsPage({
 
             {demoListings.length > 0 && (
               <section className="mt-8" aria-label="Primeri oglasa">
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 mb-5">
-                  <h2 className="font-semibold text-amber-950">Kako mogu da izgledaju oglasi u ovoj rubrici</h2>
-                  <p className="text-sm text-amber-900 mt-1">Ovo su samo primeri, nisu aktivni poslovi. Na njih nije moguće poslati prijavu. Stvarni oglasi se prikazuju iznad kada postoje, a svoj možeš odmah da objaviš.</p>
-                </div>
+                <h2 className="text-sm font-medium text-gray-500 mb-4">Primeri oglasa · neaktivni prikazi</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   {demoListings.map((item) => (
-                    <article key={item.title} className="bg-white rounded-xl border border-dashed border-gray-300 p-5" aria-label={`Primer oglasa: ${item.title}`}>
+                    <article key={item.title} className="bg-white rounded-xl border border-gray-200 p-5" aria-label={`Neaktivni primer oglasa: ${item.title}`}>
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <div className="flex flex-wrap gap-1.5">
-                          <span className="text-xs px-2.5 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-800 font-medium">Primer — nije aktivan</span>
                           {item.engagement_mode !== 'short_job' && (
                             <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700">
                               {item.engagement_mode === 'multi_day' ? 'Više dana' : item.engagement_mode === 'fixed_term' ? 'Na određeno' : 'Stalno'}

@@ -36,8 +36,9 @@ export default async function WorkersPage({
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Pružaoci usluga</h1>
-          <p className="text-sm text-gray-500 mt-1">Prikazani su samo korisnici sa aktivnim oglasom „Nudim uslugu“. Dogovor i poruke ostaju vezani za oglas.</p>
+          <h1 className="text-2xl font-bold text-gray-900">Radnici i pružaoci usluga</h1>
+          <p className="text-sm text-gray-500 mt-1">Ovde se radnici sami predstavljaju: veštine, iskustvo i kada su slobodni. Prikazani su samo oni koji su objavili aktivan oglas „Nudim uslugu“. Za dogovor se prijavi na njihov oglas; nema slobodnih privatnih poruka.</p>
+          <Link href="/oglasi/novi" className="inline-block mt-3 text-sm font-medium text-blue-700 hover:underline">Ponudi svoj rad →</Link>
         </div>
         <div className="flex flex-col md:flex-row gap-8">
           {/* Filters */}

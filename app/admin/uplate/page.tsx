@@ -18,7 +18,11 @@ async function confirmPromotion(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !(await isAdmin(user.id, supabase))) return
-  await supabase.rpc('admin_confirm_promotion', { p_promotion_id: id })
+  const { data: order } = await supabase.from('listing_promotions').select('reference_code,price_amount,status').eq('id', id).single()
+  if (!order || !['pending_payment', 'user_confirmed'].includes(order.status)) return
+  if (String(formData.get('bank_reference') || '').trim().toUpperCase() !== order.reference_code.toUpperCase()) return
+  if (Number(formData.get('bank_amount')) !== Number(order.price_amount)) return
+  await supabase.rpc('admin_confirm_promotion', { p_promotion_id: id, p_note: 'Potvrđeno prema izvodu: šifra i iznos se poklapaju.' })
   revalidatePath('/admin/uplate')
 }
 
@@ -38,7 +42,11 @@ async function confirmCreditPurchase(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !(await isAdmin(user.id, supabase))) return
-  await supabase.rpc('admin_confirm_credit_purchase', { p_purchase_id: id })
+  const { data: order } = await supabase.from('credit_purchases').select('reference_code,price_amount,status').eq('id', id).single()
+  if (!order || !['pending_payment', 'user_confirmed'].includes(order.status)) return
+  if (String(formData.get('bank_reference') || '').trim().toUpperCase() !== order.reference_code.toUpperCase()) return
+  if (Number(formData.get('bank_amount')) !== Number(order.price_amount)) return
+  await supabase.rpc('admin_confirm_credit_purchase', { p_purchase_id: id, p_note: 'Potvrđeno prema izvodu: šifra i iznos se poklapaju.' })
   revalidatePath('/admin/uplate')
 }
 
@@ -226,6 +234,7 @@ export default async function AdminPaymentsPage({
         )}
 
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Istaknuto / Gold</h2>
+        <p className="text-xs text-amber-800 mb-3">Potvrdi tek kada na bankovnom izvodu vidiš primljenu uplatu sa istom šifrom i tačnim iznosom. Korisnikovo „poslao/la sam“ nije dokaz uplate.</p>
         <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 mb-8">
           {filteredOrders.length === 0 ? (
             <div className="p-8 text-center text-gray-400">Nema porudžbina u ovoj kategoriji</div>
@@ -256,10 +265,12 @@ export default async function AdminPaymentsPage({
 
                   {canAct && (
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <form action={confirmPromotion}>
+                      <form action={confirmPromotion} className="flex flex-wrap items-center gap-2">
                         <input type="hidden" name="id" value={o.id} />
+                        <input name="bank_reference" required aria-label="Šifra sa bankovnog izvoda" placeholder="Šifra sa izvoda" className="w-32 rounded border border-gray-200 px-2 py-1 text-xs" />
+                        <input name="bank_amount" required type="number" min="0.01" step="0.01" aria-label="Iznos sa bankovnog izvoda" placeholder="Iznos RSD" className="w-24 rounded border border-gray-200 px-2 py-1 text-xs" />
                         <button type="submit" className="flex items-center gap-1 text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors">
-                          <Check className="w-3.5 h-3.5" /> Potvrdi
+                          <Check className="w-3.5 h-3.5" /> Potvrdi sa izvoda
                         </button>
                       </form>
                       <form action={rejectPromotion}>
@@ -301,10 +312,12 @@ export default async function AdminPaymentsPage({
 
                   {canAct && (
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <form action={confirmCreditPurchase}>
+                      <form action={confirmCreditPurchase} className="flex flex-wrap items-center gap-2">
                         <input type="hidden" name="id" value={o.id} />
+                        <input name="bank_reference" required aria-label="Šifra sa bankovnog izvoda" placeholder="Šifra sa izvoda" className="w-32 rounded border border-gray-200 px-2 py-1 text-xs" />
+                        <input name="bank_amount" required type="number" min="0.01" step="0.01" aria-label="Iznos sa bankovnog izvoda" placeholder="Iznos RSD" className="w-24 rounded border border-gray-200 px-2 py-1 text-xs" />
                         <button type="submit" className="flex items-center gap-1 text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors">
-                          <Check className="w-3.5 h-3.5" /> Potvrdi
+                          <Check className="w-3.5 h-3.5" /> Potvrdi sa izvoda
                         </button>
                       </form>
                       <form action={rejectCreditPurchase}>

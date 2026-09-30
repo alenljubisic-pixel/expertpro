@@ -281,8 +281,9 @@ export default function ProfileEditPage() {
                 onChange={(e) => setBio(e.target.value)}
                 rows={4}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                placeholder="Napiši nešto o sebi, iskustvu ili firmi..."
+                placeholder="Npr. slobodan sam radnim danima posle 16h; 5 godina iskustva u elektroinstalacijama..."
               />
+              {profile?.type === 'individual' && <p className="text-xs text-gray-500 mt-1">Napiši konkretno kada si slobodan/na, šta radiš i koliko imaš iskustva. Ovaj tekst se vidi javno uz tvoj aktivni oglas „Nudim uslugu“.</p>}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -340,7 +341,7 @@ export default function ProfileEditPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-900">Trenutno dostupan/na</p>
-                <p className="text-xs text-gray-400">Prikazuje se na profilu</p>
+                <p className="text-xs text-gray-400">Prikazuje se na profilu. Za termine poput „svaki dan posle podne“ napiši raspored u polju „O meni“.</p>
               </div>
               <button
                 type="button"

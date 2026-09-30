@@ -15,12 +15,7 @@ async function markUserConfirmed(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  await supabase
-    .from('credit_purchases')
-    .update({ status: 'user_confirmed', user_confirmed_at: new Date().toISOString() })
-    .eq('id', orderId)
-    .eq('user_id', user.id)
-    .eq('status', 'pending_payment')
+  await supabase.rpc('mark_my_credit_purchase_sent', { p_purchase_id: orderId })
 
   revalidatePath(`/krediti/${orderId}`)
 }
@@ -113,7 +108,7 @@ export default async function CreditPurchasePaymentPage({
                   <div className="flex flex-col items-center gap-2 pb-4 mb-2 border-b border-gray-50">
                     <img src={ipsQrDataUrl} alt="IPS QR kod za uplatu" width={180} height={180} className="rounded-lg" />
                     <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                      <QrCode className="w-3.5 h-3.5" /> Skeniraj u aplikaciji svoje banke — popuniće se svi podaci
+                      <QrCode className="w-3.5 h-3.5" /> Skeniraj u aplikaciji banke i proveri račun, iznos i šifru u svrsi uplate pre potvrde
                     </p>
                   </div>
                 )}
@@ -121,9 +116,9 @@ export default async function CreditPurchasePaymentPage({
                 {settings?.bank_name && <Row label="Banka" value={settings.bank_name} />}
                 <Row label="Broj računa" value={settings!.account_number!} mono />
                 <Row label="Iznos" value={`${Number(order.price_amount).toLocaleString('sr-RS')} ${order.currency}`} />
-                <Row label="Poziv na broj / svrha uplate" value={order.reference_code} mono highlight />
+                <Row label="Šifra u svrsi uplate" value={order.reference_code} mono highlight />
                 <p className="text-xs text-gray-400 pt-2 border-t border-gray-50">
-                  {settings?.payment_reference_note || 'Obavezno upiši ovaj poziv na broj u uplati, kako bismo mogli da povežemo uplatu sa tvojim nalogom.'}
+                  {settings?.payment_reference_note || 'Obavezno sačuvaj šifru u polju „svrha uplate“. To nije bankarski poziv na broj. Bez te šifre uplatu možda nećemo moći da povežemo sa nalogom.'}
                 </p>
               </div>
             )}
