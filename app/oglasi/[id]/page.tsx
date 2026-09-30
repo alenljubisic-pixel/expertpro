@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import ApplyButton from '@/components/listings/ApplyButton'
+import SaveButton from '@/components/listings/SaveButton'
 import JobCompletion from '@/components/listings/JobCompletion'
 import { MapPin, Calendar, Users, Star, Clock, ArrowLeft, CheckCircle, Eye, MessageSquare, X, Check } from 'lucide-react'
 import { safeName, safeInitial } from '@/lib/safe-name'
@@ -70,6 +71,10 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     .eq('reviewee_id', listing.user_id)
     .order('created_at', { ascending: false })
     .limit(5)
+
+  const { data: savedRow } = user
+    ? await supabase.from('saved_listings').select('user_id').eq('user_id', user.id).eq('listing_id', id).maybeSingle()
+    : { data: null }
 
   const profile = listing.profiles as any
   const category = listing.categories as any
@@ -281,6 +286,11 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                     >
                       🏆 Istakni oglas
                     </Link>
+                  </div>
+                )}
+                {!isOwner && user && (
+                  <div className="flex-shrink-0">
+                    <SaveButton listingId={listing.id} currentUserId={user.id} initiallySaved={!!savedRow} variant="detail" />
                   </div>
                 )}
               </div>

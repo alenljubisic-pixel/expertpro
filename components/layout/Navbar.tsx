@@ -8,7 +8,7 @@ import type { User } from '@supabase/supabase-js'
 import type { Profile } from '@/types'
 import {
   Menu, X, Bell, MessageSquare, Plus, LogOut,
-  User as UserIcon, Settings, ChevronDown, Zap, Coins
+  User as UserIcon, Settings, ChevronDown, Zap, Coins, Heart
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -174,6 +174,9 @@ export default function Navbar() {
                       <Link href="/dashboard/oglasi" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>
                         <Settings className="w-4 h-4" /> Moji oglasi
                       </Link>
+                      <Link href="/sacuvano" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>
+                        <Heart className="w-4 h-4" /> Sačuvano
+                      </Link>
                       <Link href="/krediti" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>
                         <Coins className="w-4 h-4 text-amber-500" />
                         Krediti
@@ -242,6 +245,9 @@ export default function Navbar() {
           {user ? (
             <>
               <Link href="/oglasi/novi" className="block bg-blue-600 text-white text-center py-2 rounded-lg text-sm font-medium" onClick={() => setMenuOpen(false)}>+ Novi oglas</Link>
+              <Link href="/sacuvano" className="flex items-center gap-2 text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>
+                <Heart className="w-4 h-4" /> Sačuvano
+              </Link>
               <Link href="/krediti" className="flex items-center gap-2 text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>
                 <Coins className="w-4 h-4 text-amber-500" />
                 Krediti

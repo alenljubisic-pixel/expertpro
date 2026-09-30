@@ -5,6 +5,26 @@ import Footer from '@/components/layout/Footer'
 import { MapPin, Clock, Search, SlidersHorizontal, Plus } from 'lucide-react'
 import { SERBIAN_CITIES } from '@/types'
 import { publicName, publicInitial } from '@/lib/safe-name'
+import SaveButton from '@/components/listings/SaveButton'
+
+const SORT_OPTIONS: Record<string, { label: string; apply: (q: any) => any }> = {
+  novo: {
+    label: 'Najnovije',
+    apply: (q) => q.order('is_gold', { ascending: false }).order('is_featured', { ascending: false }).order('created_at', { ascending: false }),
+  },
+  cena_rastuce: {
+    label: 'Cena: niža ka višoj',
+    apply: (q) => q.order('price_amount', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false }),
+  },
+  cena_opadajuce: {
+    label: 'Cena: viša ka nižoj',
+    apply: (q) => q.order('price_amount', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }),
+  },
+}
+// Napomena: sortiranje po oceni oglašivača namerno nije dodato ovde — PostgREST
+// ne sortira spoljne (parent) redove po koloni iz to-one relacije ("profiles"),
+// samo poredak unutar ugnježdenog rezultata. Za pravo sortiranje po oceni treba
+// denormalizovana kolona (npr. listings.owner_rating_avg) ili posebna DB view.
 
 const CATEGORIES = [
   { icon: '🔨', name: 'Građevina', slug: 'gradevina' },
@@ -13,8 +33,7 @@ const CATEGORIES = [
   { icon: '🍴', name: 'Ugostiteljstvo', slug: 'ugostiteljstvo' },
   { icon: '👷', name: 'Pomoćni radnici', slug: 'pomocni-radnici' },
   { icon: '📦', name: 'Magacin', slug: 'magacin' },
-  { icon: '👶', name: 'Čuvanje dece i ljubimaca', slug: 'cuvanje' },
-  { icon: '🏠', name: 'Nega i pomoć u kući', slug: 'nega-pomoc-u-kuci' },
+  { icon: '👶', name: 'Čuvanje i nega', slug: 'cuvanje' },
   { icon: '💻', name: 'IT i računari', slug: 'it' },
   { icon: '🌾', name: 'Poljoprivreda', slug: 'poljoprivreda' },
   { icon: '🎪', name: 'Događaji', slug: 'dogadjaji' },
@@ -72,6 +91,9 @@ export default async function ListingsPage({
     page?: string
     mode?: string
     foreign?: string
+    sort?: string
+    price_min?: string
+    price_max?: string
   }>
 }) {
   const sp = await searchParams
@@ -79,20 +101,25 @@ export default async function ListingsPage({
   const page = parseInt(sp.page || '1')
   const pageSize = 12
   const offset = (page - 1) * pageSize
+  const sortKey = sp.sort && SORT_OPTIONS[sp.sort] ? sp.sort : 'novo'
+
+  const { data: { user } } = await supabase.auth.getUser()
 
   let query = supabase
     .from('listings')
     .select('*, profiles!user_id(id, type, name, username, avatar_url, rating_avg, is_verified), categories(icon)', { count: 'exact' })
     .eq('status', 'active')
-    .order('is_gold', { ascending: false })
-    .order('is_featured', { ascending: false })
-    .order('created_at', { ascending: false })
+  query = SORT_OPTIONS[sortKey].apply(query)
 
   if (sp.type) query = query.eq('type', sp.type)
   if (sp.mode === 'long') query = query.in('engagement_mode', ['multi_day', 'fixed_term', 'permanent'])
   else if (['short_job', 'multi_day', 'fixed_term', 'permanent'].includes(sp.mode || '')) query = query.eq('engagement_mode', sp.mode!)
   if (sp.foreign === 'yes') query = query.eq('foreign_workers_welcome', true)
   if (sp.city) query = query.eq('city', sp.city)
+  const priceMin = sp.price_min ? parseInt(sp.price_min) : null
+  const priceMax = sp.price_max ? parseInt(sp.price_max) : null
+  if (priceMin !== null && !Number.isNaN(priceMin)) query = query.gte('price_amount', priceMin)
+  if (priceMax !== null && !Number.isNaN(priceMax)) query = query.lte('price_amount', priceMax)
   // Gold listings can also carry a secondary ("srodna") category — match either.
   if (sp.category) query = query.or(`category_slug.eq.${sp.category},secondary_category_slug.eq.${sp.category}`)
   if (sp.q) query = query.ilike('title', `%${sp.q}%`)
@@ -101,8 +128,18 @@ export default async function ListingsPage({
   const totalPages = Math.ceil((count || 0) / pageSize)
 
   const isUrgent = sp.type === 'urgent'
-  const hasFilters = !!(sp.type || sp.city || sp.category || sp.q || sp.mode || sp.foreign)
+  const hasFilters = !!(sp.type || sp.city || sp.category || sp.q || sp.mode || sp.foreign || sp.price_min || sp.price_max)
   const displayListings = listings || []
+
+  const savedIds = new Set<string>()
+  if (user && displayListings.length > 0) {
+    const { data: saved } = await supabase
+      .from('saved_listings')
+      .select('listing_id')
+      .eq('user_id', user.id)
+      .in('listing_id', displayListings.map((l: any) => l.id))
+    saved?.forEach((s) => savedIds.add(s.listing_id))
+  }
   const demoCandidates = sp.mode === 'long'
     ? DEMO_LISTINGS.filter(item => item.engagement_mode !== 'short_job')
     : sp.mode && sp.mode !== 'short_job'
@@ -212,6 +249,42 @@ export default async function ListingsPage({
               </div>
 
               <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Cena (RSD)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    name="price_min"
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    defaultValue={sp.price_min || ''}
+                    placeholder="Od"
+                    className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-gray-300 text-xs">–</span>
+                  <input
+                    name="price_max"
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    defaultValue={sp.price_max || ''}
+                    placeholder="Do"
+                    className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1">Odnosi se samo na oglase koji imaju unetu cenu.</p>
+              </div>
+
+              <div>
+                <label htmlFor="sort" className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Sortiraj</label>
+                <select id="sort" name="sort" defaultValue={sortKey}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white">
+                  {Object.entries(SORT_OPTIONS).map(([key, opt]) => (
+                    <option key={key} value={key}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Kategorija</label>
                 <div className="space-y-1 max-h-48 overflow-y-auto">
                   <label className="flex items-center gap-2 cursor-pointer py-0.5">
@@ -255,13 +328,23 @@ export default async function ListingsPage({
                   {sp.city ? ` u gradu ${sp.city}` : ''}
                 </p>
               </div>
-              <Link
-                href="/oglasi/novi"
-                className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Novi oglas
-              </Link>
+              <div className="flex items-center gap-2">
+                {user && (
+                  <Link
+                    href="/sacuvano"
+                    className="flex items-center gap-1.5 border border-gray-200 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    ❤️ Sačuvano
+                  </Link>
+                )}
+                <Link
+                  href="/oglasi/novi"
+                  className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Novi oglas
+                </Link>
+              </div>
             </div>
 
             {displayListings.length === 0 && demoListings.length === 0 ? (
@@ -286,12 +369,13 @@ export default async function ListingsPage({
                     <Link
                       key={listing.id}
                       href={`/oglasi/${listing.id}`}
-                      className={`block bg-white rounded-xl border hover:shadow-md transition-all overflow-hidden ${
+                      className={`relative block bg-white rounded-xl border hover:shadow-md transition-all overflow-hidden ${
                         listing.is_gold ? 'border-amber-300 ring-1 ring-amber-200'
                         : listing.type === 'urgent' ? 'border-red-200 ring-1 ring-red-100'
                         : 'border-gray-100'
                       }`}
                     >
+                      <SaveButton listingId={listing.id} currentUserId={user?.id ?? null} initiallySaved={savedIds.has(listing.id)} />
                       <div className="p-5">
                         <div className="flex items-start justify-between gap-2 mb-3">
                           <div className="flex items-center gap-1.5 flex-wrap">
