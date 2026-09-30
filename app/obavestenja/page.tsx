@@ -49,6 +49,7 @@ export default function NotificationsPage() {
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
+        .eq('suppressed', false)
         .order('created_at', { ascending: false })
         .limit(50)
 

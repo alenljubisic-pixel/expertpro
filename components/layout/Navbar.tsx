@@ -26,6 +26,7 @@ export default function Navbar() {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('is_read', false)
+      .eq('suppressed', false)
     setNotifCount(count ?? 0)
   }
 

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import CreditsWidget from '@/components/credits/CreditsWidget'
+import NotificationPreferences from '@/components/notifications/NotificationPreferences'
 import { SERBIAN_CITIES } from '@/types'
 import { ArrowLeft, Save, Upload, User, Loader2 } from 'lucide-react'
 
@@ -451,6 +452,8 @@ export default function ProfileEditPage() {
               </div>
             )}
           </div>
+
+          <NotificationPreferences />
 
           {/* Save */}
           <div className="flex items-center gap-4">
