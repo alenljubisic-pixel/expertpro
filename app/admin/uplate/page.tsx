@@ -27,9 +27,9 @@ async function confirmPromotion(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !(await isAdmin(user.id, supabase))) return
-  const { data: order } = await supabase.from('listing_promotions').select('reference_code,price_amount,status').eq('id', id).single()
+  const { data: order } = await supabase.from('listing_promotions').select('reference_code,bank_reference,price_amount,status').eq('id', id).single()
   if (!order || !['pending_payment', 'user_confirmed'].includes(order.status)) returnToPayments(formData, 'unavailable')
-  if (String(formData.get('bank_reference') || '').trim().toUpperCase() !== order.reference_code.toUpperCase()) returnToPayments(formData, 'reference_mismatch')
+  if (String(formData.get('bank_reference') || '').trim().toUpperCase() !== (order.bank_reference || order.reference_code).toUpperCase()) returnToPayments(formData, 'reference_mismatch')
   if (Number(formData.get('bank_amount')) !== Number(order.price_amount)) returnToPayments(formData, 'amount_mismatch')
   const { error } = await supabase.rpc('admin_confirm_promotion', { p_promotion_id: id, p_note: 'Potvrđeno prema izvodu: šifra i iznos se poklapaju.' })
   if (error) returnToPayments(formData, 'failed')
@@ -57,9 +57,9 @@ async function confirmCreditPurchase(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !(await isAdmin(user.id, supabase))) return
-  const { data: order } = await supabase.from('credit_purchases').select('reference_code,price_amount,status').eq('id', id).single()
+  const { data: order } = await supabase.from('credit_purchases').select('reference_code,bank_reference,price_amount,status').eq('id', id).single()
   if (!order || !['pending_payment', 'user_confirmed'].includes(order.status)) returnToPayments(formData, 'unavailable')
-  if (String(formData.get('bank_reference') || '').trim().toUpperCase() !== order.reference_code.toUpperCase()) returnToPayments(formData, 'reference_mismatch')
+  if (String(formData.get('bank_reference') || '').trim().toUpperCase() !== (order.bank_reference || order.reference_code).toUpperCase()) returnToPayments(formData, 'reference_mismatch')
   if (Number(formData.get('bank_amount')) !== Number(order.price_amount)) returnToPayments(formData, 'amount_mismatch')
   const { error } = await supabase.rpc('admin_confirm_credit_purchase', { p_purchase_id: id, p_note: 'Potvrđeno prema izvodu: šifra i iznos se poklapaju.' })
   if (error) returnToPayments(formData, 'failed')
@@ -110,7 +110,7 @@ const STATUS_LABEL: Record<string, { label: string; bg: string }> = {
 const RESULT_MESSAGES: Record<string, string> = {
   confirmed: 'Uplata je potvrđena i pripisana narudžbini.',
   rejected: 'Narudžbina je odbijena.',
-  reference_mismatch: 'Šifra sa izvoda se ne poklapa sa narudžbinom. Kredit nije dodeljen.',
+  reference_mismatch: 'Poziv na broj (ili šifra stare narudžbine) sa izvoda se ne poklapa. Kredit nije dodeljen.',
   amount_mismatch: 'Iznos sa izvoda se ne poklapa. Kredit nije dodeljen.',
   unavailable: 'Narudžbina više nije na čekanju.',
   failed: 'Potvrda nije uspela. Proveri narudžbinu i pokušaj ponovo.',
@@ -170,6 +170,7 @@ export default async function AdminPaymentsPage({
   const matchesQuery = (o: any) =>
     !q ||
     o.reference_code?.toLowerCase().includes(q) ||
+    o.bank_reference?.includes(q) ||
     o.profiles?.name?.toLowerCase().includes(q) ||
     paymentContactById.get(o.user_id)?.email?.toLowerCase().includes(q) ||
     paymentContactById.get(o.user_id)?.legal_name?.toLowerCase().includes(q)
@@ -308,7 +309,7 @@ export default async function AdminPaymentsPage({
                       Nalog: <Link href={`/admin/users/${o.user_id}`} className="text-blue-700 hover:underline">{paymentContactById.get(o.user_id)?.legal_name || safeName(o.profiles?.name)}</Link>
                       {paymentContactById.get(o.user_id)?.email && <> · {paymentContactById.get(o.user_id)?.email}</>}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{o.price_amount} {o.currency} · šifra <span className="font-mono text-gray-800">{o.reference_code}</span> · naručeno {paymentTime(o.created_at)}{o.user_confirmed_at && <> · korisnik označio uplatu {paymentTime(o.user_confirmed_at)}</>}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{o.price_amount} {o.currency} · {o.bank_reference ? 'model 97 / poziv ' : 'šifra '}<span className="font-mono text-gray-800">{o.bank_reference || o.reference_code}</span> · naručeno {paymentTime(o.created_at)}{o.user_confirmed_at && <> · korisnik označio uplatu {paymentTime(o.user_confirmed_at)}</>}</p>
                     {o.admin_note && <p className="text-xs text-gray-400 mt-0.5">Napomena: {o.admin_note}</p>}
                   </div>
 
@@ -318,7 +319,7 @@ export default async function AdminPaymentsPage({
                         <input type="hidden" name="id" value={o.id} />
                         <input type="hidden" name="return_filter" value={filter} />
                         <input type="hidden" name="return_q" value={q} />
-                        <input name="bank_reference" required aria-label="Šifra sa bankovnog izvoda" placeholder="Šifra sa izvoda" className="w-32 rounded border border-gray-200 px-2 py-1 text-xs" />
+                        <input name="bank_reference" required aria-label="Poziv na broj sa bankovnog izvoda" placeholder="Poziv sa izvoda" className="w-32 rounded border border-gray-200 px-2 py-1 text-xs" />
                         <input name="bank_amount" required type="number" min="0.01" step="0.01" aria-label="Iznos sa bankovnog izvoda" placeholder="Iznos RSD" className="w-24 rounded border border-gray-200 px-2 py-1 text-xs" />
                         <button type="submit" className="flex items-center gap-1 text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors">
                           <Check className="w-3.5 h-3.5" /> Potvrdi sa izvoda
@@ -361,7 +362,7 @@ export default async function AdminPaymentsPage({
                       Nalog: <Link href={`/admin/users/${o.user_id}`} className="text-blue-700 hover:underline">{paymentContactById.get(o.user_id)?.legal_name || safeName(o.profiles?.name)}</Link>
                       {paymentContactById.get(o.user_id)?.email && <> · {paymentContactById.get(o.user_id)?.email}</>}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{o.price_amount} {o.currency} · šifra <span className="font-mono text-gray-800">{o.reference_code}</span> · naručeno {paymentTime(o.created_at)}{o.user_confirmed_at && <> · korisnik označio uplatu {paymentTime(o.user_confirmed_at)}</>}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{o.price_amount} {o.currency} · {o.bank_reference ? 'model 97 / poziv ' : 'šifra '}<span className="font-mono text-gray-800">{o.bank_reference || o.reference_code}</span> · naručeno {paymentTime(o.created_at)}{o.user_confirmed_at && <> · korisnik označio uplatu {paymentTime(o.user_confirmed_at)}</>}</p>
                     {o.admin_note && <p className="text-xs text-gray-400 mt-0.5">Napomena: {o.admin_note}</p>}
                   </div>
 
@@ -371,7 +372,7 @@ export default async function AdminPaymentsPage({
                         <input type="hidden" name="id" value={o.id} />
                         <input type="hidden" name="return_filter" value={filter} />
                         <input type="hidden" name="return_q" value={q} />
-                        <input name="bank_reference" required aria-label="Šifra sa bankovnog izvoda" placeholder="Šifra sa izvoda" className="w-32 rounded border border-gray-200 px-2 py-1 text-xs" />
+                        <input name="bank_reference" required aria-label="Poziv na broj sa bankovnog izvoda" placeholder="Poziv sa izvoda" className="w-32 rounded border border-gray-200 px-2 py-1 text-xs" />
                         <input name="bank_amount" required type="number" min="0.01" step="0.01" aria-label="Iznos sa bankovnog izvoda" placeholder="Iznos RSD" className="w-24 rounded border border-gray-200 px-2 py-1 text-xs" />
                         <button type="submit" className="flex items-center gap-1 text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors">
                           <Check className="w-3.5 h-3.5" /> Potvrdi sa izvoda

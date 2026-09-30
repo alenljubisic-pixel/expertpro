@@ -21,20 +21,11 @@
 //            thousands separator, e.g. "RSD1000,00" — this is the exact
 //            format the spec requires; a dot here makes some banking apps
 //            reject or misparse the code.
-//   - SF:289 "non-cash transaction for citizens" — a reasonable default for
-//            a small marketplace's manual bank-transfer flow across both
-//            individuals and businesses; SF is a statistical code and does
-//            not affect where the money goes.
-//   - S      the payment purpose text — we put our existing human-readable
-//            reference code in here (the same "šifra"/"poziv na broj" text
-//            the admin already matches against the bank statement), so the
-//            manual-entry fallback and the QR-filled fields always agree.
-//   - RO     deliberately OMITTED. RO ("poziv na broj odobrenja") has its
-//            own strict model+digit-only format; our reference codes are
-//            alphanumeric (e.g. "EPK-W4TGNJ") which doesn't fit that field
-//            safely. Leaving it out is valid (optional fields are simply
-//            skipped) and avoids emitting a field that could confuse a
-//            banking app. The same reference code still travels via S.
+//   - SF:221 cashless payment for goods/services (NBS lists 121/221 as
+//            generally used for both individuals and legal entities).
+//   - S      short human-readable order code in the payment purpose.
+//   - RO     model 97 followed by the unique, server-generated numeric
+//            reference. Legacy orders without one omit this optional field.
 //
 // IMPORTANT: this has not been scanned/verified against a real Serbian
 // banking app yet. Treat it as "should be correct per the published spec"
@@ -47,6 +38,13 @@ export interface IpsQrInput {
   accountHolder: string
   amountRsd: number
   purposeText: string
+  bankReference?: string | null
+}
+
+export function isValidBankReference(value: string | null | undefined): value is string {
+  if (!value || !/^\d{12}$/.test(value)) return false
+  const base = value.slice(2)
+  return Number(value.slice(0, 2)) === 98 - ((Number(base) * 100) % 97)
 }
 
 // Returns the raw IPS QR payload string, or null if the account number
@@ -63,6 +61,7 @@ export function buildIpsQrPayload(input: IpsQrInput): string | null {
   const amountStr = `RSD${input.amountRsd.toFixed(2).replace('.', ',')}`
 
   const purpose = (input.purposeText || '').trim().slice(0, 35) // keep it short/safe
+  if (input.bankReference && !isValidBankReference(input.bankReference)) return null
 
   const fields = [
     'K:PR',
@@ -71,8 +70,9 @@ export function buildIpsQrPayload(input: IpsQrInput): string | null {
     `R:${digits}`,
     `N:${name}`,
     `I:${amountStr}`,
-    'SF:289',
+    'SF:221',
     ...(purpose ? [`S:${purpose}`] : []),
+    ...(input.bankReference ? [`RO:97${input.bankReference}`] : []),
   ]
 
   return fields.join('|')
