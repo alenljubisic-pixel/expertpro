@@ -165,7 +165,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
 
   const formatDate = (d: string | null) => {
     if (!d) return null
-    return new Date(d).toLocaleDateString('sr-RS', { day: 'numeric', month: 'long', year: 'numeric' })
+    return new Date(d).toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'long', year: 'numeric' })
   }
 
   const jobPostingJsonLd = listing.type !== 'offer' ? {

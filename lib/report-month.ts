@@ -4,6 +4,6 @@ export function reportMonth(value?: string): string {
 }
 
 export function monthLabel(month: string): string {
-  return new Intl.DateTimeFormat('sr-RS', { month: 'long', year: 'numeric', timeZone: 'Europe/Belgrade' })
+  return new Intl.DateTimeFormat('sr-Latn-RS', { month: 'long', year: 'numeric', timeZone: 'Europe/Belgrade' })
     .format(new Date(`${month}-15T12:00:00Z`))
 }

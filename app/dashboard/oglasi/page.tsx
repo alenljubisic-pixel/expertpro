@@ -109,7 +109,7 @@ export default async function MyListingsPage({
 
   const formatDate = (d: string | null) => {
     if (!d) return null
-    return new Date(d).toLocaleDateString('sr-RS', { day: 'numeric', month: 'short', year: 'numeric' })
+    return new Date(d).toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   return (
