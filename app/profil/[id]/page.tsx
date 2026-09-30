@@ -5,8 +5,9 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { MapPin, Star, CheckCircle, Briefcase } from 'lucide-react'
 import { safeName, safeInitial } from '@/lib/safe-name'
+import { reportMonth, monthLabel } from '@/lib/report-month'
 
-export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ month?: string }> }) {
   const { id } = await params
   const supabase = await createClient()
 
@@ -18,6 +19,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     .single()
 
   if (!profile) notFound()
+
+  const month = reportMonth((await searchParams).month)
+  const { data: completedCount } = await supabase.rpc('completed_job_count_monthly', { p_user_id: id, p_month: `${month}-01` })
 
   const { data: listings } = await supabase
     .from('listings')
@@ -59,6 +63,11 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                 </p>
               </div>
 
+              <form method="get" className="mb-4 flex items-center gap-2 text-xs">
+                <label htmlFor="profile-month">Mesec</label>
+                <input id="profile-month" name="month" type="month" defaultValue={month} className="min-w-0 w-36 rounded border border-gray-200 px-2 py-1" />
+                <button className="text-blue-600">Prikaži</button>
+              </form>
               <div className="space-y-2 mb-5">
                 {profile.is_verified && (
                   <div className="flex items-center gap-2 text-sm text-green-600">
@@ -78,10 +87,10 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                     {profile.rating_avg.toFixed(1)} ({profile.rating_count || 0} ocena)
                   </div>
                 )}
-                {profile.completed_jobs > 0 && (
+                {Number(completedCount) > 0 && (
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Briefcase className="w-4 h-4" />
-                    {profile.completed_jobs} završenih poslova
+                    {completedCount} završenih poslova — {monthLabel(month)}
                   </div>
                 )}
               </div>

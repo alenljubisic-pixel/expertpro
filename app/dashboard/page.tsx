@@ -4,12 +4,14 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import CreditsWidget from '@/components/credits/CreditsWidget'
+import { reportMonth, monthLabel } from '@/lib/report-month'
 import {
-  Plus, Star, Briefcase, MessageSquare, Eye, CheckCircle,
-  Clock, TrendingUp, Users, Settings, Bell, AlertCircle, Award
+  Plus, Briefcase, MessageSquare, Eye, CheckCircle,
+  Clock, TrendingUp, Settings, Bell, AlertCircle, Award
 } from 'lucide-react'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
+  const month = reportMonth((await searchParams).month)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -19,6 +21,13 @@ export default async function DashboardPage() {
     .select('*')
     .eq('id', user.id)
     .single()
+
+  const [{ data: completedCount }, { data: completedJobs }, { data: activityRows }] = await Promise.all([
+    supabase.rpc('completed_job_count_monthly', { p_user_id: user.id, p_month: `${month}-01` }),
+    supabase.rpc('my_completed_jobs_monthly', { p_month: `${month}-01` }),
+    supabase.rpc('my_monthly_activity', { p_month: `${month}-01` }),
+  ])
+  const activity = activityRows?.[0]
 
   const { data: myListings } = await supabase
     .from('listings')
@@ -33,16 +42,6 @@ export default async function DashboardPage() {
     .eq('applicant_id', user.id)
     .order('created_at', { ascending: false })
     .limit(5)
-
-  const { data: conversations } = await supabase
-    .from('conversations')
-    .select('*, messages(content, created_at)')
-    .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`)
-    .order('last_message_at', { ascending: false })
-    .limit(5)
-
-  const activeListings = myListings?.filter(l => l.status === 'active').length || 0
-  const totalApplications = myApplications?.length || 0
 
   const isCompanyOrAgency = profile?.type === 'company' || profile?.type === 'agency'
 
@@ -90,12 +89,17 @@ export default async function DashboardPage() {
         )}
 
         {/* Stats */}
+        <form method="get" action="/dashboard" className="flex items-center gap-3 mb-4 text-sm">
+          <label htmlFor="dashboard-month" className="font-medium text-gray-700">Mesec statistike</label>
+          <input id="dashboard-month" name="month" type="month" defaultValue={month} className="rounded-lg border border-gray-300 px-3 py-2" />
+          <button className="text-blue-600 font-medium">Prikaži</button>
+        </form>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
-            { icon: <Briefcase className="w-5 h-5 text-blue-600" />, label: 'Aktivnih oglasa', value: activeListings, bg: 'bg-blue-50' },
-            { icon: <Users className="w-5 h-5 text-green-600" />, label: 'Prijava', value: totalApplications, bg: 'bg-green-50' },
-            { icon: <MessageSquare className="w-5 h-5 text-purple-600" />, label: 'Poruka', value: conversations?.length || 0, bg: 'bg-purple-50' },
-            { icon: <Star className="w-5 h-5 text-yellow-600" />, label: 'Prosečna ocena', value: profile?.rating_avg ? `${profile.rating_avg.toFixed(1)} ★` : '—', bg: 'bg-yellow-50' },
+            { icon: <Briefcase className="w-5 h-5 text-blue-600" />, label: 'Objavljenih oglasa u mesecu', value: activity?.listings_posted ?? 0, bg: 'bg-blue-50' },
+            { icon: <CheckCircle className="w-5 h-5 text-green-600" />, label: `Završeno — ${monthLabel(month)}`, value: completedCount ?? 0, bg: 'bg-green-50' },
+            { icon: <MessageSquare className="w-5 h-5 text-purple-600" />, label: 'Poslatih prijava u mesecu', value: activity?.applications_sent ?? 0, bg: 'bg-purple-50' },
+            { icon: <Award className="w-5 h-5 text-yellow-600" />, label: 'Primljenih ocena u mesecu', value: activity?.reviews_received ?? 0, bg: 'bg-yellow-50' },
           ].map((stat) => (
             <div key={stat.label} className="bg-white rounded-xl border border-gray-100 p-5">
               <div className={`inline-flex p-2 rounded-lg ${stat.bg} mb-3`}>
@@ -105,6 +109,21 @@ export default async function DashboardPage() {
               <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
             </div>
           ))}
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-100 p-5 mb-8">
+          <h2 className="font-semibold text-gray-900 mb-1">Moji završeni poslovi — {monthLabel(month)}</h2>
+          <p className="text-xs text-gray-500 mb-3">Broje se tek kada obe strane potvrde završetak. Kao izvođač ili klijent — nalog nije vezan za jednu ulogu.</p>
+          {completedJobs?.length ? (
+            <div className="divide-y divide-gray-100">
+              {completedJobs.map((job: { listing_id: string; title: string; my_role: string; completed_at: string }) => (
+                <Link key={`${job.listing_id}-${job.completed_at}`} href={`/oglasi/${job.listing_id}`} className="flex justify-between gap-3 py-2 text-sm hover:text-blue-600">
+                  <span className="truncate">{job.title}</span>
+                  <span className="text-xs text-gray-500 whitespace-nowrap">{job.my_role === 'izvodjac' ? 'Izvođač' : 'Klijent'} · {new Date(job.completed_at).toLocaleDateString('sr-RS')}</span>
+                </Link>
+              ))}
+            </div>
+          ) : <p className="text-sm text-gray-500">Još nema obostrano potvrđenih završenih poslova.</p>}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

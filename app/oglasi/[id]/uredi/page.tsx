@@ -84,6 +84,10 @@ export default function EditListingPage() {
     if (!title.trim()) { setError('Naslov je obavezan.'); return }
     if (!city) { setError('Izaberi grad.'); return }
     if (!categoryId) { setError('Izaberi kategoriju.'); return }
+    if (priceType !== 'negotiable' && (!price || Number(price) <= 0)) {
+      setError('Unesi cenu veću od nule ili izaberi „Dogovor“.')
+      return
+    }
 
     setSaving(true)
     const selectedCategory = CATEGORIES.find(c => c.id === categoryId)
@@ -97,7 +101,7 @@ export default function EditListingPage() {
       city,
       location_detail: locationDetail || null,
       price_type: priceType !== 'negotiable' ? priceType : 'negotiable',
-      price_amount: price ? parseFloat(price) : null,
+      price_amount: priceType !== 'negotiable' ? Number(price) : null,
       workers_needed: parseInt(workersNeeded) || 1,
       available_from: dateFrom || null,
       available_to: dateTo || null,
@@ -214,7 +218,8 @@ export default function EditListingPage() {
           </div>
 
           <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
-            <h2 className="font-semibold text-gray-900">Cena i uslovi</h2>
+            <h2 className="font-semibold text-gray-900">{type === 'offer' ? 'Moja cena usluge' : 'Cena i uslovi'}</h2>
+            {type === 'offer' && <p className="text-sm text-gray-500">Ponudi satnicu, dnevnicu ili fiksnu cenu; ako zavisi od posla, izaberi „Dogovor“.</p>}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Tip plaćanja</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

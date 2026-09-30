@@ -11,7 +11,7 @@ import { Zap, Mail, Lock, Eye, EyeOff, User, Building2, Users } from 'lucide-rea
 type UserType = 'individual' | 'company' | 'agency'
 
 const USER_TYPE_OPTIONS = [
-  { value: 'individual' as UserType, icon: <User className="w-5 h-5" />, label: 'Fizičko lice', desc: 'Radnik ili poslodavac' },
+  { value: 'individual' as UserType, icon: <User className="w-5 h-5" />, label: 'Fizičko lice', desc: 'Nudi i traži posao' },
   { value: 'company' as UserType, icon: <Building2 className="w-5 h-5" />, label: 'Firma', desc: 'Preduzeće' },
   { value: 'agency' as UserType, icon: <Users className="w-5 h-5" />, label: 'Agencija', desc: 'Agencija za rad' },
 ]
@@ -153,7 +153,8 @@ function RegisterForm() {
         <div className="bg-white py-8 px-4 shadow-sm rounded-2xl border border-gray-100 sm:px-10">
           {/* User type selector */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Tip naloga</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Ko otvara nalog? Ovo nije izbor uloge u poslu.</label>
+            <p className="text-xs text-gray-500 mb-3">Svaki nalog može i da nudi uslugu i da traži radnika. Uloga se bira za svaki oglas posebno.</p>
             <div className="grid grid-cols-3 gap-2">
               {USER_TYPE_OPTIONS.map((opt) => (
                 <button

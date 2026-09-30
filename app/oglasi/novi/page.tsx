@@ -33,7 +33,7 @@ const TYPE_OPTIONS = [
     value: 'offer' as ListingType,
     icon: '💼',
     label: 'Nudim uslugu',
-    desc: 'Radnik koji nudi svoje usluge',
+    desc: 'Objavi šta radiš i po kojoj ceni',
     color: 'border-green-400 bg-green-50',
     activeColor: 'border-green-500 bg-green-50 ring-2 ring-green-200',
   },
@@ -41,7 +41,7 @@ const TYPE_OPTIONS = [
     value: 'request' as ListingType,
     icon: '🔍',
     label: 'Tražim radnika',
-    desc: 'Poslodavac koji traži pomoć',
+    desc: 'Traži pomoć za svoj posao',
     color: 'border-blue-400 bg-blue-50',
     activeColor: 'border-blue-500 bg-blue-50 ring-2 ring-blue-200',
   },
@@ -107,6 +107,10 @@ function NewListingForm() {
     if (!title.trim()) { setError('Naslov je obavezan.'); return }
     if (!city) { setError('Izaberi grad.'); return }
     if (!categoryId) { setError('Izaberi kategoriju.'); return }
+    if (priceType !== 'negotiable' && (!price || Number(price) <= 0)) {
+      setError('Unesi cenu veću od nule ili izaberi „Dogovor“.')
+      return
+    }
     if ((engagementMode === 'multi_day' || engagementMode === 'fixed_term') && (!dateFrom || !dateTo || dateTo < dateFrom)) {
       setError('Za višednevni angažman unesi ispravan period od–do.')
       return
@@ -136,7 +140,7 @@ function NewListingForm() {
       city,
       location_detail: locationDetail || null,
       price_type: priceType !== 'negotiable' ? priceType : 'negotiable',
-      price_amount: price ? parseFloat(price) : null,
+      price_amount: priceType !== 'negotiable' ? Number(price) : null,
       workers_needed: parseInt(workersNeeded) || 1,
       available_from: dateFrom || null,
       available_to: dateTo || null,
@@ -331,7 +335,8 @@ function NewListingForm() {
 
           {/* Pricing */}
           <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
-            <h2 className="font-semibold text-gray-900">Cena i uslovi</h2>
+            <h2 className="font-semibold text-gray-900">{type === 'offer' ? 'Moja cena usluge' : 'Cena i uslovi'}</h2>
+            {type === 'offer' && <p className="text-sm text-gray-500">Odaberi satnicu, dnevnicu ili fiksnu cenu. Možeš izabrati i „Dogovor“ ako cena zavisi od posla.</p>}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Tip plaćanja</label>

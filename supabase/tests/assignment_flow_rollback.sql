@@ -67,6 +67,12 @@ begin
   if (select completed_at from public.applications where id = v_application) is null then
     raise exception 'Job not completed after both confirmations';
   end if;
+  if public.completed_job_count_monthly(v_worker, (now() at time zone 'Europe/Belgrade')::date) <> 1
+     or public.completed_job_count_monthly(v_owner, (now() at time zone 'Europe/Belgrade')::date) <> 1
+     or (select count(*) from public.my_completed_jobs_monthly((now() at time zone 'Europe/Belgrade')::date)
+         where my_role = 'izvodjac') <> 1 then
+    raise exception 'Monthly completion statistics mismatch';
+  end if;
 
   insert into public.reviews (listing_id, reviewer_id, reviewee_id, rating)
   values (v_request, v_worker, v_owner, 5) returning id into v_review;
