@@ -23,6 +23,7 @@ const NOTIF_ICON: Record<string, { icon: any; color: string; bg: string }> = {
   new_review:       { icon: Star,          color: 'text-yellow-600', bg: 'bg-yellow-50' },
   listing_expired:  { icon: Clock,         color: 'text-orange-600', bg: 'bg-orange-50' },
   account_approved: { icon: UserCheck,     color: 'text-green-600',  bg: 'bg-green-50' },
+  support_ticket:   { icon: AlertCircle,    color: 'text-red-600',    bg: 'bg-red-50' },
   default:          { icon: Bell,          color: 'text-gray-600',   bg: 'bg-gray-50' },
 }
 
