@@ -21,8 +21,9 @@
 // automatically (DB trigger), and every new signup gets a small free
 // starter balance (migration_credits_signup_bonus.sql).
 //
-// Prices are a starting default set by the developer; change them here any
-// time (no DB migration needed) — nothing else in the app hardcodes a price.
+// Prices are mirrored in the payment-order validation trigger in
+// supabase/migrations/20260930102329_harden_manual_payment_orders.sql.
+// Any future price/package change requires a matching DB migration.
 
 export type CreditAccountBucket = 'individual' | 'company' | 'agency'
 

@@ -2,8 +2,9 @@
 // (Istaknut / Gold), paid manually via IPS/bank transfer — see
 // supabase/migration_listing_promotions.sql for the DB side.
 //
-// Prices are a starting default set by the developer; change them here any
-// time (no DB migration needed) — nothing else in the app hardcodes a price.
+// Prices are mirrored in the payment-order validation trigger in
+// supabase/migrations/20260930102329_harden_manual_payment_orders.sql.
+// Any future price change requires a matching DB migration.
 
 export type PromotionTier = 'featured' | 'gold'
 export type PromotionDuration = 7 | 15 | 30
@@ -32,8 +33,8 @@ export function promotionPrice(tier: PromotionTier, duration: PromotionDuration)
   return PROMOTION_PRICES[tier][duration]
 }
 
-// Short, human-typeable reference code the user puts in "poziv na broj" /
-// "svrha uplate" so the admin can match a bank statement line to an order.
+// Short, human-typeable reference code placed in "svrha uplate" (not in the
+// numeric bank "poziv na broj") so the admin can match a statement line.
 export function generateReferenceCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no 0/O/1/I confusion
   let code = ''
