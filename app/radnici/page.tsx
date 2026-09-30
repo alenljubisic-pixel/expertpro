@@ -8,7 +8,7 @@ import { publicName, publicInitial } from '@/lib/safe-name'
 
 const SKILLS = [
   'Građevina', 'Čišćenje', 'Transport', 'Ugostiteljstvo',
-  'Fizički radovi', 'Magacin', 'Čuvanje dece', 'IT podrška',
+  'Fizički radovi', 'Magacin', 'Čuvanje dece', 'Čuvanje starih', 'Nega i pomoć u kući', 'IT podrška',
   'Poljoprivreda', 'Događaji', 'Administracija',
 ]
 

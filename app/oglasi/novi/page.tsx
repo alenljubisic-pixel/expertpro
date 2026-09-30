@@ -20,7 +20,8 @@ const CATEGORIES = [
   { icon: '🍽️', name: 'Ugostiteljstvo', slug: 'ugostiteljstvo', id: 4 },
   { icon: '👷', name: 'Pomoćni radnici', slug: 'pomocni-radnici', id: 5 },
   { icon: '📦', name: 'Magacin', slug: 'magacin', id: 6 },
-  { icon: '👶', name: 'Čuvanje i nega', slug: 'cuvanje', id: 7 },
+  { icon: '👶', name: 'Čuvanje dece i ljubimaca', slug: 'cuvanje', id: 7 },
+  { icon: '🏠', name: 'Nega i pomoć u kući', slug: 'nega-pomoc-u-kuci', id: 13 },
   { icon: '💻', name: 'IT i računari', slug: 'it', id: 8 },
   { icon: '🌾', name: 'Poljoprivreda', slug: 'poljoprivreda', id: 9 },
   { icon: '🎪', name: 'Događaji', slug: 'dogadjaji', id: 10 },
@@ -279,6 +280,9 @@ function NewListingForm() {
                   </button>
                 ))}
               </div>
+              {categoryId === 13 && (
+                <p className="text-xs text-gray-500 mt-2">Ova rubrika je za svakodnevnu pomoć u kući i ne-medicinsku negu. Medicinske intervencije nisu obuhvaćene.</p>
+              )}
             </div>
           </div>
 

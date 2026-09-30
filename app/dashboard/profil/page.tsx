@@ -17,7 +17,7 @@ const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const SKILLS_OPTIONS = [
   'Građevina', 'Vodoinstalacije', 'Elektrika', 'Molerski radovi',
   'Čišćenje', 'Selidbe', 'Fizički radovi', 'Magacin',
-  'Vozač', 'Konobar', 'Kuvar', 'Čuvanje dece', 'Čuvanje starih',
+  'Vozač', 'Konobar', 'Kuvar', 'Čuvanje dece', 'Čuvanje starih', 'Nega i pomoć u kući',
   'IT podrška', 'Administracija', 'Poljoprivreda', 'Događaji',
 ]
 
