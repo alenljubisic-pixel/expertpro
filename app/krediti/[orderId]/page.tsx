@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle, Clock, XCircle, QrCode } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 import QRCode from 'qrcode'
 import { buildIpsQrPayload } from '@/lib/ips-qr'
+import { sendPaymentReview } from '@/lib/telegram-payments'
 
 async function markUserConfirmed(formData: FormData) {
   'use server'
@@ -15,7 +16,28 @@ async function markUserConfirmed(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  await supabase.rpc('mark_my_credit_purchase_sent', { p_purchase_id: orderId })
+  const { data: before } = await supabase.from('credit_purchases')
+    .select('user_id,status').eq('id', orderId).single()
+  if (before?.user_id !== user.id || before.status !== 'pending_payment') return
+  const { error } = await supabase.rpc('mark_my_credit_purchase_sent', { p_purchase_id: orderId })
+  if (error) return
+  const [{ data: order }, { data: contacts }] = await Promise.all([
+    supabase.from('credit_purchases')
+      .select('status,bank_reference,reference_code,price_amount,user_confirmed_at')
+      .eq('id', orderId).single(),
+    supabase.rpc('get_my_profile_contact'),
+  ])
+  if (order?.status === 'user_confirmed') {
+    await sendPaymentReview({
+      kind: 'credit', orderId,
+      reference: order.bank_reference || order.reference_code,
+      amount: Number(order.price_amount),
+      legalName: contacts?.[0]?.legal_name || null,
+      phone: contacts?.[0]?.phone || null,
+      email: user.email || null,
+      submittedAt: order.user_confirmed_at,
+    })
+  }
 
   revalidatePath(`/krediti/${orderId}`)
 }
