@@ -39,7 +39,10 @@ export default async function AdminPage() {
     { count: totalListings },
     { count: activeListings },
     { count: flaggedMessages },
-    { count: pendingPayments },
+    { count: pendingPromotions },
+    { count: pendingCreditPurchases },
+    { count: reviewPromotions },
+    { count: reviewCreditPurchases },
     { data: recentUsers },
     { data: pendingCompanies },
     { data: flaggedMsgs },
@@ -51,6 +54,9 @@ export default async function AdminPage() {
     supabase.from('listings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     supabase.from('messages').select('*', { count: 'exact', head: true }).eq('flagged_contact_share', true),
     supabase.from('listing_promotions').select('*', { count: 'exact', head: true }).in('status', ['pending_payment', 'user_confirmed']),
+    supabase.from('credit_purchases').select('*', { count: 'exact', head: true }).in('status', ['pending_payment', 'user_confirmed']),
+    supabase.from('listing_promotions').select('*', { count: 'exact', head: true }).eq('status', 'user_confirmed'),
+    supabase.from('credit_purchases').select('*', { count: 'exact', head: true }).eq('status', 'user_confirmed'),
     supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(5),
     supabase.from('profiles').select('*').eq('is_approved', false).in('type', ['company', 'agency']).limit(10),
     supabase.from('messages').select('*, conversations(participant_1_id, participant_2_id, listing_id)').eq('flagged_contact_share', true).order('created_at', { ascending: false }).limit(10),
@@ -61,6 +67,8 @@ export default async function AdminPage() {
     (sum: number, s: any) => sum + Number(s.credits_paid_total) + Number(s.promotions_paid_total),
     0
   )
+  const pendingPayments = (pendingPromotions || 0) + (pendingCreditPurchases || 0)
+  const reviewPayments = (reviewPromotions || 0) + (reviewCreditPurchases || 0)
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -86,7 +94,7 @@ export default async function AdminPage() {
             { href: '/admin/oglasi', label: 'Oglasi' },
             { href: '/admin/poruke', label: 'Poruke' },
             { href: '/admin/zalbe', label: 'Žalbe' },
-            { href: '/admin/uplate', label: 'Uplate' },
+            { href: '/admin/uplate?filter=review', label: `Uplate za proveru${reviewPayments ? ` (${reviewPayments})` : ''}` },
           ].map(tab => (
             <Link
               key={tab.href}
@@ -109,7 +117,8 @@ export default async function AdminPage() {
             { icon: <Clock className="w-5 h-5 text-amber-600" />, label: 'Čeka odobrenje', value: pendingApprovals || 0, bg: 'bg-amber-50', href: '/admin/users', urgent: (pendingApprovals || 0) > 0 },
             { icon: <Briefcase className="w-5 h-5 text-green-600" />, label: 'Aktivnih oglasa', value: activeListings || 0, bg: 'bg-green-50', href: '/admin/oglasi' },
             { icon: <AlertTriangle className="w-5 h-5 text-red-600" />, label: 'Flagovane poruke', value: flaggedMessages || 0, bg: 'bg-red-50', href: '/admin/poruke', urgent: (flaggedMessages || 0) > 0 },
-            { icon: <Clock className="w-5 h-5 text-amber-600" />, label: 'Uplate na čekanju', value: pendingPayments || 0, bg: 'bg-amber-50', href: '/admin/uplate', urgent: (pendingPayments || 0) > 0 },
+            { icon: <Clock className="w-5 h-5 text-amber-600" />, label: 'Korisnik prijavio uplatu', value: reviewPayments, bg: 'bg-amber-50', href: '/admin/uplate?filter=review', urgent: reviewPayments > 0 },
+            { icon: <Wallet className="w-5 h-5 text-blue-600" />, label: 'Sve neodobrene uplate', value: pendingPayments, bg: 'bg-blue-50', href: '/admin/uplate?filter=pending', urgent: pendingPayments > 0 },
             { icon: <Wallet className="w-5 h-5 text-emerald-600" />, label: 'Ukupno uplaćeno (RSD)', value: totalRevenue.toLocaleString('sr-RS'), bg: 'bg-emerald-50', href: '/admin/users' },
           ].map((stat) => (
             <Link

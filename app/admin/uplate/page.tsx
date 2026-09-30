@@ -12,6 +12,15 @@ async function isAdmin(userId: string, supabase: any): Promise<boolean> {
   return data?.is_admin === true
 }
 
+function returnToPayments(formData: FormData, result: string): never {
+  const requested = String(formData.get('return_filter') || 'review')
+  const filter = ['review', 'unapproved_user', 'pending', 'pending_payment', 'paid_confirmed', 'rejected', 'all'].includes(requested) ? requested : 'review'
+  const q = String(formData.get('return_q') || '').trim().slice(0, 80)
+  const params = new URLSearchParams({ filter, result })
+  if (q) params.set('q', q)
+  redirect(`/admin/uplate?${params.toString()}`)
+}
+
 async function confirmPromotion(formData: FormData) {
   'use server'
   const id = formData.get('id') as string
@@ -19,11 +28,13 @@ async function confirmPromotion(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !(await isAdmin(user.id, supabase))) return
   const { data: order } = await supabase.from('listing_promotions').select('reference_code,price_amount,status').eq('id', id).single()
-  if (!order || !['pending_payment', 'user_confirmed'].includes(order.status)) return
-  if (String(formData.get('bank_reference') || '').trim().toUpperCase() !== order.reference_code.toUpperCase()) return
-  if (Number(formData.get('bank_amount')) !== Number(order.price_amount)) return
-  await supabase.rpc('admin_confirm_promotion', { p_promotion_id: id, p_note: 'Potvrđeno prema izvodu: šifra i iznos se poklapaju.' })
+  if (!order || !['pending_payment', 'user_confirmed'].includes(order.status)) returnToPayments(formData, 'unavailable')
+  if (String(formData.get('bank_reference') || '').trim().toUpperCase() !== order.reference_code.toUpperCase()) returnToPayments(formData, 'reference_mismatch')
+  if (Number(formData.get('bank_amount')) !== Number(order.price_amount)) returnToPayments(formData, 'amount_mismatch')
+  const { error } = await supabase.rpc('admin_confirm_promotion', { p_promotion_id: id, p_note: 'Potvrđeno prema izvodu: šifra i iznos se poklapaju.' })
+  if (error) returnToPayments(formData, 'failed')
   revalidatePath('/admin/uplate')
+  returnToPayments(formData, 'confirmed')
 }
 
 async function rejectPromotion(formData: FormData) {
@@ -32,8 +43,12 @@ async function rejectPromotion(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !(await isAdmin(user.id, supabase))) return
-  await supabase.rpc('admin_reject_promotion', { p_promotion_id: id })
+  const reason = String(formData.get('reason') || '').trim().slice(0, 400)
+  if (reason.length < 5) returnToPayments(formData, 'reason_required')
+  const { error } = await supabase.rpc('admin_reject_promotion', { p_promotion_id: id, p_note: reason })
+  if (error) returnToPayments(formData, 'failed')
   revalidatePath('/admin/uplate')
+  returnToPayments(formData, 'rejected')
 }
 
 async function confirmCreditPurchase(formData: FormData) {
@@ -43,11 +58,13 @@ async function confirmCreditPurchase(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !(await isAdmin(user.id, supabase))) return
   const { data: order } = await supabase.from('credit_purchases').select('reference_code,price_amount,status').eq('id', id).single()
-  if (!order || !['pending_payment', 'user_confirmed'].includes(order.status)) return
-  if (String(formData.get('bank_reference') || '').trim().toUpperCase() !== order.reference_code.toUpperCase()) return
-  if (Number(formData.get('bank_amount')) !== Number(order.price_amount)) return
-  await supabase.rpc('admin_confirm_credit_purchase', { p_purchase_id: id, p_note: 'Potvrđeno prema izvodu: šifra i iznos se poklapaju.' })
+  if (!order || !['pending_payment', 'user_confirmed'].includes(order.status)) returnToPayments(formData, 'unavailable')
+  if (String(formData.get('bank_reference') || '').trim().toUpperCase() !== order.reference_code.toUpperCase()) returnToPayments(formData, 'reference_mismatch')
+  if (Number(formData.get('bank_amount')) !== Number(order.price_amount)) returnToPayments(formData, 'amount_mismatch')
+  const { error } = await supabase.rpc('admin_confirm_credit_purchase', { p_purchase_id: id, p_note: 'Potvrđeno prema izvodu: šifra i iznos se poklapaju.' })
+  if (error) returnToPayments(formData, 'failed')
   revalidatePath('/admin/uplate')
+  returnToPayments(formData, 'confirmed')
 }
 
 async function rejectCreditPurchase(formData: FormData) {
@@ -56,8 +73,12 @@ async function rejectCreditPurchase(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !(await isAdmin(user.id, supabase))) return
-  await supabase.rpc('admin_reject_credit_purchase', { p_purchase_id: id })
+  const reason = String(formData.get('reason') || '').trim().slice(0, 400)
+  if (reason.length < 5) returnToPayments(formData, 'reason_required')
+  const { error } = await supabase.rpc('admin_reject_credit_purchase', { p_purchase_id: id, p_note: reason })
+  if (error) returnToPayments(formData, 'failed')
   revalidatePath('/admin/uplate')
+  returnToPayments(formData, 'rejected')
 }
 
 async function updatePaymentSettings(formData: FormData) {
@@ -86,10 +107,24 @@ const STATUS_LABEL: Record<string, { label: string; bg: string }> = {
   expired: { label: 'Isteklo', bg: 'bg-gray-100 text-gray-400' },
 }
 
+const RESULT_MESSAGES: Record<string, string> = {
+  confirmed: 'Uplata je potvrđena i pripisana narudžbini.',
+  rejected: 'Narudžbina je odbijena.',
+  reference_mismatch: 'Šifra sa izvoda se ne poklapa sa narudžbinom. Kredit nije dodeljen.',
+  amount_mismatch: 'Iznos sa izvoda se ne poklapa. Kredit nije dodeljen.',
+  unavailable: 'Narudžbina više nije na čekanju.',
+  failed: 'Potvrda nije uspela. Proveri narudžbinu i pokušaj ponovo.',
+  reason_required: 'Za odbijanje je potreban razlog (najmanje 5 znakova).',
+}
+
+function paymentTime(value: string): string {
+  return new Date(value).toLocaleString('sr-RS', { timeZone: 'Europe/Belgrade', dateStyle: 'short', timeStyle: 'short' })
+}
+
 export default async function AdminPaymentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; q?: string }>
+  searchParams: Promise<{ filter?: string; q?: string; result?: string }>
 }) {
   const sp = await searchParams
   const supabase = await createClient()
@@ -97,25 +132,27 @@ export default async function AdminPaymentsPage({
   if (!user) redirect('/login')
   if (!(await isAdmin(user.id, supabase))) redirect('/dashboard')
 
-  const filter = sp.filter || 'pending'
+  const filter = sp.filter || 'review'
   const q = (sp.q || '').trim().toLowerCase()
 
   let query = supabase
     .from('listing_promotions')
-    .select('*, listings(title), profiles!user_id(name, email)')
+    .select('*, listings(title), profiles!user_id(name, email, is_approved)')
     .order('created_at', { ascending: false })
 
-  if (filter === 'pending') query = query.in('status', ['pending_payment', 'user_confirmed'])
+  if (filter === 'review' || filter === 'unapproved_user') query = query.eq('status', 'user_confirmed')
+  else if (filter === 'pending') query = query.in('status', ['pending_payment', 'user_confirmed'])
   else if (filter !== 'all') query = query.eq('status', filter)
 
   const { data: orders } = await query.limit(200)
 
   let creditQuery = supabase
     .from('credit_purchases')
-    .select('*, profiles!user_id(name, email)')
+    .select('*, profiles!user_id(name, email, is_approved)')
     .order('created_at', { ascending: false })
 
-  if (filter === 'pending') creditQuery = creditQuery.in('status', ['pending_payment', 'user_confirmed'])
+  if (filter === 'review' || filter === 'unapproved_user') creditQuery = creditQuery.eq('status', 'user_confirmed')
+  else if (filter === 'pending') creditQuery = creditQuery.in('status', ['pending_payment', 'user_confirmed'])
   else if (filter !== 'all') creditQuery = creditQuery.eq('status', filter)
 
   const { data: creditOrders } = await creditQuery.limit(200)
@@ -126,7 +163,7 @@ export default async function AdminPaymentsPage({
     : { data: [] }
   const paymentContactById = new Map<string, { email: string | null; legal_name: string | null }>((paymentContacts || []).map((c: { id: string; email: string | null; legal_name: string | null }) => [c.id, c]))
 
-  // Client-side match on the "šifra"/poziv na broj, the payer's name, or
+  // Client-side match on the order code, registered name or email, or
   // their email — this is what an admin has in hand while going through a
   // bank statement with many pending payments, so it needs to be findable
   // without scrolling through everything.
@@ -137,8 +174,8 @@ export default async function AdminPaymentsPage({
     paymentContactById.get(o.user_id)?.email?.toLowerCase().includes(q) ||
     paymentContactById.get(o.user_id)?.legal_name?.toLowerCase().includes(q)
 
-  const filteredOrders = (orders || []).filter(matchesQuery)
-  const filteredCreditOrders = (creditOrders || []).filter(matchesQuery)
+  const filteredOrders = (orders || []).filter(o => matchesQuery(o) && (filter !== 'unapproved_user' || o.profiles?.is_approved === false))
+  const filteredCreditOrders = (creditOrders || []).filter(o => matchesQuery(o) && (filter !== 'unapproved_user' || o.profiles?.is_approved === false))
 
   const { data: settings } = await supabase
     .from('payment_settings')
@@ -147,7 +184,10 @@ export default async function AdminPaymentsPage({
     .single()
 
   const tabs = [
-    { value: 'pending', label: 'Na čekanju' },
+    { value: 'review', label: 'Korisnik prijavio uplatu' },
+    { value: 'unapproved_user', label: 'Prijavljena uplata · nalog nije odobren' },
+    { value: 'pending', label: 'Sve neodobrene' },
+    { value: 'pending_payment', label: 'Čeka uplatu' },
     { value: 'paid_confirmed', label: 'Potvrđene' },
     { value: 'rejected', label: 'Odbijene' },
     { value: 'all', label: 'Sve' },
@@ -161,8 +201,16 @@ export default async function AdminPaymentsPage({
           <Link href="/admin" className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
             <ArrowLeft className="w-5 h-5 text-gray-500" />
           </Link>
-          <h1 className="text-xl font-bold text-gray-900">Uplate — Istaknuto / Gold / Krediti</h1>
+          <h1 className="text-xl font-bold text-gray-900">Provera uplata — Istaknuto / Gold / Krediti</h1>
         </div>
+
+        <p className="text-sm text-gray-600 mb-5">„Korisnik prijavio uplatu“ znači samo da je kliknuo dugme. Priliv proveri na bankovnom izvodu. Ime naloga služi za pomoć pri traženju, ali uplata može stići sa računa druge osobe.</p>
+
+        {sp.result && (
+          <p role="status" className={`rounded-lg border px-4 py-3 text-sm mb-5 ${sp.result === 'confirmed' ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
+            {RESULT_MESSAGES[sp.result] || 'Proveri stanje narudžbine.'}
+          </p>
+        )}
 
         {/* Bank details settings */}
         <div className="bg-white rounded-xl border border-gray-100 p-5 mb-8">
@@ -234,7 +282,7 @@ export default async function AdminPaymentsPage({
         )}
 
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Istaknuto / Gold</h2>
-        <p className="text-xs text-amber-800 mb-3">Potvrdi tek kada na bankovnom izvodu vidiš primljenu uplatu sa istom šifrom i tačnim iznosom. Korisnikovo „poslao/la sam“ nije dokaz uplate.</p>
+        <p className="text-xs text-amber-800 mb-3">Potvrdi tek kada na bankovnom izvodu vidiš primljenu uplatu sa istom šifrom i tačnim iznosom. Ako priliv još nije vidljiv, ostavi narudžbinu na čekanju; ne odbijaj je preuranjeno.</p>
         <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 mb-8">
           {filteredOrders.length === 0 ? (
             <div className="p-8 text-center text-gray-400">Nema porudžbina u ovoj kategoriji</div>
@@ -254,12 +302,13 @@ export default async function AdminPaymentsPage({
                         {tierInfo.label} · {o.duration_days}d
                       </span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${status.bg}`}>{status.label}</span>
+                      {o.profiles?.is_approved === false && <span className="text-xs px-2 py-0.5 rounded-full bg-rose-50 text-rose-700">Nalog čeka odobrenje</span>}
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {safeName(o.profiles?.name)} · {o.price_amount} {o.currency} · šifra{' '}
-                      <span className="font-mono text-gray-600">{o.reference_code}</span> ·{' '}
-                      {new Date(o.created_at).toLocaleString('sr-RS')}
+                    <p className="text-xs text-gray-600 mt-1">
+                      Nalog: <Link href={`/admin/users/${o.user_id}`} className="text-blue-700 hover:underline">{paymentContactById.get(o.user_id)?.legal_name || safeName(o.profiles?.name)}</Link>
+                      {paymentContactById.get(o.user_id)?.email && <> · {paymentContactById.get(o.user_id)?.email}</>}
                     </p>
+                    <p className="text-xs text-gray-500 mt-0.5">{o.price_amount} {o.currency} · šifra <span className="font-mono text-gray-800">{o.reference_code}</span> · naručeno {paymentTime(o.created_at)}{o.user_confirmed_at && <> · korisnik označio uplatu {paymentTime(o.user_confirmed_at)}</>}</p>
                     {o.admin_note && <p className="text-xs text-gray-400 mt-0.5">Napomena: {o.admin_note}</p>}
                   </div>
 
@@ -267,14 +316,19 @@ export default async function AdminPaymentsPage({
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <form action={confirmPromotion} className="flex flex-wrap items-center gap-2">
                         <input type="hidden" name="id" value={o.id} />
+                        <input type="hidden" name="return_filter" value={filter} />
+                        <input type="hidden" name="return_q" value={q} />
                         <input name="bank_reference" required aria-label="Šifra sa bankovnog izvoda" placeholder="Šifra sa izvoda" className="w-32 rounded border border-gray-200 px-2 py-1 text-xs" />
                         <input name="bank_amount" required type="number" min="0.01" step="0.01" aria-label="Iznos sa bankovnog izvoda" placeholder="Iznos RSD" className="w-24 rounded border border-gray-200 px-2 py-1 text-xs" />
                         <button type="submit" className="flex items-center gap-1 text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors">
                           <Check className="w-3.5 h-3.5" /> Potvrdi sa izvoda
                         </button>
                       </form>
-                      <form action={rejectPromotion}>
+                      <form action={rejectPromotion} className="flex flex-wrap items-center gap-2">
                         <input type="hidden" name="id" value={o.id} />
+                        <input type="hidden" name="return_filter" value={filter} />
+                        <input type="hidden" name="return_q" value={q} />
+                        <input name="reason" required minLength={5} maxLength={400} aria-label="Razlog odbijanja" placeholder="Razlog odbijanja" className="w-36 rounded border border-gray-200 px-2 py-1 text-xs" />
                         <button type="submit" className="flex items-center gap-1 text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors">
                           <X className="w-3.5 h-3.5" /> Odbij
                         </button>
@@ -301,12 +355,13 @@ export default async function AdminPaymentsPage({
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-gray-900 text-sm">{o.credits_amount} kredita</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${status.bg}`}>{status.label}</span>
+                      {o.profiles?.is_approved === false && <span className="text-xs px-2 py-0.5 rounded-full bg-rose-50 text-rose-700">Nalog čeka odobrenje</span>}
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {safeName(o.profiles?.name)} · {o.price_amount} {o.currency} · šifra{' '}
-                      <span className="font-mono text-gray-600">{o.reference_code}</span> ·{' '}
-                      {new Date(o.created_at).toLocaleString('sr-RS')}
+                    <p className="text-xs text-gray-600 mt-1">
+                      Nalog: <Link href={`/admin/users/${o.user_id}`} className="text-blue-700 hover:underline">{paymentContactById.get(o.user_id)?.legal_name || safeName(o.profiles?.name)}</Link>
+                      {paymentContactById.get(o.user_id)?.email && <> · {paymentContactById.get(o.user_id)?.email}</>}
                     </p>
+                    <p className="text-xs text-gray-500 mt-0.5">{o.price_amount} {o.currency} · šifra <span className="font-mono text-gray-800">{o.reference_code}</span> · naručeno {paymentTime(o.created_at)}{o.user_confirmed_at && <> · korisnik označio uplatu {paymentTime(o.user_confirmed_at)}</>}</p>
                     {o.admin_note && <p className="text-xs text-gray-400 mt-0.5">Napomena: {o.admin_note}</p>}
                   </div>
 
@@ -314,14 +369,19 @@ export default async function AdminPaymentsPage({
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <form action={confirmCreditPurchase} className="flex flex-wrap items-center gap-2">
                         <input type="hidden" name="id" value={o.id} />
+                        <input type="hidden" name="return_filter" value={filter} />
+                        <input type="hidden" name="return_q" value={q} />
                         <input name="bank_reference" required aria-label="Šifra sa bankovnog izvoda" placeholder="Šifra sa izvoda" className="w-32 rounded border border-gray-200 px-2 py-1 text-xs" />
                         <input name="bank_amount" required type="number" min="0.01" step="0.01" aria-label="Iznos sa bankovnog izvoda" placeholder="Iznos RSD" className="w-24 rounded border border-gray-200 px-2 py-1 text-xs" />
                         <button type="submit" className="flex items-center gap-1 text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors">
                           <Check className="w-3.5 h-3.5" /> Potvrdi sa izvoda
                         </button>
                       </form>
-                      <form action={rejectCreditPurchase}>
+                      <form action={rejectCreditPurchase} className="flex flex-wrap items-center gap-2">
                         <input type="hidden" name="id" value={o.id} />
+                        <input type="hidden" name="return_filter" value={filter} />
+                        <input type="hidden" name="return_q" value={q} />
+                        <input name="reason" required minLength={5} maxLength={400} aria-label="Razlog odbijanja" placeholder="Razlog odbijanja" className="w-36 rounded border border-gray-200 px-2 py-1 text-xs" />
                         <button type="submit" className="flex items-center gap-1 text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors">
                           <X className="w-3.5 h-3.5" /> Odbij
                         </button>
