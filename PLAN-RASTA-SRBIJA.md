@@ -36,6 +36,8 @@ Za 4 nedelje objaviti 3–5 kratkih videa nedeljno po mreži, prilagođenih form
 
 Testni cilj kanala: broj relevantnih poseta → početak objave → objavljen stvaran oglas → relevantna prijava → završen posao. Sam broj pregleda i pratilaca nije pokazatelj likvidnosti. Ako dolazi publika koja samo gleda, preusmeriti napor na direktne pozive i lokalne partnere, a ne povećavati broj videa naslepo.
 
+Jednostavan kapacitetni model, **ne prognoza**: od 1.000 kvalifikovanih poseta, stopa od 1% daje 10 stvarnih autora, 3% daje 30, a 5% daje 50. Ako je stvarna stopa 2%, za 50 treba približno 2.500 relevantnih poseta. Bez podataka o gradu publike, stvarnim klikovima i konverziji naloga od 55k pratilaca ne možemo izvesti očekivani broj oglasa.
+
 ## Faze i pragovi za odluke
 
 | Faza | Vreme kao okvir | Akcija | Merilo za nastavak |
