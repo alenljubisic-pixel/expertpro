@@ -7,7 +7,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
     for (const client of windows) client.postMessage({ type: 'expertpro-push' })
-    if (windows.some(client => client.focused)) return
+    if (windows.some(client => client.focused) && !data.forceShow) return
     await self.registration.showNotification(String(data.title || 'ExpertPro').slice(0, 120), {
       body: String(data.body || 'Imaš novo obaveštenje.').slice(0, 180),
       icon: '/icon-192.png',

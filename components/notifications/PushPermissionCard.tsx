@@ -20,6 +20,7 @@ function toUint8Array(base64Url: string) {
 export default function PushPermissionCard({ compact = false }: { compact?: boolean }) {
   const [state, setState] = useState<PushState>('checking')
   const [busy, setBusy] = useState(false)
+  const [testing, setTesting] = useState(false)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -126,6 +127,25 @@ export default function PushPermissionCard({ compact = false }: { compact?: bool
     } finally { setBusy(false) }
   }
 
+  const testPush = async () => {
+    setTesting(true)
+    setMessage('')
+    try {
+      const registration = await navigator.serviceWorker.ready
+      const subscription = await registration.pushManager.getSubscription()
+      if (!subscription) throw new Error('Ovaj uređaj više nije prijavljen. Uključi push ponovo.')
+      const response = await fetch('/api/push/test', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: subscription.endpoint }),
+      })
+      if (response.status === 429) throw new Error('Probni push možeš poslati jednom u minutu.')
+      if (!response.ok) throw new Error('Probni push nije poslat. Pokušaj ponovo kasnije.')
+      setMessage('Probno obaveštenje je poslato. Proveri obaveštenja telefona.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Proba nije uspela.')
+    } finally { setTesting(false) }
+  }
+
   if (state === 'checking' || (compact && state === 'enabled')) return null
   return (
     <section className="rounded-xl border border-blue-100 bg-blue-50 p-4" aria-label="Push obaveštenja">
@@ -145,10 +165,16 @@ export default function PushPermissionCard({ compact = false }: { compact?: bool
               : 'Uključi push za prijave, poruke, potvrđene uplate i druge važne promene. Telefon će tražiti tvoju dozvolu.'}</p>
           )}
           {(state === 'enabled' || state === 'disabled') && (
-            <button type="button" disabled={busy} onClick={state === 'enabled' ? disable : enable}
-              className="mt-3 rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-60">
-              {busy ? 'Sačekaj...' : state === 'enabled' ? 'Isključi na ovom uređaju' : 'Uključi push obaveštenja'}
-            </button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" disabled={busy || testing} onClick={state === 'enabled' ? disable : enable}
+                className="rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-60">
+                {busy ? 'Sačekaj...' : state === 'enabled' ? 'Isključi na ovom uređaju' : 'Uključi push obaveštenja'}
+              </button>
+              {state === 'enabled' && <button type="button" disabled={testing || busy} onClick={testPush}
+                className="rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium text-blue-800 disabled:opacity-60">
+                {testing ? 'Šaljem...' : 'Pošalji probno obaveštenje'}
+              </button>}
+            </div>
           )}
           {message && <p role="status" className="mt-2 text-xs text-blue-900">{message}</p>}
         </div>
