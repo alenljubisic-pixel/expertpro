@@ -8,6 +8,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import CreditsWidget from '@/components/credits/CreditsWidget'
 import NotificationPreferences from '@/components/notifications/NotificationPreferences'
+import ProfileCompletionBar from '@/components/profile/ProfileCompletionBar'
 import { SERBIAN_CITIES } from '@/types'
 import { ArrowLeft, Save, Upload, User, Loader2 } from 'lucide-react'
 
@@ -206,6 +207,19 @@ export default function ProfileEditPage() {
         </div>
 
         <div className="space-y-6">
+          {/* Popunjenost profila */}
+          <ProfileCompletionBar input={{
+            type: userType,
+            avatarUrl,
+            bio,
+            city,
+            phone,
+            skills,
+            experienceYears: experience ? parseInt(experience) : null,
+            pib,
+            isVerified: profile?.is_verified,
+          }} />
+
           {/* Credits */}
           <CreditsWidget balance={profile?.credit_balance ?? 0} accountType={profile?.type} />
 
