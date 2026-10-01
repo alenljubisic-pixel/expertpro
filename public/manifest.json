@@ -1,6 +1,7 @@
 {
   "name": "ExpertPro – Honorarni poslovi u Srbiji",
   "short_name": "ExpertPro",
+  "id": "/",
   "description": "Platforma za honorarne poslove, usluge i radnike u Srbiji.",
   "start_url": "/dashboard",
   "scope": "/",

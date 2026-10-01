@@ -8,6 +8,7 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import CreditsWidget from '@/components/credits/CreditsWidget'
 import NotificationPreferences from '@/components/notifications/NotificationPreferences'
+import PushPermissionCard from '@/components/notifications/PushPermissionCard'
 import ProfileCompletionBar from '@/components/profile/ProfileCompletionBar'
 import { SERBIAN_CITIES } from '@/types'
 import { ArrowLeft, Save, Upload, User, Loader2 } from 'lucide-react'
@@ -508,6 +509,7 @@ export default function ProfileEditPage() {
             )}
           </div>
 
+          <PushPermissionCard />
           <NotificationPreferences />
 
           {/* Save */}

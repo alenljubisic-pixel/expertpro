@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type Category = 'applications' | 'messages' | 'jobs' | 'listings' | 'opportunities'
-type Preference = { category: Category; in_app: boolean; email: boolean }
+type Preference = { category: Category; in_app: boolean; email: boolean; push: boolean }
 type EmailFrequency = 'two_hours' | 'daily' | 'off'
 
 const categories: { id: Category; title: string; description: string }[] = [
@@ -16,7 +16,7 @@ const categories: { id: Category; title: string; description: string }[] = [
 ]
 const emailActive = new Set<Category>(['applications', 'messages', 'jobs'])
 
-const defaults = (): Preference[] => categories.map(({ id }) => ({ category: id, in_app: true, email: true }))
+const defaults = (): Preference[] => categories.map(({ id }) => ({ category: id, in_app: true, email: true, push: true }))
 
 export default function NotificationPreferences() {
   const [rows, setRows] = useState<Preference[]>(defaults)
@@ -33,7 +33,7 @@ export default function NotificationPreferences() {
       if (!user) return
       const [preferences, digestSettings] = await Promise.all([
         supabase.from('notification_preferences')
-          .select('category,in_app,email').eq('user_id', user.id),
+          .select('category,in_app,email,push').eq('user_id', user.id),
         supabase.from('email_digest_settings')
           .select('frequency').eq('user_id', user.id).maybeSingle(),
       ])
@@ -50,7 +50,7 @@ export default function NotificationPreferences() {
     return () => { active = false }
   }, [])
 
-  const change = (category: Category, field: 'in_app' | 'email', checked: boolean) => {
+  const change = (category: Category, field: 'in_app' | 'email' | 'push', checked: boolean) => {
     setRows(current => current.map(row => row.category === category ? { ...row, [field]: checked } : row))
     setFeedback('')
   }
@@ -80,7 +80,7 @@ export default function NotificationPreferences() {
     <section className="bg-white rounded-xl border border-gray-100 p-6" aria-labelledby="notification-preferences-title">
       <h2 id="notification-preferences-title" className="font-semibold text-gray-900">Obaveštenja</h2>
       <p className="text-xs text-gray-500 mt-1 mb-4">Izaberi šta želiš da dobijaš. Potvrde e-mail adrese i bezbednosne poruke ne mogu da se isključe ovim izborom.</p>
-      <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2 mb-4">E-mail za prijave, poruke i posao stiže u jednom sažetku. Izaberi učestalost i isključi kategoriju koja ti smeta. Obaveštenja u aplikaciji podešavaš zasebno; za oglase i hitne prilike e-mail još nije aktivan.</p>
+      <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2 mb-4">E-mail za prijave, poruke i posao stiže u sažetku. Push stiže odmah na uređaj koji si uključio iznad. Ako isključiš neku vrstu u aplikaciji, ni njen push neće stizati. Za oglase i hitne prilike e-mail još nije aktivan.</p>
       <label className="block text-sm font-medium text-gray-900 mb-4">
         Učestalost email sažetka
         <select value={frequency} disabled={loading || saving} onChange={event => setFrequency(event.target.value as EmailFrequency)} className="block mt-1 w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
@@ -89,15 +89,16 @@ export default function NotificationPreferences() {
           <option value="off">Ne šalji email sažetke</option>
         </select>
       </label>
-      <div className="grid grid-cols-[minmax(0,1fr)_4rem_4rem] sm:grid-cols-[minmax(0,1fr)_6rem_6rem] gap-x-2 items-center text-xs text-gray-500 border-b border-gray-100 pb-2">
-        <span>Vrsta obaveštenja</span><span className="text-center">U aplikaciji</span><span className="text-center">E-mail</span>
+      <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem_3.5rem] sm:grid-cols-[minmax(0,1fr)_6rem_6rem_6rem] gap-x-2 items-center text-xs text-gray-500 border-b border-gray-100 pb-2">
+        <span>Vrsta obaveštenja</span><span className="text-center">U aplikaciji</span><span className="text-center">Push</span><span className="text-center">E-mail</span>
       </div>
       {categories.map(item => {
         const row = rows.find(value => value.category === item.id)!
         return (
-          <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_4rem_4rem] sm:grid-cols-[minmax(0,1fr)_6rem_6rem] gap-x-2 items-center py-3 border-b border-gray-100 last:border-0">
+          <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem_3.5rem] sm:grid-cols-[minmax(0,1fr)_6rem_6rem_6rem] gap-x-2 items-center py-3 border-b border-gray-100 last:border-0">
             <div><p className="text-sm font-medium text-gray-900">{item.title}</p><p className="text-xs text-gray-500">{item.description}</p></div>
             <label className="flex justify-center"><input type="checkbox" checked={row.in_app} disabled={loading || saving} onChange={event => change(item.id, 'in_app', event.target.checked)} aria-label={`${item.title} u aplikaciji`} /></label>
+            <label className="flex justify-center"><input type="checkbox" checked={row.push} disabled={loading || saving || !row.in_app} onChange={event => change(item.id, 'push', event.target.checked)} aria-label={`${item.title} push`} /></label>
             <label className="flex justify-center"><input type="checkbox" checked={emailActive.has(item.id) && row.email} disabled={loading || saving || frequency === 'off' || !emailActive.has(item.id)} onChange={event => change(item.id, 'email', event.target.checked)} aria-label={`${item.title} e-mailom`} /></label>
           </div>
         )

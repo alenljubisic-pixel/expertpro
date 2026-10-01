@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import { Bell, CheckCheck, MessageSquare, Star, AlertCircle, Clock, UserCheck } from 'lucide-react'
+import { Bell, CheckCheck, MessageSquare, Star, AlertCircle, Clock, UserCheck, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -18,7 +18,7 @@ type Notification = {
   link?: string
 }
 
-const NOTIF_ICON: Record<string, { icon: any; color: string; bg: string }> = {
+const NOTIF_ICON: Record<string, { icon: LucideIcon; color: string; bg: string }> = {
   new_message:      { icon: MessageSquare, color: 'text-blue-600',   bg: 'bg-blue-50' },
   new_review:       { icon: Star,          color: 'text-yellow-600', bg: 'bg-yellow-50' },
   listing_expired:  { icon: Clock,         color: 'text-orange-600', bg: 'bg-orange-50' },
@@ -38,33 +38,50 @@ function timeAgo(dateStr: string) {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const router = useRouter()
 
   useEffect(() => {
-    const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
+    let active = true
+    let userId: string | null = null
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    const load = async (id: string) => {
       const { data } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', id)
         .eq('suppressed', false)
         .order('created_at', { ascending: false })
         .limit(50)
 
+      if (!active) return
       setNotifications(data ?? [])
       setLoading(false)
-
-      await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false)
+      await supabase.from('notifications').update({ is_read: true })
+        .eq('user_id', id).eq('is_read', false)
     }
-    load()
-  }, [])
+    const start = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/login'); return }
+      if (!active) return
+      userId = user.id
+      await load(user.id)
+      channel = supabase.channel(`notification-list-${user.id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public',
+          table: 'notifications', filter: `user_id=eq.${user.id}` }, () => load(user.id))
+        .subscribe()
+    }
+    const onWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'expertpro-push' && userId) load(userId)
+    }
+    navigator.serviceWorker?.addEventListener('message', onWorkerMessage)
+    start()
+    return () => {
+      active = false
+      navigator.serviceWorker?.removeEventListener('message', onWorkerMessage)
+      if (channel) supabase.removeChannel(channel)
+    }
+  }, [router, supabase])
 
   const markAllRead = async () => {
     const { data: { user } } = await supabase.auth.getUser()

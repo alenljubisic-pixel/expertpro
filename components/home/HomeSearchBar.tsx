@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, MapPin, Loader2, Navigation } from 'lucide-react'
 import { CITY_COORDS, getNearestCity } from '@/lib/city-distance'
@@ -10,7 +10,17 @@ export default function HomeSearchBar() {
   const [city, setCity] = useState('')
   const [detecting, setDetecting] = useState(false)
   const [locationError, setLocationError] = useState('')
+  const [autoCity, setAutoCity] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    if (localStorage.getItem('ep_auto_city') !== '1' || !navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      pos => { setCity(getNearestCity(pos.coords.latitude, pos.coords.longitude)); setAutoCity(true) },
+      () => { setAutoCity(true); setLocationError('Automatska lokacija nije dostupna. Izaberi grad ručno.') },
+      { timeout: 8000, maximumAge: 300000 }
+    )
+  }, [])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,6 +41,8 @@ export default function HomeSearchBar() {
       (pos) => {
         const nearest = getNearestCity(pos.coords.latitude, pos.coords.longitude)
         setCity(nearest)
+        localStorage.setItem('ep_auto_city', '1')
+        setAutoCity(true)
         setDetecting(false)
       },
       () => {
@@ -83,6 +95,7 @@ export default function HomeSearchBar() {
         Pretraži
       </button>
       {locationError && <p role="status" className="w-full px-3 text-xs text-red-600">{locationError}</p>}
+      {autoCity && <p className="w-full px-3 text-xs text-gray-500">Grad se automatski predlaže na ovom uređaju. <button type="button" onClick={() => { localStorage.removeItem('ep_auto_city'); setAutoCity(false) }} className="text-blue-700 underline">Isključi</button></p>}
     </form>
   )
 }

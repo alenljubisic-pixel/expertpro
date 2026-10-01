@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer'
 import CreditsWidget from '@/components/credits/CreditsWidget'
 import ReferralCard from '@/components/credits/ReferralCard'
 import ProfileAvatar from '@/components/profile/ProfileAvatar'
+import PushPermissionCard from '@/components/notifications/PushPermissionCard'
 import { reportMonth, monthLabel } from '@/lib/report-month'
 import {
   Plus, Briefcase, MessageSquare, Eye, CheckCircle,
@@ -91,6 +92,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </div>
           </div>
         )}
+
+        <div className="mb-6"><PushPermissionCard compact /></div>
 
         {/* Stats */}
         <form method="get" action="/dashboard" className="flex items-center gap-3 mb-4 text-sm">

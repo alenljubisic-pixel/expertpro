@@ -1,12 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader2, Navigation } from 'lucide-react'
 import { getNearestCity } from '@/lib/city-distance'
 
 export default function DetectCityButton({ selectId }: { selectId: string }) {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    if (localStorage.getItem('ep_auto_city') !== '1' || !navigator.geolocation) return
+    const select = document.getElementById(selectId) as HTMLSelectElement | null
+    if (!select?.form || select.value) return
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        select.value = getNearestCity(coords.latitude, coords.longitude)
+        select.form?.requestSubmit()
+      },
+      () => setMessage('Automatska lokacija nije dostupna. Izaberi grad ručno.'),
+      { timeout: 8000, maximumAge: 300000 }
+    )
+  }, [selectId])
 
   const detect = () => {
     if (!navigator.geolocation) {
@@ -20,6 +34,7 @@ export default function DetectCityButton({ selectId }: { selectId: string }) {
         const select = document.getElementById(selectId) as HTMLSelectElement | null
         if (select?.form) {
           select.value = getNearestCity(coords.latitude, coords.longitude)
+          localStorage.setItem('ep_auto_city', '1')
           select.form.requestSubmit()
         } else {
           setMessage('Izaberi grad ručno.')

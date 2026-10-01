@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { User } from '@supabase/supabase-js'
+import type { RealtimeChannel, User } from '@supabase/supabase-js'
 import type { Profile } from '@/types'
 import {
   Menu, X, Bell, MessageSquare, Plus, LogOut,
@@ -18,9 +18,9 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [notifCount, setNotifCount] = useState(0)
   const pathname = usePathname()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
-  const fetchNotifCount = async (userId: string) => {
+  const fetchNotifCount = useCallback(async (userId: string) => {
     const { count } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
@@ -28,17 +28,22 @@ export default function Navbar() {
       .eq('is_read', false)
       .eq('suppressed', false)
     setNotifCount(count ?? 0)
-  }
+  }, [supabase])
 
   useEffect(() => {
+    let active = true
+    let channel: RealtimeChannel | null = null
+    let currentUserId: string | null = null
     supabase.auth.getUser().then(({ data }) => {
+      if (!active) return
       setUser(data.user)
       if (data.user) {
+        currentUserId = data.user.id
         supabase.from('profiles').select('*').eq('id', data.user.id).single()
           .then(({ data: p }) => setProfile(p))
         fetchNotifCount(data.user.id)
 
-        const channel = supabase
+        channel = supabase
           .channel('notif-count')
           .on('postgres_changes', {
             event: '*',
@@ -50,18 +55,41 @@ export default function Navbar() {
           })
           .subscribe()
 
-        return () => { supabase.removeChannel(channel) }
       }
     })
 
+    const onWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'expertpro-push' && currentUserId)
+        fetchNotifCount(currentUserId)
+    }
+    navigator.serviceWorker?.addEventListener('message', onWorkerMessage)
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      currentUserId = session?.user?.id ?? null
       setUser(session?.user ?? null)
       if (!session?.user) setNotifCount(0)
     })
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => {
+      active = false
+      subscription.unsubscribe()
+      navigator.serviceWorker?.removeEventListener('message', onWorkerMessage)
+      if (channel) supabase.removeChannel(channel)
+    }
+  }, [supabase, fetchNotifCount])
 
   const handleSignOut = async () => {
+    try {
+      const registration = await navigator.serviceWorker?.getRegistration('/sw.js')
+      const pushSubscription = await registration?.pushManager.getSubscription()
+      if (pushSubscription) {
+        await fetch('/api/push/subscription', {
+          method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: pushSubscription.endpoint }),
+        })
+        await pushSubscription.unsubscribe()
+      }
+      localStorage.removeItem('ep_auto_city')
+    } catch { /* Signing out must still work if the browser cannot revoke push. */ }
     await supabase.auth.signOut()
     window.location.href = '/'
   }

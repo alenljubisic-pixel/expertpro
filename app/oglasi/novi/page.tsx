@@ -202,7 +202,7 @@ function NewListingForm() {
                 <div className="flex items-start gap-2 bg-red-50 rounded-lg p-3">
                   <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-red-700">
-                    Hitni oglas šalje push notifikaciju svim radnicima u izabranom gradu.
+                    Hitni oglas obaveštava dostupne radnike sa ponudom u istom gradu i oblasti. Push stiže onima koji su ga uključili.
                     Koristiti samo za stvarno hitne situacije. Objava hitnog oglasa košta 1 kredit.
                   </p>
                 </div>

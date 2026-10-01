@@ -102,7 +102,7 @@ export default function InstallPrompt() {
           </p>
         ) : (
           <p className="text-xs text-gray-600 mt-1">
-            Instaliraj prečicu za brži pristup oglasima i porukama. Obaveštenja za sada vidiš kada otvoriš sajt; push obaveštenja još nisu dostupna.
+            Instaliraj aplikaciju za brži pristup. Posle instalacije uključi push obaveštenja u svom nalogu i dozvoli ih na telefonu.
           </p>
         )}
         <div className="flex gap-2 mt-3">

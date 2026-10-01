@@ -199,7 +199,7 @@ export default function CenovnikPage() {
                 <h2 className="text-xl font-bold text-gray-900 mb-2">Hitna berza — kreditni oglas</h2>
                 <p className="text-gray-600 leading-relaxed">
                   Hitna berza je sekcija za urgentne potrebe — kvar u stanu, hitna selidba, potreban radnik danas.
-                  Hitni oglasi se objavljuju putem kredita i šalju push notifikaciju svim dostupnim radnicima u vašem gradu.
+                  Hitni oglasi se objavljuju putem kredita i obaveštavaju dostupne radnike sa ponudom u istom gradu i oblasti. Push stiže onima koji su ga uključili.
                   1 kredit = 1 hitan oglas. Krediti se kupuju u paketima (uplata na tekući račun), ne pojedinačno po oglasu.
                   Svaki novi nalog dobija {SIGNUP_WELCOME_CREDITS} besplatna kredita odmah po registraciji.
                 </p>
