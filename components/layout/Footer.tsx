@@ -21,7 +21,7 @@ export default function Footer() {
 
           {/* Links */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Oglasi</h4>
+            <h2 className="text-white font-semibold mb-4">Oglasi</h2>
             <ul className="space-y-2 text-sm">
               <li><Link href="/oglasi?type=request" className="hover:text-white transition-colors">Tražim radnika</Link></li>
               <li><Link href="/oglasi?type=offer" className="hover:text-white transition-colors">Nudim uslugu</Link></li>
@@ -31,7 +31,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4">Platforme</h4>
+            <h2 className="text-white font-semibold mb-4">Platforme</h2>
             <ul className="space-y-2 text-sm">
               <li><Link href="/register?type=individual" className="hover:text-white transition-colors">Za fizička lica</Link></li>
               <li><Link href="/register?type=company" className="hover:text-white transition-colors">Za firme</Link></li>
@@ -41,7 +41,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4">Kompanija</h4>
+            <h2 className="text-white font-semibold mb-4">Kompanija</h2>
             <ul className="space-y-2 text-sm">
               <li><Link href="/o-nama" className="hover:text-white transition-colors">O nama</Link></li>
               <li><Link href="/kontakt" className="hover:text-white transition-colors">Kontakt</Link></li>

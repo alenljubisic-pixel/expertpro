@@ -3,8 +3,10 @@ import Footer from '@/components/layout/Footer'
 import { Zap, Users, Shield, Star, Target, Heart } from 'lucide-react'
 
 export const metadata = {
-  title: 'O nama | ExpertPro',
+  title: 'O nama',
   description: 'Saznajte više o ExpertPro platformi — berzi rada koja spaja radnike i poslodavce širom Srbije.',
+  alternates: { canonical: 'https://www.expertpro.app/o-nama' },
+  openGraph: { title: 'O nama | ExpertPro', description: 'Saznajte više o ExpertPro platformi.', url: 'https://www.expertpro.app/o-nama' },
 }
 
 export default function ONamePage() {

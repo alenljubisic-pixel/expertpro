@@ -8,6 +8,13 @@ import { publicName, publicInitial } from '@/lib/safe-name'
 import { AVAILABILITY_TIME_OPTIONS, AVAILABILITY_DAY_OPTIONS } from '@/lib/listing-availability'
 import DetectCityButton from '@/components/location/DetectCityButton'
 
+export const metadata = {
+  title: 'Pružaoci usluga i radnici',
+  description: 'Pronađite aktivne ponude radnika i pružalaca usluga po gradu, veštini i dostupnosti. Pregledajte njihove oglase pre dogovora.',
+  alternates: { canonical: 'https://www.expertpro.app/radnici' },
+  openGraph: { title: 'Pružaoci usluga i radnici', description: 'Aktivne ponude usluga i radnika po gradovima Srbije.', url: 'https://www.expertpro.app/radnici' },
+}
+
 const SKILLS = [
   'Građevina', 'Čišćenje', 'Transport', 'Ugostiteljstvo',
   'Fizički radovi', 'Magacin', 'Čuvanje dece', 'Čuvanje starih', 'Nega i pomoć u kući', 'IT podrška',

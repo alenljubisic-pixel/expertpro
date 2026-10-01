@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: 'Blog — lokalni vodiči za poslove i usluge',
   description: 'Praktični vodiči za pronalaženje majstora, pomoći u kući, čuvanja ljubimaca i kratkoročnih ili dugoročnih radnika u Srbiji.',
   alternates: { canonical: 'https://www.expertpro.app/blog' },
+  openGraph: { title: 'Lokalni vodiči za poslove i usluge', description: 'Praktični saveti za usluge i radnike po gradovima Srbije.', url: 'https://www.expertpro.app/blog', type: 'website' },
 }
 
 const groups = [

@@ -2,8 +2,9 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 
 export const metadata = {
-  title: 'Politika privatnosti | ExpertPro',
+  title: 'Politika privatnosti',
   description: 'Politika privatnosti ExpertPro platforme — kako prikupljamo i koristimo vaše podatke.',
+  alternates: { canonical: 'https://www.expertpro.app/privatnost' },
 }
 
 export default function PrivatnostPage() {
@@ -94,8 +95,8 @@ export default function PrivatnostPage() {
               </ul>
               <p className="text-sm text-gray-600 mt-3">
                 Zahteve možete poslati na{' '}
-                <a href="mailto:podrska@expertpro.rs" className="text-blue-600 hover:underline">
-                  podrska@expertpro.rs
+                <a href="mailto:podrska@expertpro.app" className="text-blue-600 hover:underline">
+                  podrska@expertpro.app
                 </a>
                 . Odgovaramo u roku od 30 dana.
               </p>
@@ -122,8 +123,8 @@ export default function PrivatnostPage() {
               <h2 className="text-lg font-bold text-gray-900 mb-3">10. Kontakt</h2>
               <p className="text-gray-600 leading-relaxed text-sm">
                 Za sva pitanja o zaštiti podataka:{' '}
-                <a href="mailto:podrska@expertpro.rs" className="text-blue-600 hover:underline">
-                  podrska@expertpro.rs
+                <a href="mailto:podrska@expertpro.app" className="text-blue-600 hover:underline">
+                  podrska@expertpro.app
                 </a>
               </p>
             </section>

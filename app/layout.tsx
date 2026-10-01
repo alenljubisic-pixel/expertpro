@@ -18,9 +18,6 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   keywords: "honorarni posao, radnici, usluge, Srbija, freelance, pomoćni radnici",
-  alternates: {
-    canonical: "/",
-  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -77,7 +74,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="sr">
+    <html lang="sr-Latn">
       <body className={`${inter.className} min-h-full`}>
         <script
           type="application/ld+json"

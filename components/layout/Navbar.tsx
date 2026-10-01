@@ -227,6 +227,8 @@ export default function Navbar() {
           <button
             className="md:hidden p-2 text-gray-500"
             onClick={() => setMenuOpen(!menuOpen)}
+            aria-label={menuOpen ? 'Zatvori meni' : 'Otvori meni'}
+            aria-expanded={menuOpen}
           >
             {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>

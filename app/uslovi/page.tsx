@@ -2,8 +2,9 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 
 export const metadata = {
-  title: 'Uslovi korišćenja | ExpertPro',
+  title: 'Uslovi korišćenja',
   description: 'Uslovi korišćenja ExpertPro platforme.',
+  alternates: { canonical: 'https://www.expertpro.app/uslovi' },
 }
 
 export default function UsloviPage() {
@@ -90,7 +91,7 @@ export default function UsloviPage() {
               <p className="text-gray-600 leading-relaxed text-sm">
                 Zadržavamo pravo da ugasimo nalog koji krši ove uslove korišćenja, bez prethodnog
                 upozorenja. Korisnici mogu zatražiti brisanje naloga slanjem zahteva na
-                podrska@expertpro.rs.
+                podrska@expertpro.app.
               </p>
             </section>
 
@@ -106,8 +107,8 @@ export default function UsloviPage() {
               <h2 className="text-lg font-bold text-gray-900 mb-3">10. Kontakt</h2>
               <p className="text-gray-600 leading-relaxed text-sm">
                 Za sva pitanja u vezi sa uslovima korišćenja, kontaktirajte nas na{' '}
-                <a href="mailto:podrska@expertpro.rs" className="text-blue-600 hover:underline">
-                  podrska@expertpro.rs
+                <a href="mailto:podrska@expertpro.app" className="text-blue-600 hover:underline">
+                  podrska@expertpro.app
                 </a>
                 .
               </p>

@@ -6,8 +6,10 @@ import { PROMOTION_TIERS, PROMOTION_PRICES, PROMOTION_DURATIONS, type PromotionT
 import { CREDIT_PACKAGES, PAID_MEMBERSHIP_WELCOME_BONUS_CREDITS, SIGNUP_WELCOME_CREDITS } from '@/lib/credits'
 
 export const metadata = {
-  title: 'Cenovnik | ExpertPro',
+  title: 'Cenovnik',
   description: 'Pregled planova i cena na ExpertPro platformi.',
+  alternates: { canonical: 'https://www.expertpro.app/cenovnik' },
+  openGraph: { title: 'Cenovnik | ExpertPro', description: 'Pregled planova i cena na ExpertPro platformi.', url: 'https://www.expertpro.app/cenovnik' },
 }
 
 const PLANS = [
@@ -255,7 +257,7 @@ export default function CenovnikPage() {
                 },
                 {
                   q: 'Kako se aktivira puno članstvo za firmu?',
-                  a: 'Kontaktirajte nas na podrska@expertpro.rs ili putem kontakt forme. Admin pregleda zahtev i odobrava puno članstvo. Bićete obavešteni emailom.',
+                  a: 'Kontaktirajte nas na podrska@expertpro.app ili putem kontakt forme. Admin pregleda zahtev i odobrava puno članstvo. Bićete obavešteni u svom nalogu.',
                 },
                 {
                   q: 'Da li postoji probni period za firme?',

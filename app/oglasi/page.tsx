@@ -10,6 +10,13 @@ import { AVAILABILITY_TIME_OPTIONS, AVAILABILITY_DAY_OPTIONS, matchingTimes, mat
 import { nearbyCitiesWithResults } from '@/lib/city-distance'
 import DetectCityButton from '@/components/location/DetectCityButton'
 
+export const metadata = {
+  title: 'Oglasi za poslove i usluge u Srbiji',
+  description: 'Pregledajte aktivne zahteve i ponude usluga u Srbiji. Filtrirajte oglase po gradu, kategoriji, ceni i trajanju angažmana.',
+  alternates: { canonical: 'https://www.expertpro.app/oglasi' },
+  openGraph: { title: 'Oglasi za poslove i usluge u Srbiji', description: 'Aktivni zahtevi i ponude usluga po gradovima i kategorijama.', url: 'https://www.expertpro.app/oglasi' },
+}
+
 const SORT_OPTIONS: Record<string, { label: string; apply: (q: any) => any }> = {
   novo: {
     label: 'Najnovije',

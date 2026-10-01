@@ -3,8 +3,10 @@ import Footer from '@/components/layout/Footer'
 import { Mail, MessageSquare, Clock, MapPin } from 'lucide-react'
 
 export const metadata = {
-  title: 'Kontakt | ExpertPro',
-  description: 'Kontaktirajte tim ExpertPro platforme. Odgovaramo u roku od 24 sata.',
+  title: 'Kontakt',
+  description: 'Kontaktirajte ExpertPro podršku za pitanja o oglasima, nalogu i korišćenju platforme.',
+  alternates: { canonical: 'https://www.expertpro.app/kontakt' },
+  openGraph: { title: 'Kontakt | ExpertPro', description: 'Kontaktirajte ExpertPro podršku.', url: 'https://www.expertpro.app/kontakt' },
 }
 
 export default function KontaktPage() {
@@ -27,8 +29,8 @@ export default function KontaktPage() {
                   <Mail className="w-5 h-5 text-blue-600" />
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-1">Email</h3>
-                <a href="mailto:podrska@expertpro.rs" className="text-blue-600 hover:text-blue-700 text-sm">
-                  podrska@expertpro.rs
+                <a href="mailto:podrska@expertpro.app" className="text-blue-600 hover:text-blue-700 text-sm">
+                  podrska@expertpro.app
                 </a>
                 <p className="text-xs text-gray-400 mt-1">Za opšta pitanja i podršku</p>
               </div>
@@ -39,7 +41,7 @@ export default function KontaktPage() {
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-1">Radno vreme podrške</h3>
                 <p className="text-sm text-gray-600">Pon–Pet: 09:00–17:00</p>
-                <p className="text-xs text-gray-400 mt-1">Odgovaramo u roku od 24h</p>
+                <p className="text-xs text-gray-400 mt-1">Odgovori stižu tokom radnog vremena podrške.</p>
               </div>
 
               <div className="bg-white rounded-xl border border-gray-100 p-6">
@@ -68,7 +70,7 @@ export default function KontaktPage() {
               <div className="bg-white rounded-xl border border-gray-100 p-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Pošaljite poruku</h2>
                 <form
-                  action="mailto:podrska@expertpro.rs"
+                  action="mailto:podrska@expertpro.app"
                   method="GET"
                   encType="text/plain"
                   className="space-y-5"
@@ -132,7 +134,7 @@ export default function KontaktPage() {
                   </button>
 
                   <p className="text-xs text-gray-400 text-center">
-                    Klikom na dugme otvarate vaš email klijent. Odgovaramo u roku od 24 radna sata.
+                    Klikom na dugme otvarate vaš email klijent. Odgovaramo tokom radnog vremena podrške.
                   </p>
                 </form>
               </div>

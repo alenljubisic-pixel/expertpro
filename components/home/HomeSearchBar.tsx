@@ -47,6 +47,7 @@ export default function HomeSearchBar() {
         <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
         <input
           type="text"
+          aria-label="Usluga ili posao koji tražiš"
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Šta tražiš? (spremačica, vodoinstalater...)"
@@ -56,6 +57,7 @@ export default function HomeSearchBar() {
       <div className="flex items-center gap-1 px-3 border-l border-gray-200">
         <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
         <select
+          aria-label="Izaberi grad"
           value={city}
           onChange={e => setCity(e.target.value)}
           className="text-gray-700 outline-none text-sm bg-transparent max-w-[100px]"

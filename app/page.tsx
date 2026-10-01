@@ -2,9 +2,14 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import HomeSearchBar from '@/components/home/HomeSearchBar'
-import { Star, Shield, Zap, Users, Briefcase, ChevronRight, MapPin, Clock } from 'lucide-react'
+import { Star, Shield, Zap, Users, Briefcase, ChevronRight, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { publicName, publicInitial } from '@/lib/safe-name'
+import { BLOG_POST_BY_SLUG } from '@/lib/blog-posts'
+
+export const metadata = {
+  alternates: { canonical: 'https://www.expertpro.app/' },
+}
 
 const CATEGORIES = [
   { icon: '🏗️', name: 'Građevina', slug: 'gradevina' },
@@ -30,27 +35,9 @@ const CATEGORIES = [
 ]
 
 const BLOG_PREVIEWS = [
-  {
-    slug: 'kako-naci-honorarni-posao-u-srbiji',
-    title: 'Kako naći honorarni posao u Srbiji — vodič za 2025.',
-    excerpt: 'Otkrijte gde tražiti kratkotrajna zapošljavanja i koje veštine su najtraženije.',
-    image: '💼',
-    readTime: '7 min',
-  },
-  {
-    slug: 'rad-od-kuce-opcije-srbija',
-    title: '10 najpopularnijih poslova od kuće u Srbiji',
-    excerpt: 'Od prevođenja do IT podrške — poslovi koje možete raditi kada i gde hoćete.',
-    image: '🏠',
-    readTime: '6 min',
-  },
-  {
-    slug: 'kako-zaraditi-dodatni-novac',
-    title: '15 načina za dodatnu zaradu pored redovnog posla',
-    excerpt: 'Realni načini da povećate prihode uz fleksibilno radno vreme.',
-    image: '💰',
-    readTime: '8 min',
-  },
+  BLOG_POST_BY_SLUG['popravka-bojlera-beograd'],
+  BLOG_POST_BY_SLUG['pomoc-starijima-beograd'],
+  BLOG_POST_BY_SLUG['dva-fizicka-radnika-vikend-novi-sad'],
 ]
 
 const TYPE_CONFIG: Record<string, { label: string; bg: string }> = {
@@ -74,19 +61,21 @@ export default async function HomePage() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
 
+      <main className="flex-1">
+
       {/* Hero */}
       <section className="bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 bg-white/20 text-white text-sm px-4 py-2 rounded-full mb-6 backdrop-blur-sm">
               <Zap className="w-4 h-4" />
-              <span>Prva platforma za honorarne poslove u Srbiji</span>
+              <span>Platforma za poslove i usluge u Srbiji</span>
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
               Pronađi posao ili<br />radnika — <span className="text-yellow-300">odmah</span>
             </h1>
             <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
-              Povezi se sa proverenim radnicima i firmama u svom gradu.
+              Poveži se sa radnicima i firmama u svom gradu.
               Jednodnevni angažmani, honorarni posao, hitne intervencije — sve na jednom mestu.
             </p>
 
@@ -100,7 +89,7 @@ export default async function HomePage() {
               </Link>
               <Link
                 href="/oglasi/novi?type=offer"
-                className="bg-blue-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-blue-400 transition-colors border border-blue-400"
+                className="bg-blue-800 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-blue-900 transition-colors border border-blue-300"
               >
                 💼 Nudim uslugu
               </Link>
@@ -128,7 +117,7 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link href="/oglasi?type=urgent" className="flex items-center justify-center gap-3 hover:opacity-90 transition-opacity">
             <span className="text-lg">🚨</span>
-            <span className="font-medium">Hitna berza — Objavi problem, radnici iz tvog grada se javljaju odmah</span>
+            <span className="font-medium">Hitna berza — Objavi problem i primi prijave dostupnih radnika</span>
             <ChevronRight className="w-5 h-5" />
           </Link>
         </div>
@@ -192,9 +181,9 @@ export default async function HomePage() {
                   <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 text-sm leading-snug">
                     {listing.title}
                   </h3>
-                  <p className="text-xs text-gray-400 line-clamp-2 mb-3">{listing.description}</p>
+                  <p className="text-xs text-gray-600 line-clamp-2 mb-3">{listing.description}</p>
 
-                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                  <div className="flex items-center gap-3 text-xs text-gray-600">
                     {listing.city && (
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
@@ -292,7 +281,7 @@ export default async function HomePage() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-1">Blog i saveti</h2>
-              <p className="text-gray-500 text-sm">Vodiči za honorarni rad i dodatnu zaradu</p>
+              <p className="text-gray-500 text-sm">Praktični vodiči za usluge, negu i angažovanje radnika</p>
             </div>
             <Link href="/blog" className="text-blue-600 text-sm font-medium hover:text-blue-700 flex items-center gap-1">
               Svi tekstovi <ChevronRight className="w-4 h-4" />
@@ -301,10 +290,9 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {BLOG_PREVIEWS.map(post => (
               <Link key={post.slug} href={`/blog/${post.slug}`} className="block bg-gray-50 rounded-xl border border-gray-100 p-6 hover:shadow-md transition-all">
-                <div className="text-4xl mb-3">{post.image}</div>
+                <div className="text-4xl mb-3">{post.icon}</div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-3 h-3 text-gray-400" />
-                  <span className="text-xs text-gray-400">{post.readTime} čitanja</span>
+                  <span className="text-xs text-gray-500">{post.category}{post.city ? ` · ${post.city}` : ''}</span>
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2 text-sm leading-snug">{post.title}</h3>
                 <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{post.excerpt}</p>
@@ -359,7 +347,7 @@ export default async function HomePage() {
       <section className="bg-blue-600 text-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold mb-4">Počni danas — besplatno</h2>
-          <p className="text-blue-100 text-lg mb-8 max-w-2xl mx-auto">
+          <p className="text-white text-lg mb-8 max-w-2xl mx-auto">
             Registracija je besplatna. Fizička lica koriste platformu bez naknade.
             Firme i agencije imaju pristup svim funkcijama platforme.
           </p>
@@ -380,6 +368,7 @@ export default async function HomePage() {
         </div>
       </section>
 
+      </main>
       <Footer />
     </div>
   )
