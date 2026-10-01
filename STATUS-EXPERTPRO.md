@@ -38,6 +38,12 @@
 
 > Čitaj ovo pre rada i ažuriraj posle svake značajne izmene. Samo aktuelno stanje; istorija je u Git-u. Bez lozinki, ključeva i korisničkih podataka.
 
+## 01.10.2026 — SEO blog
+
+- Osam starih blogova je sadržajno prerađeno za 2026: uklonjeni su zastareli datumi, nepotvrđene cene/statistike i obećanja koja platforma ne garantuje. Dodata su 24 nova, različita vodiča po usluzi i gradu (ukupno 32), uključujući majstore, čišćenje, ljubimce, ne-medicinsku pomoć starijima, kratke i višednevne angažmane i ponudu tima radnika. Izvor tekstova je `lib/blog-posts.ts` — jedino mesto za naslove, slugs i sadržaj.
+- `/blog` grupiše svih 32 tekstova. Svaki članak ima link na odgovarajuću pretragu i registraciju/objavu, canonical, Open Graph i `BlogPosting` strukturirane podatke. `sitemap.xml` automatski uzima sve blog slugs iz istog izvora i stavlja `lastModified=2026-10-01`; `robots.txt` već upućuje na sitemap. Nema garancije Google indeksiranja.
+- Lokalno provereno: TypeScript, ciljani ESLint i produkcioni build (sa sintetičkim javnim Supabase vrednostima samo za lokalno renderovanje) prolaze; build je generisao svih 32 blog stranice. Potrebno još: push/deploy, HTTP provera produkcije i ponovno slanje sitemap-a u Google Search Console. Prvi build bez Supabase javnih promenljivih nije prošao zbog postojećeg zahteva Navbar-a; nije greška bloga.
+
 ## Gde radimo
 
 - Repo: `D:\Downloads\expertpro-code\expertpro`, grana `main`; produkcija: `https://www.expertpro.app`.

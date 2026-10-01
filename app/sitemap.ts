@@ -1,25 +1,15 @@
 import type { MetadataRoute } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { BLOG_POSTS, BLOG_UPDATED_AT } from '@/lib/blog-posts'
 
 const BASE = 'https://www.expertpro.app'
-
-const BLOG_SLUGS = [
-  'kako-naci-honorarni-posao-u-srbiji',
-  'rad-od-kuce-opcije-srbija',
-  'kako-zaraditi-dodatni-novac',
-  'jednodnevni-angazmani-srbija',
-  'cuvanje-dece-i-ljubimaca-posao',
-  'freelancing-u-srbiji-vodic',
-  'hitni-poslovi-srbija',
-  'fizicki-radnici-srbija',
-]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, changeFrequency: 'daily', priority: 1 },
     { url: `${BASE}/oglasi`, changeFrequency: 'hourly', priority: 0.9 },
     { url: `${BASE}/radnici`, changeFrequency: 'daily', priority: 0.8 },
-    { url: `${BASE}/blog`, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE}/blog`, lastModified: new Date(BLOG_UPDATED_AT), changeFrequency: 'weekly', priority: 0.6 },
     { url: `${BASE}/cenovnik`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE}/faq`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE}/o-nama`, changeFrequency: 'monthly', priority: 0.4 },
@@ -30,8 +20,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/uslovi`, changeFrequency: 'yearly', priority: 0.2 },
   ]
 
-  const blogPages: MetadataRoute.Sitemap = BLOG_SLUGS.map((slug) => ({
-    url: `${BASE}/blog/${slug}`,
+  const blogPages: MetadataRoute.Sitemap = BLOG_POSTS.map((post) => ({
+    url: `${BASE}/blog/${post.slug}`,
+    lastModified: new Date(BLOG_UPDATED_AT),
     changeFrequency: 'monthly',
     priority: 0.5,
   }))
