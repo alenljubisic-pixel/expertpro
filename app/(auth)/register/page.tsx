@@ -227,7 +227,7 @@ function RegisterForm() {
           {userType === 'individual' && <div className="mb-5">
             <label htmlFor="signup-username" className="block text-sm font-medium text-gray-700 mb-1">Javni nadimak (opciono)</label>
             <input id="signup-username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} minLength={3} maxLength={24} autoComplete="nickname" className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="npr. markomajstor" />
-            <p className="mt-1 text-xs text-gray-500">Javno se vidi nadimak, ne puno ime. Ako preskočiš, dobijaš kratak automatski ID. Možeš ga kasnije promeniti u profilu.</p>
+            <p className="mt-1 text-xs text-gray-500">Javno se vidi nadimak, ne puno ime. Ako preskočiš, dobijaš ime poput Lucky425630. Nadimak možeš promeniti jednom u 60 dana.</p>
           </div>}
           <div className="space-y-3 mb-6">
             <button

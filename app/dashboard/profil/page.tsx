@@ -30,6 +30,7 @@ export default function ProfileEditPage() {
 
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
+  const [clockNow, setClockNow] = useState(0)
   const [bio, setBio] = useState('')
   const [city, setCity] = useState('')
   const [phone, setPhone] = useState('')
@@ -60,6 +61,7 @@ export default function ProfileEditPage() {
       if (p) {
         setProfile(p)
         setUsername(p.username || '')
+        setClockNow(Date.now())
         const { data: contacts } = await supabase.rpc('get_my_profile_contact')
         setName(p.type === 'individual' ? (contacts?.[0]?.legal_name || '') : (p.name || ''))
         setBio(p.bio || '')
@@ -150,7 +152,13 @@ export default function ProfileEditPage() {
   const handleSave = async () => {
     setSaveError('')
     const requestedUsername = username.trim().toLowerCase()
-    if (userType === 'individual' && requestedUsername !== profile?.username &&
+    const usernameChanged = userType === 'individual' && requestedUsername !== profile?.username?.toLowerCase()
+    if (usernameChanged && profile?.username_changed_at &&
+        Date.now() < new Date(profile.username_changed_at).getTime() + 60 * 24 * 60 * 60 * 1000) {
+      setSaveError('Nadimak možeš promeniti samo jednom u 60 dana.')
+      return
+    }
+    if (usernameChanged &&
         (!/^[a-z][a-z0-9_]{2,23}$/.test(requestedUsername) || /^(admin|administrator|support|podrska|expertpro|moderator|official|system|ep[-_])/.test(requestedUsername))) {
       setSaveError('Nadimak: 3–24 znaka, počinje slovom; dozvoljena su mala slova, brojevi i _.')
       return
@@ -173,17 +181,9 @@ export default function ProfileEditPage() {
     })
     if (contactError) { setSaveError('Čuvanje kontakta nije uspelo. Pokušaj ponovo.'); setSaving(false); return }
 
-    if (userType === 'individual' && requestedUsername !== profile?.username) {
-      const { error: usernameError } = await supabase.from('profiles').update({ username: requestedUsername }).eq('id', user.id)
-      if (usernameError) {
-        setSaveError(usernameError.code === '23505' ? 'Taj nadimak je zauzet. Izaberi drugi.' : 'Nadimak nije sačuvan. Pokušaj ponovo.')
-        setSaving(false)
-        return
-      }
-    }
-
     const { data: savedProfile, error: profileError } = await supabase.from('profiles').update({
-      name: userType === 'individual' ? requestedUsername : name,
+      ...(usernameChanged ? { username: requestedUsername } : {}),
+      name: userType === 'individual' ? (usernameChanged ? requestedUsername : profile?.username) : name,
       bio,
       city: city || null,
       skills,
@@ -194,9 +194,14 @@ export default function ProfileEditPage() {
       type: userType,
       pib: (userType === 'company' || userType === 'agency') ? (pib || null) : null,
       updated_at: new Date().toISOString(),
-    }).eq('id', user.id).select('type, name, username, is_approved').single()
+    }).eq('id', user.id).select('type, name, username, username_changed_at, is_approved').single()
 
-    if (profileError) { setSaveError('Profil nije sačuvan. Pokušaj ponovo.'); setSaving(false); return }
+    if (profileError) {
+      setSaveError(profileError.code === '23505' ? 'Taj nadimak je zauzet. Izaberi drugi.' :
+        profileError.message.includes('Nadimak se može') ? profileError.message : 'Profil nije sačuvan. Pokušaj ponovo.')
+      setSaving(false)
+      return
+    }
 
     setProfile((prev: any) => prev ? { ...prev, ...savedProfile } : prev)
     if (typeChanged) setTypeChangeRequested(needsApproval)
@@ -205,6 +210,11 @@ export default function ProfileEditPage() {
     setSuccess(true)
     setTimeout(() => setSuccess(false), 3000)
   }
+
+  const usernameAvailableAt = profile?.username_changed_at
+    ? new Date(profile.username_changed_at).getTime() + 60 * 24 * 60 * 60 * 1000
+    : 0
+  const usernameLocked = usernameAvailableAt > clockNow
 
   if (loading) {
     return (
@@ -301,8 +311,9 @@ export default function ProfileEditPage() {
 
             {userType === 'individual' && <div>
               <label htmlFor="profile-username" className="block text-sm font-medium text-gray-700 mb-1">Javni nadimak</label>
-              <input id="profile-username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} minLength={3} maxLength={24} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <p className="mt-1 text-xs text-gray-500">3–24 znaka: mala slova, brojevi i _. Kod za preporuke ostaje isti kada promeniš nadimak.</p>
+              <input id="profile-username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} minLength={3} maxLength={24} disabled={usernameLocked} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500" />
+              <p className="mt-1 text-xs text-gray-500">3–24 znaka: mala slova, brojevi i _. Menjanje je moguće jednom u 60 dana; kod za preporuke ostaje isti.</p>
+              {usernameLocked && <p className="mt-1 text-xs text-amber-700">Sledeća promena od {new Intl.DateTimeFormat('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(usernameAvailableAt))}.</p>}
             </div>}
 
             <div>
