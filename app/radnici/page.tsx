@@ -195,7 +195,7 @@ export default async function WorkersPage({
                     {worker.available && (
                       <div className="mt-3 flex items-center gap-1 text-xs text-green-600">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                        Dostupan odmah
+                        Prima upite
                       </div>
                     )}
                   </Link>
