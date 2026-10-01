@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { telegramApi } from '@/lib/telegram-payments'
+import { sendCreditConfirmationEmail } from '@/lib/credit-confirmation-email'
 
 export const runtime = 'nodejs'
 
@@ -83,6 +84,13 @@ export async function POST(request: Request) {
   if (error) {
     await answer('Potvrda nije uspela. Proveri status i podatke u admin panelu.', true)
     return Response.json({ ok: true })
+  }
+  if (kindCode === 'c' && data === 'confirmed') {
+    try {
+      await sendCreditConfirmationEmail(orderId)
+    } catch (emailError) {
+      console.error('Credit purchase confirmed, but receipt email failed:', emailError)
+    }
   }
   await answer(data === 'already_confirmed' ? 'Ova uplata je već potvrđena.' : 'Uplata potvrđena; kredit/promocija su dodeljeni.')
   if (callback.message?.message_id) {

@@ -4,7 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function proxy(request: NextRequest) {
   // Telegram authenticates this webhook with its dedicated secret header.
   // Do not require a browser session or call Supabase Auth for bot callbacks.
-  if (request.nextUrl.pathname === '/api/telegram/payment-webhook') {
+  if (request.nextUrl.pathname === '/api/telegram/payment-webhook' ||
+      request.nextUrl.pathname === '/api/cron/credit-confirmation-emails') {
     return NextResponse.next({ request })
   }
   let supabaseResponse = NextResponse.next({ request })

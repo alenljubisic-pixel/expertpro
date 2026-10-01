@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 import { safeName } from '@/lib/safe-name'
 import { PROMOTION_TIERS, type PromotionTier } from '@/lib/promotions'
 import { buildPaymentPurpose } from '@/lib/payment-purpose'
+import { sendCreditConfirmationEmail } from '@/lib/credit-confirmation-email'
 
 async function isAdmin(userId: string, supabase: any): Promise<boolean> {
   const { data } = await supabase.from('profiles').select('is_admin').eq('id', userId).single()
@@ -64,6 +65,11 @@ async function confirmCreditPurchase(formData: FormData) {
   if (Number(formData.get('bank_amount')) !== Number(order.price_amount)) returnToPayments(formData, 'amount_mismatch')
   const { error } = await supabase.rpc('admin_confirm_credit_purchase', { p_purchase_id: id, p_note: 'Potvrđeno prema izvodu: šifra i iznos se poklapaju.' })
   if (error) returnToPayments(formData, 'failed')
+  try {
+    await sendCreditConfirmationEmail(id)
+  } catch (emailError) {
+    console.error('Credit purchase confirmed, but receipt email failed:', emailError)
+  }
   revalidatePath('/admin/uplate')
   returnToPayments(formData, 'confirmed')
 }

@@ -1,1 +1,5 @@
-{}
+{
+  "crons": [
+    { "path": "/api/cron/credit-confirmation-emails", "schedule": "0 8 * * *" }
+  ]
+}
