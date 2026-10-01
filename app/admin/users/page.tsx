@@ -193,6 +193,7 @@ export default async function AdminUsersPage({
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  <Link href={`/admin/users/${u.id}?month=${month}#credits`} className="rounded-lg border border-blue-200 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50">Krediti</Link>
                   {u.type === 'individual' || u.is_approved ? (
                     <span className="flex items-center gap-1 text-xs text-green-600">
                       <CheckCircle className="w-4 h-4" />
