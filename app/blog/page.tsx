@@ -6,7 +6,7 @@ import { ArrowRight } from 'lucide-react'
 import { BLOG_POSTS, BLOG_UPDATED_AT } from '@/lib/blog-posts'
 
 export const metadata: Metadata = {
-  title: 'Blog — lokalni vodiči za poslove i usluge | ExpertPro',
+  title: 'Blog — lokalni vodiči za poslove i usluge',
   description: 'Praktični vodiči za pronalaženje majstora, pomoći u kući, čuvanja ljubimaca i kratkoročnih ili dugoročnih radnika u Srbiji.',
   alternates: { canonical: 'https://www.expertpro.app/blog' },
 }
