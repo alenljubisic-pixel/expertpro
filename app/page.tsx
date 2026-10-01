@@ -2,9 +2,10 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import HomeSearchBar from '@/components/home/HomeSearchBar'
+import ProfileAvatar from '@/components/profile/ProfileAvatar'
 import { Star, Shield, Zap, Users, Briefcase, ChevronRight, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { publicName, publicInitial } from '@/lib/safe-name'
+import { publicName } from '@/lib/safe-name'
 import { BLOG_POST_BY_SLUG } from '@/lib/blog-posts'
 
 export const metadata = {
@@ -52,7 +53,7 @@ export default async function HomePage() {
   // Real featured listings (latest 6 active)
   const { data: featuredListings } = await supabase
     .from('listings')
-    .select('*, profile:profiles!user_id(id, type, name, username, rating_avg, is_verified)')
+    .select('*, profile:profiles!user_id(id, type, name, username, avatar_url, rating_avg, is_verified)')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(6)
@@ -215,9 +216,7 @@ export default async function HomePage() {
                 </div>
 
                 <div className="border-t border-gray-50 px-5 py-3 flex items-center gap-2">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600 flex-shrink-0">
-                    {publicInitial(profile)}
-                  </div>
+                  <ProfileAvatar src={profile?.avatar_url} type={profile?.type} name={publicName(profile)} className="w-6 h-6" />
                   <span className="text-xs text-gray-600 truncate">
                     {publicName(profile)}
                   </span>

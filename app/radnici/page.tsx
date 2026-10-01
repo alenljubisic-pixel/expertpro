@@ -4,7 +4,8 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { MapPin, Star, CheckCircle } from 'lucide-react'
 import { SERBIAN_CITIES } from '@/types'
-import { publicName, publicInitial } from '@/lib/safe-name'
+import { publicName } from '@/lib/safe-name'
+import ProfileAvatar from '@/components/profile/ProfileAvatar'
 import { AVAILABILITY_TIME_OPTIONS, AVAILABILITY_DAY_OPTIONS } from '@/lib/listing-availability'
 import DetectCityButton from '@/components/location/DetectCityButton'
 
@@ -164,9 +165,7 @@ export default async function WorkersPage({
                     className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-all"
                   >
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-lg font-bold text-blue-600 flex-shrink-0">
-                        {publicInitial({ id: worker.id, username: worker.username, type: 'individual' })}
-                      </div>
+                      <ProfileAvatar src={worker.avatar_url} type="individual" name={publicName({ id: worker.id, username: worker.username, type: 'individual' })} className="w-12 h-12" />
                       <div>
                         <p className="font-semibold text-gray-900 text-sm">{publicName({ id: worker.id, username: worker.username, type: 'individual' })}</p>
                         <div className="flex items-center gap-1.5 text-xs text-gray-400">

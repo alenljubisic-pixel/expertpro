@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Zap, Mail, Lock, Eye, EyeOff, User, Building2, Users } from 'lucide-react'
 
@@ -31,10 +31,20 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const router = useRouter()
+  const [referralCode, setReferralCode] = useState(() => {
+    const code = searchParams.get('ref')?.trim().toLowerCase() || ''
+    return /^ep-[0-9a-f]{16}$/.test(code) ? code : ''
+  })
   const supabase = createClient()
 
+  const rememberReferral = () => {
+    const code = referralCode.trim().toLowerCase()
+    if (code) window.localStorage.setItem('expertpro_referral_code', code)
+    else window.localStorage.removeItem('expertpro_referral_code')
+  }
+
   const handleGoogleLogin = async () => {
+    rememberReferral()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` }
@@ -47,6 +57,7 @@ function RegisterForm() {
   const SHOW_FACEBOOK_LOGIN = false
 
   const handleFacebookLogin = async () => {
+    rememberReferral()
     await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options: { redirectTo: `${window.location.origin}/auth/callback` }
@@ -69,8 +80,13 @@ function RegisterForm() {
       setError('PIB je obavezan za firme i agencije.')
       return
     }
+    if (referralCode.trim() && !/^ep-[0-9a-f]{16}$/.test(referralCode.trim().toLowerCase())) {
+      setError('Kod preporuke nije ispravan.')
+      return
+    }
 
     setLoading(true)
+    rememberReferral()
 
     const displayName = userType === 'individual' ? name : companyName
 
@@ -82,6 +98,7 @@ function RegisterForm() {
           full_name: displayName,
           type: userType,
           pib: pib || null,
+          referral_code: referralCode.trim().toLowerCase() || null,
         }
       }
     })
@@ -108,6 +125,7 @@ function RegisterForm() {
       }
     }
 
+    window.localStorage.removeItem('expertpro_referral_code')
     setSuccess(true)
     setLoading(false)
   }
@@ -280,6 +298,12 @@ function RegisterForm() {
                   placeholder="tvoj@email.com"
                 />
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="referral-code" className="block text-sm font-medium text-gray-700 mb-1">Kod preporuke (opciono)</label>
+              <input id="referral-code" type="text" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ep-..." autoComplete="off" />
+              <p className="mt-1 text-xs text-gray-500">Ako si dobio link od prijatelja, kod je već unet. On dobija nagradu tek nakon tvog prvog aktivnog oglasa.</p>
             </div>
 
             <div>

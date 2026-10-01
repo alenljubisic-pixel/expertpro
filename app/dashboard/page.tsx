@@ -4,6 +4,8 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import CreditsWidget from '@/components/credits/CreditsWidget'
+import ReferralCard from '@/components/credits/ReferralCard'
+import ProfileAvatar from '@/components/profile/ProfileAvatar'
 import { reportMonth, monthLabel } from '@/lib/report-month'
 import {
   Plus, Briefcase, MessageSquare, Eye, CheckCircle,
@@ -28,6 +30,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     supabase.rpc('my_monthly_activity', { p_month: `${month}-01` }),
   ])
   const activity = activityRows?.[0]
+  const { data: referralRows } = await supabase.rpc('my_referral_stats')
+  const referralStats = referralRows?.[0] ?? { pending_count: 0, rewarded_count: 0, earned_credits: 0 }
 
   const { data: myListings } = await supabase
     .from('listings')
@@ -179,13 +183,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <div className="space-y-4">
             {/* Credits */}
             <CreditsWidget balance={profile?.credit_balance ?? 0} accountType={profile?.type} />
+            <ReferralCard code={profile?.username ?? null} stats={referralStats} />
 
             {/* Profile card */}
             <div className="bg-white rounded-xl border border-gray-100 p-5">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-xl font-bold text-blue-600">
-                  {profile?.name ? profile.name[0].toUpperCase() : '?'}
-                </div>
+                <ProfileAvatar src={profile?.avatar_url} type={profile?.type} name={profile?.name} className="w-12 h-12" />
                 <div>
                   <p className="font-semibold text-gray-900">{profile?.name}</p>
                   <p className="text-xs text-gray-500">{user.email}</p>

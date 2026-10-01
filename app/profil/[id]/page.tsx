@@ -4,7 +4,8 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { MapPin, Star, CheckCircle, Briefcase } from 'lucide-react'
-import { safeName, safeInitial } from '@/lib/safe-name'
+import { safeName } from '@/lib/safe-name'
+import ProfileAvatar from '@/components/profile/ProfileAvatar'
 import { reportMonth, monthLabel } from '@/lib/report-month'
 
 export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ month?: string }> }) {
@@ -33,7 +34,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
 
   const { data: reviews } = await supabase
     .from('reviews')
-    .select('*, reviewer:profiles!reviewer_id(name)')
+    .select('*, reviewer:profiles!reviewer_id(name, avatar_url)')
     .eq('reviewee_id', id)
     .order('created_at', { ascending: false })
     .limit(10)
@@ -52,9 +53,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
           <div className="md:col-span-1">
             <div className="bg-white rounded-xl border border-gray-100 p-6 sticky top-20">
               <div className="text-center mb-4">
-                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-3xl font-bold text-blue-600 mx-auto mb-3">
-                  {safeInitial(profile.name)}
-                </div>
+                <ProfileAvatar src={profile.avatar_url} type={profile.type} name={safeName(profile.name)} className="w-20 h-20 mx-auto mb-3" />
                 <h1 className="text-xl font-bold text-gray-900">{safeName(profile.name)}</h1>
                 <p className="text-sm text-gray-400 capitalize mt-0.5">
                   {profile.type === 'individual' ? 'Fizičko lice'
@@ -185,9 +184,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
                     return (
                       <div key={review.id} className="border-b border-gray-50 pb-4 last:border-0 last:pb-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
-                            {safeInitial(reviewer?.name)}
-                          </div>
+                          <ProfileAvatar src={reviewer?.avatar_url} name={safeName(reviewer?.name)} className="w-7 h-7" />
                           <span className="text-sm font-medium text-gray-900">{safeName(reviewer?.name)}</span>
                           <div className="flex gap-0.5 ml-1">
                             {Array.from({ length: 5 }, (_, i) => (

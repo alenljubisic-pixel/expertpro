@@ -4,7 +4,8 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { MapPin, Clock, Search, SlidersHorizontal, Plus } from 'lucide-react'
 import { SERBIAN_CITIES } from '@/types'
-import { publicName, publicInitial } from '@/lib/safe-name'
+import { publicName } from '@/lib/safe-name'
+import ProfileAvatar from '@/components/profile/ProfileAvatar'
 import SaveButton from '@/components/listings/SaveButton'
 import { AVAILABILITY_TIME_OPTIONS, AVAILABILITY_DAY_OPTIONS, matchingTimes, matchingDays, availabilityLabel } from '@/lib/listing-availability'
 import { nearbyCitiesWithResults } from '@/lib/city-distance'
@@ -515,9 +516,7 @@ export default async function ListingsPage({
                       </div>
 
                       <div className="border-t border-gray-50 px-5 py-3 flex items-center gap-2">
-                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600 flex-shrink-0">
-                          {publicInitial(profile)}
-                        </div>
+                        <ProfileAvatar src={profile?.avatar_url} type={profile?.type} name={publicName(profile)} className="w-6 h-6" />
                         <span className="text-xs text-gray-600 truncate">{publicName(profile)}</span>
                         {profile?.rating_avg > 0 && (
                           <span className="text-xs text-yellow-600 ml-auto flex-shrink-0">★ {profile.rating_avg.toFixed(1)}</span>

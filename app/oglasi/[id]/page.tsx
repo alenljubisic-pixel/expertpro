@@ -5,9 +5,10 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import ApplyButton from '@/components/listings/ApplyButton'
 import SaveButton from '@/components/listings/SaveButton'
+import ProfileAvatar from '@/components/profile/ProfileAvatar'
 import JobCompletion from '@/components/listings/JobCompletion'
 import { MapPin, Calendar, Users, Star, Clock, ArrowLeft, CheckCircle, Eye, MessageSquare, X, Check } from 'lucide-react'
-import { safeName, safeInitial } from '@/lib/safe-name'
+import { safeName } from '@/lib/safe-name'
 import { revalidatePath } from 'next/cache'
 import { availabilityLabel } from '@/lib/listing-availability'
 
@@ -95,7 +96,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const { data: applicants } = isOwner
     ? await supabase
         .from('applications')
-        .select('id, applicant_id, message, proposed_price, status, created_at, owner_finished_at, applicant_finished_at, completed_at, applicant:profiles!applicant_id(id, name, avatar_url, rating_avg, rating_count, is_verified, phone)')
+        .select('id, applicant_id, message, proposed_price, status, created_at, owner_finished_at, applicant_finished_at, completed_at, applicant:profiles!applicant_id(id, name, type, avatar_url, rating_avg, rating_count, is_verified, phone)')
         .eq('listing_id', id)
         .order('created_at', { ascending: false })
     : { data: null }
@@ -331,9 +332,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                     return (
                       <div key={review.id} className="border-b border-gray-50 pb-4 last:border-0 last:pb-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
-                            {safeInitial(reviewer?.name)}
-                          </div>
+                          <ProfileAvatar src={reviewer?.avatar_url} name={safeName(reviewer?.name)} className="w-7 h-7" />
                           <span className="text-sm font-medium text-gray-900">{safeName(reviewer?.name)}</span>
                           <div className="flex gap-0.5 ml-1">
                             {Array.from({ length: 5 }, (_, i) => (
@@ -355,9 +354,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             {/* Apply / Contact card */}
             <div className="bg-white rounded-xl border border-gray-100 p-5">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-xl font-bold text-blue-600 flex-shrink-0">
-                  {safeInitial(profile?.name)}
-                </div>
+                <ProfileAvatar src={profile?.avatar_url} type={profile?.type} name={safeName(profile?.name)} className="w-12 h-12" />
                 <div>
                   <p className="font-semibold text-gray-900">{safeName(profile?.name)}</p>
                   <div className="flex items-center gap-1.5 text-xs text-gray-400">
@@ -444,9 +441,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                   return (
                     <div key={app.id} className="py-4 first:pt-0 last:pb-0">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600 flex-shrink-0">
-                          {safeInitial(applicant?.name)}
-                        </div>
+                        <ProfileAvatar src={applicant?.avatar_url} type={applicant?.type} name={safeName(applicant?.name)} className="w-10 h-10" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-0.5">
                             <Link href={`/profil/${applicant?.id}`} className="font-medium text-gray-900 hover:text-blue-600 transition-colors">
