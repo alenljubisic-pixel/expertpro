@@ -72,11 +72,11 @@ export default async function HomePage() {
               <span>Platforma za poslove i usluge u Srbiji</span>
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
-              Pronađi posao ili<br />radnika — <span className="text-yellow-300">odmah</span>
+              Pronađi posao ili<br />radnika — <span className="text-yellow-300">za svoj plan</span>
             </h1>
             <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
               Poveži se sa radnicima i firmama u svom gradu.
-              Jednodnevni angažmani, honorarni posao, hitne intervencije — sve na jednom mestu.
+              Jednokratan zadatak, dodatna zarada, slobodan tim ili višemesečni angažman — sve na jednom mestu.
             </p>
 
             {/* CTA Buttons */}
@@ -109,6 +109,21 @@ export default async function HomePage() {
               Klikni na <span className="font-medium">⊕</span> da automatski detektujemo tvoj grad
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid md:grid-cols-2 gap-4">
+          <Link href="/kratkorocni-poslovi" className="rounded-xl border border-blue-200 bg-blue-50 p-6 hover:border-blue-400">
+            <h2 className="text-xl font-bold text-gray-900">Kratkoročno: reši zadatak ili zaradi dodatno</h2>
+            <p className="text-gray-700 mt-2">Popravke, čišćenje, selidbe i ispomoć za danas, vikend ili nekoliko sati.</p>
+            <span className="inline-block text-blue-700 font-semibold mt-4">Pogledaj berzu →</span>
+          </Link>
+          <Link href="/dugorocni-poslovi" className="rounded-xl border border-green-200 bg-green-50 p-6 hover:border-green-400">
+            <h2 className="text-xl font-bold text-gray-900">Dugoročno: radnik ili tim na više dana</h2>
+            <p className="text-gray-700 mt-2">Sezonski rad, angažman na određeno i stalne pozicije za firme i pojedince.</p>
+            <span className="inline-block text-green-800 font-semibold mt-4">Pogledaj angažmane →</span>
+          </Link>
         </div>
       </section>
 
@@ -315,8 +330,8 @@ export default async function HomePage() {
             {[
               { icon: <Shield className="w-6 h-6 text-blue-600" />, title: 'Verifikovani korisnici', desc: 'Svi korisnici prolaze kroz verifikaciju email-om i brojem telefona. Firme i agencije dodatno odobrava admin.' },
               { icon: <Star className="w-6 h-6 text-blue-600" />, title: 'Dvostrani rejting sistem', desc: 'I radnici i poslodavci ocenjuju jedni druge. Vidiš istoriju posla, procenat dolaznosti i ocene pre angažmana.' },
-              { icon: <Zap className="w-6 h-6 text-blue-600" />, title: 'Hitna berza', desc: 'Objavi problem — pokvarena instalacija, selidba danas, nedostaje radnik — i dobij ponude za sat vremena.' },
-              { icon: <MapPin className="w-6 h-6 text-blue-600" />, title: 'Oko mene — pretraga po lokaciji', desc: 'Automatski detektuj svoj grad i pronađi radnike u blizini. Svi gradovi u Srbiji pokriveni.' },
+              { icon: <Zap className="w-6 h-6 text-blue-600" />, title: 'Hitna berza', desc: 'Objavi hitan problem — pokvarena instalacija, selidba danas ili nedostaje radnik — i prati pristigle prijave.' },
+              { icon: <MapPin className="w-6 h-6 text-blue-600" />, title: 'Oko mene — pretraga po lokaciji', desc: 'Automatski detektuj svoj grad i pretraži dostupne oglase u blizini. Ako ih nema, proširi pretragu na okolna mesta.' },
               { icon: <Users className="w-6 h-6 text-blue-600" />, title: 'Moj Tim', desc: 'Angažovao si dobrog radnika? Sačuvaj ga u "Moj Tim" i pozovi ponovo jednim klikom.' },
               { icon: <Shield className="w-6 h-6 text-blue-600" />, title: 'Zaštićena komunikacija', desc: 'Sav razgovor ostaje u chatu. Admin ima uvid ako dođe do problema i interveniše po potrebi.' },
             ].map((item) => (

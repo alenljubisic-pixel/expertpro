@@ -1,5 +1,11 @@
 # ExpertPro — zajednički status (Codex + Claude)
 
+## 01.10.2026 — SEO oglasa i plan izlaska na tržište Srbije (Codex)
+
+- U toku ove izmene pojedinačni **aktivni stvarni** oglasi zadržavaju javni URL, jedinstven naslov/opis/canonical i sitemap unos; neaktivni dobijaju `noindex` i nisu u mapi. Dodate su dve indeksabilne ulazne stranice `/kratkorocni-poslovi` i `/dugorocni-poslovi`, sa različitim tekstom, živim aktivnim oglasima i internim linkovima iz menija/početne/podnožja. Početna jasnije objašnjava jednokratne poslove, dodatnu zaradu, slobodne timove i duži angažman bez obećanja trenutne prijave.
+- Stara `JobPosting` JSON-LD oznaka uklonjena je iz oglasa jer je pogrešno označavala i jednokratne kućne zahteve kao formalne poslove, svima davala `CONTRACTOR` i tretirala cenu/budžet kao platu. Google dopušta tu oznaku samo za stvarne otvorene pozicije sa potpunim, tačnim informacijama; sada se oglasi i dalje mogu indeksirati kao obične stranice. Buduće vraćanje ove oznake tek posle pravne i sadržinske provere dugoročnih oglasa i modela naplate kandidatima.
+- Operativni plan za prvih 50 stvarnih autora oglasa, postojeće TikTok/Instagram kanale, faze širenja, metrike i odluku o engleskoj verziji je u `PLAN-RASTA-SRBIJA.md`. Preporuka: Srbija/Beograd kao prvi klaster; engleski i automatski prevod ne dodavati napola bez stvarne potražnje i kontrole kvaliteta. Pravnik treba da proveri da li naplata kandidatu pri stalnom zaposlenju ili predstavljanje „rentiranja radnika“ zahteva promenu modela. TypeScript, ciljani ESLint (0 grešaka, 9 postojećih upozorenja) i lokalni produkcioni build prošli su; **javna provera i deploy slede**.
+
 ## 01.10.2026 — SEO revizija (Codex)
 
 - Javni audit pre ispravke: Google PageSpeed Insights za početnu stranu dao je laboratorijski mobilni rezultat Performance 87, Accessibility 82, SEO 100; desktop Performance 100, Accessibility 88, SEO 100. Ovo nije ocena pozicija u pretrazi. Search Console „Page indexing“ još kaže „Processing data“, a Core Web Vitals nema dovoljno stvarnih poseta u prethodnih 90 dana. Sitemap je poslednji put pročitan 29.09. (23 otkrivene stranice), iako je nova mapa predata 01.10. i javno sadrži 32 blog URL-a.

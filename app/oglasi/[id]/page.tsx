@@ -22,14 +22,19 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const supabase = await createClient()
   const { data: listing } = await supabase
     .from('listings')
-    .select('title, description, city, status')
+    .select('title, description, city, status, type, engagement_mode')
     .eq('id', id)
     .single()
 
   if (!listing) return {}
 
   const title = `${listing.title} — ${listing.city}`
-  const description = (listing.description || `Oglas na ExpertPro platformi u gradu ${listing.city}.`).slice(0, 160)
+  const kind = listing.type === 'offer'
+    ? 'Ponuda usluge'
+    : ['fixed_term', 'permanent'].includes(listing.engagement_mode || '')
+      ? 'Dugoročni angažman'
+      : 'Aktivan posao'
+  const description = `${kind} u ${listing.city}. ${listing.description || listing.title}`.slice(0, 160)
 
   return {
     title,
@@ -174,45 +179,8 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     return new Date(d).toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'long', year: 'numeric' })
   }
 
-  const jobPostingJsonLd = listing.type !== 'offer' ? {
-    '@context': 'https://schema.org/',
-    '@type': 'JobPosting',
-    title: listing.title,
-    description: listing.description || listing.title,
-    datePosted: listing.created_at,
-    validThrough: listing.expires_at || undefined,
-    employmentType: 'CONTRACTOR',
-    hiringOrganization: {
-      '@type': profile?.type === 'individual' ? 'Person' : 'Organization',
-      name: safeName(profile?.name),
-    },
-    jobLocation: {
-      '@type': 'Place',
-      address: {
-        '@type': 'PostalAddress',
-        addressLocality: listing.city,
-        addressCountry: 'RS',
-      },
-    },
-    baseSalary: listing.price_amount ? {
-      '@type': 'MonetaryAmount',
-      currency: 'RSD',
-      value: {
-        '@type': 'QuantitativeValue',
-        value: listing.price_amount,
-        unitText: listing.price_type === 'hourly' ? 'HOUR' : listing.price_type === 'daily' ? 'DAY' : undefined,
-      },
-    } : undefined,
-  } : null
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {jobPostingJsonLd && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPostingJsonLd) }}
-        />
-      )}
       <Navbar />
 
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">

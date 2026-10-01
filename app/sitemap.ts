@@ -8,6 +8,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, changeFrequency: 'daily', priority: 1 },
     { url: `${BASE}/oglasi`, changeFrequency: 'hourly', priority: 0.9 },
+    { url: `${BASE}/kratkorocni-poslovi`, changeFrequency: 'daily', priority: 0.8 },
+    { url: `${BASE}/dugorocni-poslovi`, changeFrequency: 'daily', priority: 0.8 },
     { url: `${BASE}/radnici`, changeFrequency: 'daily', priority: 0.8 },
     { url: `${BASE}/blog`, lastModified: new Date(BLOG_UPDATED_AT), changeFrequency: 'weekly', priority: 0.6 },
     { url: `${BASE}/cenovnik`, changeFrequency: 'monthly', priority: 0.5 },
