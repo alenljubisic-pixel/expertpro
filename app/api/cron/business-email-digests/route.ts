@@ -81,6 +81,19 @@ export async function POST(request: Request) {
   for (const digest of (data || []) as ClaimedDigest[]) {
     try {
       // Preferences may have changed after the database claimed the batch.
+      const { data: digestSettings, error: digestError } = await db
+        .from('email_digest_settings').select('frequency')
+        .eq('user_id', digest.recipient_user_id).maybeSingle()
+      if (digestError) throw digestError
+      if (digestSettings?.frequency === 'off') {
+        await db.rpc('finish_business_email_digest', {
+          p_user_id: digest.recipient_user_id,
+          p_notification_ids: digest.notification_ids,
+          p_sent: false,
+          p_error: 'Recipient disabled email digests',
+        })
+        continue
+      }
       const { data: preferences, error: preferencesError } = await db
         .from('notification_preferences').select('category,email')
         .eq('user_id', digest.recipient_user_id)
