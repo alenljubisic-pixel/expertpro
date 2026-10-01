@@ -6,6 +6,7 @@ import { MapPin, Clock, Search, SlidersHorizontal, Plus } from 'lucide-react'
 import { SERBIAN_CITIES } from '@/types'
 import { publicName, publicInitial } from '@/lib/safe-name'
 import SaveButton from '@/components/listings/SaveButton'
+import { AVAILABILITY_TIME_OPTIONS, AVAILABILITY_DAY_OPTIONS, matchingTimes, matchingDays, availabilityLabel } from '@/lib/listing-availability'
 
 const SORT_OPTIONS: Record<string, { label: string; apply: (q: any) => any }> = {
   novo: {
@@ -33,7 +34,8 @@ const CATEGORIES = [
   { icon: '🍴', name: 'Ugostiteljstvo', slug: 'ugostiteljstvo' },
   { icon: '👷', name: 'Pomoćni radnici', slug: 'pomocni-radnici' },
   { icon: '📦', name: 'Magacin', slug: 'magacin' },
-  { icon: '👶', name: 'Čuvanje i nega', slug: 'cuvanje' },
+  { icon: '👶', name: 'Čuvanje dece i ljubimaca', slug: 'cuvanje' },
+  { icon: '🏠', name: 'Nega i pomoć u kući', slug: 'nega-pomoc-u-kuci' },
   { icon: '💻', name: 'IT i računari', slug: 'it' },
   { icon: '🌾', name: 'Poljoprivreda', slug: 'poljoprivreda' },
   { icon: '🎪', name: 'Događaji', slug: 'dogadjaji' },
@@ -49,7 +51,7 @@ const TYPE_LABELS: Record<string, { label: string; color: string; bg: string }> 
 
 // Temporary, non-interactive examples. They are never stored as real jobs.
 // Set this to false when the marketplace has enough genuine listings.
-const SHOW_DEMO_LISTINGS = true
+const SHOW_DEMO_LISTINGS = false
 
 type DemoListing = {
   title: string
@@ -94,6 +96,8 @@ export default async function ListingsPage({
     sort?: string
     price_min?: string
     price_max?: string
+    time?: string
+    days?: string
   }>
 }) {
   const sp = await searchParams
@@ -107,7 +111,7 @@ export default async function ListingsPage({
 
   let query = supabase
     .from('listings')
-    .select('*, profiles!user_id(id, type, name, username, avatar_url, rating_avg, is_verified), categories(icon)', { count: 'exact' })
+    .select('*, profiles!user_id(id, type, name, username, avatar_url, rating_avg, is_verified), categories!listings_category_id_fkey(icon)', { count: 'exact' })
     .eq('status', 'active')
   query = SORT_OPTIONS[sortKey].apply(query)
 
@@ -116,6 +120,11 @@ export default async function ListingsPage({
   else if (['short_job', 'multi_day', 'fixed_term', 'permanent'].includes(sp.mode || '')) query = query.eq('engagement_mode', sp.mode!)
   if (sp.foreign === 'yes') query = query.eq('foreign_workers_welcome', true)
   if (sp.city) query = query.eq('city', sp.city)
+  const times = matchingTimes(sp.time)
+  const days = matchingDays(sp.days)
+  if (times || days) query = query.eq('type', 'offer')
+  if (times) query = query.in('availability_time', times)
+  if (days) query = query.in('availability_days', days)
   const priceMin = sp.price_min ? parseInt(sp.price_min) : null
   const priceMax = sp.price_max ? parseInt(sp.price_max) : null
   if (priceMin !== null && !Number.isNaN(priceMin)) query = query.gte('price_amount', priceMin)
@@ -128,7 +137,7 @@ export default async function ListingsPage({
   const totalPages = Math.ceil((count || 0) / pageSize)
 
   const isUrgent = sp.type === 'urgent'
-  const hasFilters = !!(sp.type || sp.city || sp.category || sp.q || sp.mode || sp.foreign || sp.price_min || sp.price_max)
+  const hasFilters = !!(sp.type || sp.city || sp.category || sp.q || sp.mode || sp.foreign || sp.price_min || sp.price_max || sp.time || sp.days)
   const displayListings = listings || []
 
   const savedIds = new Set<string>()
@@ -147,7 +156,7 @@ export default async function ListingsPage({
       : sp.mode === 'short_job'
         ? DEMO_LISTINGS.filter(item => item.engagement_mode === 'short_job')
         : [...DEMO_LISTINGS.slice(0, 4), ...DEMO_LISTINGS.slice(8, 12)]
-  const demoListings = SHOW_DEMO_LISTINGS && sp.type === 'request' && page === 1 && !sp.q && !sp.city && !sp.category && !sp.foreign
+  const demoListings = SHOW_DEMO_LISTINGS && sp.type === 'request' && page === 1 && !sp.q && !sp.city && !sp.category && !sp.foreign && !sp.time && !sp.days
     ? demoCandidates
     : []
 
@@ -245,6 +254,25 @@ export default async function ListingsPage({
                 >
                   <option value="">Svi gradovi</option>
                   {SERBIAN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="availability-time" className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Radnik slobodan</label>
+                <select id="availability-time" name="time" defaultValue={sp.time || ''}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white">
+                  <option value="">Bilo kada</option>
+                  {AVAILABILITY_TIME_OPTIONS.filter(option => option.value !== 'flexible').map(option =>
+                    <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="availability-days" className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Dani rada</label>
+                <select id="availability-days" name="days" defaultValue={sp.days || ''}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white">
+                  <option value="">Bilo kojim danom</option>
+                  {AVAILABILITY_DAY_OPTIONS.filter(option => option.value === 'weekdays' || option.value === 'weekends').map(option =>
+                    <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </div>
 
@@ -424,6 +452,9 @@ export default async function ListingsPage({
                             </span>
                           )}
                         </div>
+                        {listing.type === 'offer' && availabilityLabel(listing.availability_time, listing.availability_days) && (
+                          <p className="mt-2 text-xs text-green-700">{availabilityLabel(listing.availability_time, listing.availability_days)}</p>
+                        )}
                       </div>
 
                       <div className="border-t border-gray-50 px-5 py-3 flex items-center gap-2">

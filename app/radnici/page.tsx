@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer'
 import { MapPin, Star, CheckCircle } from 'lucide-react'
 import { SERBIAN_CITIES } from '@/types'
 import { publicName, publicInitial } from '@/lib/safe-name'
+import { AVAILABILITY_TIME_OPTIONS, AVAILABILITY_DAY_OPTIONS } from '@/lib/listing-availability'
 
 const SKILLS = [
   'Građevina', 'Čišćenje', 'Transport', 'Ugostiteljstvo',
@@ -12,19 +13,33 @@ const SKILLS = [
   'Poljoprivreda', 'Događaji', 'Administracija',
 ]
 
+const SKILL_DB_NAME: Record<string, string> = {
+  'Građevina': 'Gradjevina i majstori',
+  'Čišćenje': 'Ciscenje i odrzavanje',
+  'Transport': 'Transport i selidbe',
+  'Fizički radovi': 'Pomocni radnici',
+  'Magacin': 'Magacin i logistika',
+  'Čuvanje dece': 'Čuvanje dece i ljubimaca',
+  'Čuvanje starih': 'Nega i pomoć u kući',
+  'IT podrška': 'IT i racunari',
+  'Događaji': 'Dogadjaji',
+}
+
 export default async function WorkersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ city?: string; skill?: string; q?: string; foreign?: string }>
+  searchParams: Promise<{ city?: string; skill?: string; q?: string; foreign?: string; time?: string; days?: string }>
 }) {
   const sp = await searchParams
   const supabase = await createClient()
 
-  const { data: workers } = await supabase.rpc('search_workers', {
+  const { data: workers } = await supabase.rpc('search_workers_available', {
     p_city: sp.city || null,
-    p_skill: sp.skill || null,
+    p_skill: sp.skill ? (SKILL_DB_NAME[sp.skill] || sp.skill) : null,
     p_query: sp.q?.trim().slice(0, 80) || null,
     p_foreign: sp.foreign === 'yes',
+    p_time: sp.time || null,
+    p_days: sp.days || null,
     p_limit: 24,
     p_offset: 0,
   })
@@ -80,6 +95,25 @@ export default async function WorkersPage({
                     </label>
                   ))}
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="worker-time" className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Slobodan</label>
+                <select id="worker-time" name="time" defaultValue={sp.time || ''}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white">
+                  <option value="">Bilo kada</option>
+                  {AVAILABILITY_TIME_OPTIONS.filter(option => option.value !== 'flexible').map(option =>
+                    <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="worker-days" className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Dani rada</label>
+                <select id="worker-days" name="days" defaultValue={sp.days || ''}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white">
+                  <option value="">Bilo kojim danom</option>
+                  {AVAILABILITY_DAY_OPTIONS.filter(option => option.value === 'weekdays' || option.value === 'weekends').map(option =>
+                    <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
               </div>
 
               <label className="flex items-center gap-2 text-sm text-gray-700">

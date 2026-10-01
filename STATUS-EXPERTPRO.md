@@ -1,5 +1,13 @@
 # ExpertPro — zajednički status (Codex + Claude)
 
+## 01.10.2026 — trenutno u radu
+
+- Na vlasničkom nalogu je objavljeno **10 stvarnih ponuda usluga** (električar, vodoinstalater, kućni majstor, čišćenje i ne-medicinska pomoć starijima) u Beogradu, Novom Sadu i Sremskoj Mitrovici. Cene i termini su po dogovoru; nisu izmišljeni rasporedi, licence ni cenovnici. Ponude „Nudim uslugu“ sada po postojećem pravilu ističu za 30 dana, 31.10.2026, ako se ne obnove.
+- Vlasniku je uz admin evidenciju dodeljeno 30 promotivnih kredita za inicijalne oglase. Prvi oglas je besplatan, devet narednih je potrošilo po 1 kredit; **trenutni saldo je 23**. Nije evidentirana lažna uplata.
+- Produkcioni Supabase: primenjene su migracije `20261001095437` (profil više ne dozvoljava klijentsku promenu kredita/plana), `20261001095515` (dostupnost po oglasu i pretraga radnika po gradovima/terminima) i `20261001100126` (javno čitanje aktivnih kategorija). SQL rollback test potvrdio je da jutarnji/vikend filter nalazi ponudu označenu „ceo dan / oba dana“, a 24h filter je ne nalazi; probna promena je poništena.
+- U kodu su dodati izbor „pre podne / posle podne / ceo dan / 24h“ i „radnim danima / vikendom“ u kreiranje i izmenu ponude, filteri na `/oglasi` i `/radnici`, prikaz dostupnosti na kartici/detalju, te ispravka dvosmislene PostgREST veze kategorija koja je novim javnim oglasima vraćala 404. Neaktivni primeri na berzi su isključeni. **Kod čeka push/deploy i javni browser test**; tek nakon toga označiti ga kao objavljen.
+- Otvoreno: potvrditi stvarne rasporede pojedinačnih radnika pre označavanja bilo kog oglasa kao „24h“, upisati prave cene kada ih vlasnik odredi, proveriti 30-dnevno obnavljanje, zatim rešavati email i ostale ranije navedene blokere lansiranja.
+
 > Čitaj ovo pre rada i ažuriraj posle svake značajne izmene. Samo aktuelno stanje; istorija je u Git-u. Bez lozinki, ključeva i korisničkih podataka.
 
 ## Gde radimo

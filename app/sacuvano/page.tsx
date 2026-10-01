@@ -22,7 +22,7 @@ export default async function SavedListingsPage() {
 
   const { data: saved } = await supabase
     .from('saved_listings')
-    .select('created_at, listings(*, profiles!user_id(id, type, name, username, avatar_url, rating_avg, is_verified), categories(icon))')
+    .select('created_at, listings(*, profiles!user_id(id, type, name, username, avatar_url, rating_avg, is_verified), categories!listings_category_id_fkey(icon))')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { SERBIAN_CITIES } from '@/types'
+import { AVAILABILITY_TIME_OPTIONS, AVAILABILITY_DAY_OPTIONS } from '@/lib/listing-availability'
 import { ArrowLeft, AlertTriangle } from 'lucide-react'
 
 type ListingType = 'offer' | 'request' | 'urgent'
@@ -55,6 +56,8 @@ export default function EditListingPage() {
   const [workersNeeded, setWorkersNeeded] = useState('1')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [availabilityTime, setAvailabilityTime] = useState('flexible')
+  const [availabilityDays, setAvailabilityDays] = useState('flexible')
 
   useEffect(() => {
     if (!listingId) return
@@ -74,6 +77,8 @@ export default function EditListingPage() {
       setWorkersNeeded(listing.workers_needed ? String(listing.workers_needed) : '1')
       setDateFrom(listing.available_from || '')
       setDateTo(listing.available_to || '')
+      setAvailabilityTime(listing.availability_time || 'flexible')
+      setAvailabilityDays(listing.availability_days || 'flexible')
       setLoading(false)
     })
   }, [listingId])
@@ -106,6 +111,8 @@ export default function EditListingPage() {
       workers_needed: parseInt(workersNeeded) || 1,
       available_from: dateFrom || null,
       available_to: dateTo || null,
+      availability_time: type === 'offer' ? availabilityTime : 'flexible',
+      availability_days: type === 'offer' ? availabilityDays : 'flexible',
       updated_at: new Date().toISOString(),
     }).eq('id', listingId)
 
@@ -173,6 +180,27 @@ export default function EditListingPage() {
               </div>
             )}
           </div>
+
+          {type === 'offer' && (
+            <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+              <h2 className="font-semibold text-gray-900">Kada je radnik slobodan?</h2>
+              <p className="text-sm text-gray-500">Navedi stvarnu dostupnost za ovu ponudu. Ako se menja, ostavi „Po dogovoru“.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className="block text-sm font-medium text-gray-700">Doba dana
+                  <select value={availabilityTime} onChange={e => setAvailabilityTime(e.target.value)}
+                    className="mt-1 block w-full rounded-lg border border-gray-200 px-3 py-2.5 bg-white">
+                    {AVAILABILITY_TIME_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
+                <label className="block text-sm font-medium text-gray-700">Dani
+                  <select value={availabilityDays} onChange={e => setAvailabilityDays(e.target.value)}
+                    className="mt-1 block w-full rounded-lg border border-gray-200 px-3 py-2.5 bg-white">
+                    {AVAILABILITY_DAY_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
+              </div>
+            </div>
+          )}
 
           <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
             <h2 className="font-semibold text-gray-900">Detalji oglasa</h2>

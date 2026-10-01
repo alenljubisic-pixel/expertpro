@@ -9,6 +9,7 @@ import JobCompletion from '@/components/listings/JobCompletion'
 import { MapPin, Calendar, Users, Star, Clock, ArrowLeft, CheckCircle, Eye, MessageSquare, X, Check } from 'lucide-react'
 import { safeName, safeInitial } from '@/lib/safe-name'
 import { revalidatePath } from 'next/cache'
+import { availabilityLabel } from '@/lib/listing-availability'
 
 const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   offer: { label: '💼 Nudim uslugu', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200' },
@@ -48,7 +49,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
 
   const { data: listing } = await supabase
     .from('listings')
-    .select('*, profiles!user_id(*), categories(*)')
+    .select('*, profiles!user_id(*), categories!listings_category_id_fkey(*)')
     .eq('id', id)
     .single()
 
@@ -306,6 +307,12 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                     <Calendar className="w-4 h-4" />
                     {formatDate(listing.available_from)}
                     {listing.available_to && ` — ${formatDate(listing.available_to)}`}
+                  </span>
+                )}
+                {listing.type === 'offer' && availabilityLabel(listing.availability_time, listing.availability_days) && (
+                  <span className="flex items-center gap-1.5 text-green-700">
+                    <Clock className="w-4 h-4" />
+                    {availabilityLabel(listing.availability_time, listing.availability_days)}
                   </span>
                 )}
                 {listing.workers_needed && listing.workers_needed > 1 && (

@@ -88,7 +88,7 @@ export default async function MyListingsPage({
 
   const { data: listings } = await supabase
     .from('listings')
-    .select('*, categories(name_sr, icon)')
+    .select('*, categories!listings_category_id_fkey(name_sr, icon)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
