@@ -7,6 +7,8 @@ import { SERBIAN_CITIES } from '@/types'
 import { publicName, publicInitial } from '@/lib/safe-name'
 import SaveButton from '@/components/listings/SaveButton'
 import { AVAILABILITY_TIME_OPTIONS, AVAILABILITY_DAY_OPTIONS, matchingTimes, matchingDays, availabilityLabel } from '@/lib/listing-availability'
+import { nearbyCitiesWithResults } from '@/lib/city-distance'
+import DetectCityButton from '@/components/location/DetectCityButton'
 
 const SORT_OPTIONS: Record<string, { label: string; apply: (q: any) => any }> = {
   novo: {
@@ -133,8 +135,33 @@ export default async function ListingsPage({
   if (sp.category) query = query.or(`category_slug.eq.${sp.category},secondary_category_slug.eq.${sp.category}`)
   if (sp.q) query = query.ilike('title', `%${sp.q}%`)
 
-  const { data: listings, count } = await query.range(offset, offset + pageSize - 1)
+  const { data: listings, count, error: listingsError } = await query.range(offset, offset + pageSize - 1)
   const totalPages = Math.ceil((count || 0) / pageSize)
+
+  let nearbyCities: ReturnType<typeof nearbyCitiesWithResults> = []
+  if (sp.city && count === 0 && !listingsError) {
+    const { data: cityCounts, error: cityError } = await supabase.rpc('search_listing_cities', {
+      p_type: sp.type || null,
+      p_mode: sp.mode === 'long' || ['short_job', 'multi_day', 'fixed_term', 'permanent'].includes(sp.mode || '') ? sp.mode : null,
+      p_foreign: sp.foreign === 'yes',
+      p_times: times,
+      p_days: days,
+      p_price_min: priceMin !== null && !Number.isNaN(priceMin) ? priceMin : null,
+      p_price_max: priceMax !== null && !Number.isNaN(priceMax) ? priceMax : null,
+      p_category_slug: sp.category || null,
+      p_query: sp.q || null,
+    })
+    if (!cityError && cityCounts) nearbyCities = nearbyCitiesWithResults(sp.city, cityCounts)
+  }
+
+  const cityLink = (city: string) => {
+    const params = new URLSearchParams()
+    for (const [key, value] of Object.entries(sp)) {
+      if (value && key !== 'city' && key !== 'page') params.set(key, value)
+    }
+    params.set('city', city)
+    return `/oglasi?${params.toString()}`
+  }
 
   const isUrgent = sp.type === 'urgent'
   const hasFilters = !!(sp.type || sp.city || sp.category || sp.q || sp.mode || sp.foreign || sp.price_min || sp.price_max || sp.time || sp.days)
@@ -246,8 +273,9 @@ export default async function ListingsPage({
               </label>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Grad</label>
+                <label htmlFor="listing-city" className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Grad</label>
                 <select
+                  id="listing-city"
                   name="city"
                   defaultValue={sp.city || ''}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -255,6 +283,7 @@ export default async function ListingsPage({
                   <option value="">Svi gradovi</option>
                   {SERBIAN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
+                <DetectCityButton selectId="listing-city" />
               </div>
 
               <div>
@@ -375,14 +404,35 @@ export default async function ListingsPage({
               </div>
             </div>
 
-            {displayListings.length === 0 && demoListings.length === 0 ? (
+            {listingsError ? (
+              <div role="alert" className="rounded-xl border border-red-100 bg-white p-8 text-center text-sm text-red-700">
+                Pretraga trenutno nije dostupna. Pokušaj ponovo za koji trenutak.
+              </div>
+            ) : displayListings.length === 0 && demoListings.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
                 <p className="text-4xl mb-4">🔍</p>
                 <p className="text-gray-500 mb-2">
                   {hasFilters ? 'Nema oglasa koji odgovaraju pretrazi' : 'Trenutno nema aktivnih oglasa'}
                 </p>
                 {hasFilters ? (
-                  <Link href="/oglasi" className="text-sm text-blue-600 hover:text-blue-700">Poništi filtere</Link>
+                  <>
+                    {sp.city && nearbyCities.length > 0 && (
+                      <div className="mx-auto mb-5 max-w-md rounded-lg bg-blue-50 p-4 text-left">
+                        <p className="mb-2 text-sm font-medium text-blue-900">U gradu {sp.city} nema takvih oglasa. Ima ih u ovim gradovima:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {nearbyCities.map(item => (
+                            <Link key={item.city} href={cityLink(item.city)}
+                              className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-blue-700 hover:bg-blue-100">
+                              {item.city} · {item.listing_count} {item.listing_count === 1 ? 'oglas' : 'oglasa'}
+                              {item.distanceKm !== null ? ` · oko ${Math.round(item.distanceKm)} km` : ''}
+                            </Link>
+                          ))}
+                        </div>
+                        <p className="mt-2 text-xs text-blue-700">Kilometri su okvirna udaljenost između centara gradova, ne vreme putovanja.</p>
+                      </div>
+                    )}
+                    <Link href="/oglasi" className="text-sm text-blue-600 hover:text-blue-700">Poništi filtere</Link>
+                  </>
                 ) : (
                   <Link href="/oglasi/novi" className="text-sm text-blue-600 hover:text-blue-700">Budi prvi koji postavlja oglas →</Link>
                 )}

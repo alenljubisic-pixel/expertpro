@@ -6,6 +6,7 @@ import { MapPin, Star, CheckCircle } from 'lucide-react'
 import { SERBIAN_CITIES } from '@/types'
 import { publicName, publicInitial } from '@/lib/safe-name'
 import { AVAILABILITY_TIME_OPTIONS, AVAILABILITY_DAY_OPTIONS } from '@/lib/listing-availability'
+import DetectCityButton from '@/components/location/DetectCityButton'
 
 const SKILLS = [
   'Građevina', 'Čišćenje', 'Transport', 'Ugostiteljstvo',
@@ -33,7 +34,7 @@ export default async function WorkersPage({
   const sp = await searchParams
   const supabase = await createClient()
 
-  const { data: workers } = await supabase.rpc('search_workers_available', {
+  const { data: workers, error: workersError } = await supabase.rpc('search_workers_available', {
     p_city: sp.city || null,
     p_skill: sp.skill ? (SKILL_DB_NAME[sp.skill] || sp.skill) : null,
     p_query: sp.q?.trim().slice(0, 80) || null,
@@ -44,6 +45,10 @@ export default async function WorkersPage({
     p_offset: 0,
   })
   const count = workers?.[0]?.total_count || 0
+  const allCitiesParams = new URLSearchParams()
+  for (const [key, value] of Object.entries(sp)) {
+    if (value && key !== 'city') allCitiesParams.set(key, value)
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -70,8 +75,9 @@ export default async function WorkersPage({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Grad</label>
+                <label htmlFor="worker-city" className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Grad</label>
                 <select
+                  id="worker-city"
                   name="city"
                   defaultValue={sp.city || ''}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -79,6 +85,7 @@ export default async function WorkersPage({
                   <option value="">Svi gradovi</option>
                   {SERBIAN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
+                <DetectCityButton selectId="worker-city" />
               </div>
 
               <div>
@@ -132,9 +139,14 @@ export default async function WorkersPage({
           <div className="flex-1">
             <p className="text-sm text-gray-500 mb-5">{count} pružalaca usluga</p>
 
-            {!workers || workers.length === 0 ? (
+            {workersError ? (
+              <div role="alert" className="rounded-xl border border-red-100 bg-white p-8 text-center text-sm text-red-700">
+                Pretraga radnika trenutno nije dostupna. Pokušaj ponovo za koji trenutak.
+              </div>
+            ) : !workers || workers.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-10 text-center">
-                <p className="text-gray-400">Nema aktivnih ponuda usluga za ovu pretragu</p>
+                <p className="text-gray-500">Nema aktivnih ponuda usluga za ovu pretragu{sp.city ? ` u gradu ${sp.city}` : ''}.</p>
+                {sp.city && <Link href={`/radnici?${allCitiesParams.toString()}`} className="mt-3 inline-block text-sm font-medium text-blue-700 hover:underline">Proširi na sve gradove →</Link>}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
