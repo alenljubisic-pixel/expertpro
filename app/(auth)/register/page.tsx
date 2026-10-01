@@ -22,6 +22,7 @@ function RegisterForm() {
 
   const [userType, setUserType] = useState<UserType>(initialType)
   const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPass, setConfirmPass] = useState('')
@@ -43,8 +44,19 @@ function RegisterForm() {
     else window.localStorage.removeItem('expertpro_referral_code')
   }
 
+  const rememberUsername = () => {
+    const wanted = username.trim().toLowerCase()
+    if (wanted && userType === 'individual') window.localStorage.setItem('expertpro_signup_username', wanted)
+    else window.localStorage.removeItem('expertpro_signup_username')
+  }
+
+  const validUsername = (value: string) => /^[a-z][a-z0-9_]{2,23}$/.test(value)
+    && !/^(admin|administrator|support|podrska|expertpro|moderator|official|system|ep[-_])/.test(value)
+
   const handleGoogleLogin = async () => {
+    if (username.trim() && !validUsername(username.trim().toLowerCase())) { setError('Nadimak: 3–24 znaka, počinje slovom; dozvoljena su mala slova, brojevi i _.'); return }
     rememberReferral()
+    rememberUsername()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` }
@@ -57,7 +69,9 @@ function RegisterForm() {
   const SHOW_FACEBOOK_LOGIN = false
 
   const handleFacebookLogin = async () => {
+    if (username.trim() && !validUsername(username.trim().toLowerCase())) { setError('Nadimak nije ispravan.'); return }
     rememberReferral()
+    rememberUsername()
     await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options: { redirectTo: `${window.location.origin}/auth/callback` }
@@ -84,6 +98,15 @@ function RegisterForm() {
       setError('Kod preporuke nije ispravan.')
       return
     }
+    const requestedUsername = username.trim().toLowerCase()
+    if (userType === 'individual' && requestedUsername && !validUsername(requestedUsername)) {
+      setError('Nadimak: 3–24 znaka, počinje slovom; dozvoljena su mala slova, brojevi i _.')
+      return
+    }
+    if (userType === 'individual' && requestedUsername) {
+      const { data: taken } = await supabase.from('profiles').select('id').eq('username', requestedUsername).maybeSingle()
+      if (taken) { setError('Taj nadimak je zauzet. Izaberi drugi.'); return }
+    }
 
     setLoading(true)
     rememberReferral()
@@ -99,6 +122,7 @@ function RegisterForm() {
           type: userType,
           pib: pib || null,
           referral_code: referralCode.trim().toLowerCase() || null,
+          username: userType === 'individual' ? requestedUsername || null : null,
         }
       }
     })
@@ -126,6 +150,7 @@ function RegisterForm() {
     }
 
     window.localStorage.removeItem('expertpro_referral_code')
+    window.localStorage.removeItem('expertpro_signup_username')
     setSuccess(true)
     setLoading(false)
   }
@@ -199,6 +224,11 @@ function RegisterForm() {
           </div>
 
           {/* OAuth */}
+          {userType === 'individual' && <div className="mb-5">
+            <label htmlFor="signup-username" className="block text-sm font-medium text-gray-700 mb-1">Javni nadimak (opciono)</label>
+            <input id="signup-username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} minLength={3} maxLength={24} autoComplete="nickname" className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="npr. markomajstor" />
+            <p className="mt-1 text-xs text-gray-500">Javno se vidi nadimak, ne puno ime. Ako preskočiš, dobijaš kratak automatski ID. Možeš ga kasnije promeniti u profilu.</p>
+          </div>}
           <div className="space-y-3 mb-6">
             <button
               onClick={handleGoogleLogin}

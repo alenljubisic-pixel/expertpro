@@ -23,6 +23,20 @@ export default function ReferralCard({ code, stats }: { code: string | null; sta
     })
   }, [router])
 
+  useEffect(() => {
+    const wanted = window.localStorage.getItem('expertpro_signup_username')
+    if (!wanted) return
+    window.localStorage.removeItem('expertpro_signup_username')
+    const supabase = createClient()
+    void (async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || Date.now() - new Date(user.created_at).getTime() > 10 * 60 * 1000) return
+      const { error } = await supabase.from('profiles').update({ username: wanted }).eq('id', user.id).eq('type', 'individual')
+      if (error) console.error('Signup nickname could not be saved:', error.message)
+      else router.refresh()
+    })()
+  }, [router])
+
   const link = code ? `https://www.expertpro.app/register?ref=${encodeURIComponent(code)}` : ''
 
   const copy = async () => {

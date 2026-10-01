@@ -29,6 +29,7 @@ export default function ProfileEditPage() {
   const [profile, setProfile] = useState<any>(null)
 
   const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
   const [city, setCity] = useState('')
   const [phone, setPhone] = useState('')
@@ -58,6 +59,7 @@ export default function ProfileEditPage() {
       const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       if (p) {
         setProfile(p)
+        setUsername(p.username || '')
         const { data: contacts } = await supabase.rpc('get_my_profile_contact')
         setName(p.type === 'individual' ? (contacts?.[0]?.legal_name || '') : (p.name || ''))
         setBio(p.bio || '')
@@ -147,6 +149,12 @@ export default function ProfileEditPage() {
 
   const handleSave = async () => {
     setSaveError('')
+    const requestedUsername = username.trim().toLowerCase()
+    if (userType === 'individual' && requestedUsername !== profile?.username &&
+        (!/^[a-z][a-z0-9_]{2,23}$/.test(requestedUsername) || /^(admin|administrator|support|podrska|expertpro|moderator|official|system|ep[-_])/.test(requestedUsername))) {
+      setSaveError('Nadimak: 3–24 znaka, počinje slovom; dozvoljena su mala slova, brojevi i _.')
+      return
+    }
     if ((userType === 'company' || userType === 'agency') && (!name.trim() || !/^\d{9}$/.test(pib.trim()))) {
       setSaveError('Za firmu ili agenciju unesi naziv i PIB od tačno 9 cifara.')
       return
@@ -165,8 +173,17 @@ export default function ProfileEditPage() {
     })
     if (contactError) { setSaveError('Čuvanje kontakta nije uspelo. Pokušaj ponovo.'); setSaving(false); return }
 
+    if (userType === 'individual' && requestedUsername !== profile?.username) {
+      const { error: usernameError } = await supabase.from('profiles').update({ username: requestedUsername }).eq('id', user.id)
+      if (usernameError) {
+        setSaveError(usernameError.code === '23505' ? 'Taj nadimak je zauzet. Izaberi drugi.' : 'Nadimak nije sačuvan. Pokušaj ponovo.')
+        setSaving(false)
+        return
+      }
+    }
+
     const { data: savedProfile, error: profileError } = await supabase.from('profiles').update({
-      name: userType === 'individual' ? profile?.username : name,
+      name: userType === 'individual' ? requestedUsername : name,
       bio,
       city: city || null,
       skills,
@@ -177,7 +194,7 @@ export default function ProfileEditPage() {
       type: userType,
       pib: (userType === 'company' || userType === 'agency') ? (pib || null) : null,
       updated_at: new Date().toISOString(),
-    }).eq('id', user.id).select('type, name, is_approved').single()
+    }).eq('id', user.id).select('type, name, username, is_approved').single()
 
     if (profileError) { setSaveError('Profil nije sačuvan. Pokušaj ponovo.'); setSaving(false); return }
 
@@ -281,6 +298,12 @@ export default function ProfileEditPage() {
             <h2 className="font-semibold text-gray-900">Osnovne informacije</h2>
 
             {profile?.type === 'individual' && <p className="text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-2">Javno te vide kao <strong>{profile?.username}</strong>. Ime i telefon ispod vidljivi su samo tebi i administraciji.</p>}
+
+            {userType === 'individual' && <div>
+              <label htmlFor="profile-username" className="block text-sm font-medium text-gray-700 mb-1">Javni nadimak</label>
+              <input id="profile-username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} minLength={3} maxLength={24} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <p className="mt-1 text-xs text-gray-500">3–24 znaka: mala slova, brojevi i _. Kod za preporuke ostaje isti kada promeniš nadimak.</p>
+            </div>}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
