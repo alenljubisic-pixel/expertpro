@@ -86,7 +86,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <p className="font-medium text-amber-800">Nalog čeka odobrenje</p>
               <p className="text-sm text-amber-600 mt-0.5">
                 Tvoj {profile?.type === 'company' ? 'firmski' : 'agencijski'} nalog je pod reviziom.
-                Obično traje do 24 časa. Bićeš obavešten emailom čim bude odobren.
+                Posle provere videćeš obaveštenje u svom nalogu. Aktivni oglasi su pauzirani dok odobrenje čeka.
               </p>
             </div>
           </div>

@@ -10,10 +10,10 @@ import { AVAILABILITY_TIME_OPTIONS, AVAILABILITY_DAY_OPTIONS } from '@/lib/listi
 import DetectCityButton from '@/components/location/DetectCityButton'
 
 export const metadata = {
-  title: 'Pružaoci usluga i radnici',
-  description: 'Pronađite aktivne ponude radnika i pružalaca usluga po gradu, veštini i dostupnosti. Pregledajte njihove oglase pre dogovora.',
+  title: 'Radnici sa aktivnim ponudama rada',
+  description: 'Pronađite radnike koji su objavili aktivnu ponudu rada. Filtrirajte po gradu, veštini i dostupnosti i pregledajte njihove oglase pre dogovora.',
   alternates: { canonical: 'https://www.expertpro.app/radnici' },
-  openGraph: { title: 'Pružaoci usluga i radnici', description: 'Aktivne ponude usluga i radnika po gradovima Srbije.', url: 'https://www.expertpro.app/radnici' },
+  openGraph: { title: 'Radnici sa aktivnim ponudama rada', description: 'Aktivne ponude rada po gradovima Srbije.', url: 'https://www.expertpro.app/radnici' },
 }
 
 const SKILLS = [
@@ -64,7 +64,7 @@ export default async function WorkersPage({
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Radnici i pružaoci usluga</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Radnici</h1>
           <p className="text-sm text-gray-500 mt-1">Ovde se radnici sami predstavljaju: veštine, iskustvo i kada su slobodni. Prikazani su samo oni koji su objavili aktivan oglas „Nudim uslugu“. Za dogovor se prijavi na njihov oglas; nema slobodnih privatnih poruka.</p>
           <Link href="/oglasi/novi" className="inline-block mt-3 text-sm font-medium text-blue-700 hover:underline">Ponudi svoj rad →</Link>
         </div>

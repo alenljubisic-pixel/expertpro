@@ -142,7 +142,7 @@ function RegisterForm() {
             </p>
             {(userType === 'company' || userType === 'agency') && (
               <p className="text-sm text-amber-600 bg-amber-50 rounded-lg p-3 mt-4">
-                Tvoj nalog je na čekanju odobravanja od strane admina. Bićeš obavešten emailom.
+                Tvoj nalog čeka odobrenje admina. Posle odobrenja dobićeš obaveštenje na platformi.
               </p>
             )}
             <Link href="/login" className="mt-6 block w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors">
@@ -345,7 +345,7 @@ function RegisterForm() {
 
             {(userType === 'company' || userType === 'agency') && (
               <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg text-sm">
-                ⚠️ Nalog firme/agencije zahteva odobrenje admina. Bićeš obavešten emailom (obično u roku od 24 časa).
+                ⚠️ Nalog firme/agencije zahteva odobrenje admina pre objavljivanja aktivnih oglasa. Odluku ćeš videti u obaveštenjima na platformi.
               </div>
             )}
 

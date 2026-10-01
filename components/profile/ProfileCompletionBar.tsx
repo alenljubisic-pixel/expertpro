@@ -24,6 +24,7 @@ export default function ProfileCompletionBar({ input }: { input: ProfileComplete
       <div className="w-full h-2 bg-white/70 rounded-full overflow-hidden mb-3">
         <div className={`h-full ${styles.bar} transition-all`} style={{ width: `${Math.min(percent, 100)}%` }} />
       </div>
+      {missing.length > 0 && <p className="mb-3 text-xs text-gray-700">Unapredi profil: opis, iskustvo i stvarna slika mogu pomoći drugima da procene tvoju ponudu. Polja su opciona; potpuna popunjenost ne garantuje posao.</p>}
       {missing.length > 0 ? (
         <ul className="space-y-1">
           {missing.map(item => (

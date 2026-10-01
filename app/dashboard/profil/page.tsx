@@ -40,6 +40,7 @@ export default function ProfileEditPage() {
   const [pib, setPib] = useState('')
   const [isForeignWorker, setIsForeignWorker] = useState(false)
   const [typeChangeRequested, setTypeChangeRequested] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
@@ -145,10 +146,15 @@ export default function ProfileEditPage() {
   }
 
   const handleSave = async () => {
+    setSaveError('')
+    if ((userType === 'company' || userType === 'agency') && (!name.trim() || !/^\d{9}$/.test(pib.trim()))) {
+      setSaveError('Za firmu ili agenciju unesi naziv i PIB od tačno 9 cifara.')
+      return
+    }
     setSaving(true)
     setSuccess(false)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) { setSaving(false); return }
 
     const typeChanged = userType !== profile?.type
     const needsApproval = typeChanged && (userType === 'company' || userType === 'agency')
@@ -157,9 +163,9 @@ export default function ProfileEditPage() {
       p_legal_name: userType === 'individual' ? name : null,
       p_phone: phone || null,
     })
-    if (contactError) { setSaving(false); return }
+    if (contactError) { setSaveError('Čuvanje kontakta nije uspelo. Pokušaj ponovo.'); setSaving(false); return }
 
-    const { error: profileError } = await supabase.from('profiles').update({
+    const { data: savedProfile, error: profileError } = await supabase.from('profiles').update({
       name: userType === 'individual' ? profile?.username : name,
       bio,
       city: city || null,
@@ -170,12 +176,12 @@ export default function ProfileEditPage() {
       is_foreign_worker: userType === 'individual' && isForeignWorker,
       type: userType,
       pib: (userType === 'company' || userType === 'agency') ? (pib || null) : null,
-      is_approved: needsApproval ? false : (profile?.is_approved ?? true),
       updated_at: new Date().toISOString(),
-    }).eq('id', user.id)
+    }).eq('id', user.id).select('type, name, is_approved').single()
 
-    if (profileError) { setSaving(false); return }
+    if (profileError) { setSaveError('Profil nije sačuvan. Pokušaj ponovo.'); setSaving(false); return }
 
+    setProfile((prev: any) => prev ? { ...prev, ...savedProfile } : prev)
     if (typeChanged) setTypeChangeRequested(needsApproval)
 
     setSaving(false)
@@ -289,7 +295,7 @@ export default function ProfileEditPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bio / O meni</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">O meni / o firmi <span className="font-normal text-gray-400">(opciono)</span></label>
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
@@ -420,7 +426,7 @@ export default function ProfileEditPage() {
           <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
             <div>
               <h2 className="font-semibold text-gray-900 mb-1">Tip naloga</h2>
-              <p className="text-xs text-gray-400">Promena tipa naloga na firmu ili agenciju zahteva odobrenje admina.</p>
+              <p className="text-xs text-gray-500">Promena na firmu ili agenciju zahteva odobrenje admina. Do tada se postojeći aktivni oglasi pauziraju i novi ne mogu biti objavljeni.</p>
             </div>
             <div className="grid grid-cols-3 gap-3">
               {[
@@ -458,12 +464,12 @@ export default function ProfileEditPage() {
             )}
             {userType !== profile?.type && (userType === 'company' || userType === 'agency') && (
               <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg text-sm">
-                ⚠️ Promena tipa na firmu/agenciju zahteva odobrenje admina. Sačuvaj promene i biće te obavešteni emailom.
+                ⚠️ Promena tipa na firmu/agenciju zahteva odobrenje admina. Posle čuvanja prati obaveštenja na platformi.
               </div>
             )}
             {typeChangeRequested && (
               <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-                ✅ Zahtev za promenu tipa poslat. Bićete obavešteni emailom.
+                ✅ Zahtev za promenu tipa je na čekanju. Odobrenje će se pojaviti u obaveštenjima na platformi.
               </div>
             )}
           </div>
@@ -472,6 +478,7 @@ export default function ProfileEditPage() {
 
           {/* Save */}
           <div className="flex items-center gap-4">
+            {saveError && <p role="alert" className="text-sm text-red-700">{saveError}</p>}
             <button
               onClick={handleSave}
               disabled={saving}

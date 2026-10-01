@@ -28,7 +28,7 @@ export default function Footer() {
               <li><Link href="/oglasi?type=urgent" className="hover:text-white transition-colors">🚨 Hitna berza</Link></li>
               <li><Link href="/kratkorocni-poslovi" className="hover:text-white transition-colors">Kratkoročni poslovi</Link></li>
               <li><Link href="/dugorocni-poslovi" className="hover:text-white transition-colors">Dugoročni poslovi</Link></li>
-              <li><Link href="/radnici" className="hover:text-white transition-colors">Pružaoci usluga</Link></li>
+              <li><Link href="/radnici" className="hover:text-white transition-colors">Radnici</Link></li>
             </ul>
           </div>
 
