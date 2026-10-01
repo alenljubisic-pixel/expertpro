@@ -1,5 +1,17 @@
 # ExpertPro — zajednički status (Codex + Claude)
 
+## AKTUELNO — prvo pročitati pri nastavku (01.10.2026)
+
+- **Izvor istine:** `main` je objavljen na `https://www.expertpro.app`; lokalni `main` i `origin/main` su bili poravnati posle commita `bd8adfc`. Claude-ov sadržaj iz `9585d93` (skriveno Facebook dugme i traka profila) već je u objavljenoj istoriji; `740f9bb3` nije dostupan u ovom checkout-u, ali je vlasnik naveo da ima isti sadržaj. `git push origin main` je vratio `Everything up-to-date`. Pre novih izmena proveriti `git status` i remote jer oba agenta koriste isti repo.
+- **Urađeno:** rubrika `/radnici` prikazuje samo fizička lica sa aktivnim „Nudim uslugu“ oglasom; naziv u meniju je „Radnici“. Polje „O meni“ i ostali detalji su opcioni, traka popunjenosti je savet, ne blokada. Prelazak na firmu/agenciju ide preko `/dashboard/profil`, PIB i naziv su obavezni, `is_approved=false`; baza pauzira postojeće aktivne oglase i odbija nove dok admin ne odobri. Admin odobrenje javlja se in-app, ne emailom. Preporuke (+2 kredita pozivaocu tek posle potvrđenog novog naloga i aktivnog potpunog oglasa 24 h, maksimalno 5) su objavljene. Detalji i testovi su u neposrednim odeljcima ispod.
+- **Urađeno, ali ograničeno testom:** DB transakcioni/ROLLBACK testovi su prošli za poslovno odobravanje i jednokratnu dodelu preporučnih kredita; TypeScript, ciljani ESLint bez grešaka i build prolaze; javne stranice `/radnici`, `/uslovi`, `/privatnost` i referral prikazi su live provereni. Nije urađen pun browser E2E sa dva stvarna naloga za posao, novu preporuku, promenu tipa naloga ili stvarnu bankarsku uplatu. Ne proglašavati te tokove potvrđenim samo na osnovu SQL testa ili HTTP 200.
+- **Sledeće, po prioritetu:** (1) vlasnik treba da dostavi tačan registrovani naziv operatera, sedište i registracione podatke; pravnik da potvrdi uslove/privatnost, radne angažmane, kredite i granice odgovornosti; (2) stvarna uplata i provera QR→Telegram/admin→krediti→in-app/email, bez označavanja lažne uplate plaćenom; (3) dve stvarne korisničke sesije za prijavu, dodelu posla, zatvaranje chata i obostranu ocenu; (4) nova preporuka s potvrđenim emailom i oglasom posle 24 h; (5) admin browser proba promene firme/agencije, pauze oglasa i ručnih kredita; (6) proveriti backup/PITR. Za Facebook javni login čeka Meta Business Verification/App Review; dugme ostaje sakriveno. Profilne slike drugih ljudi dodavati samo uz njihovu stvarnu sliku/pristanak.
+- **Email:** domenski prijem/slanje i Supabase Auth SMTP za magic link/reset su potvrđeni, ali kompletna poslovna email obaveštenja nisu uvedena; email posle stvarne potvrde uplate još nije E2E testiran. Ne vraćati se na stariji plan „podesiti MX/SMTP od nule“ bez nove provere. Ne upisivati lozinke, API ključeve ni jednokratne kodove u ovaj fajl.
+
+## Istorija rada — datirani zapisi ispod nisu automatski aktuelni zadaci
+
+Noviji odeljak iznad ima prednost kada se stariji zapisi razlikuju (npr. tvrdnje „email nije podešen“, „kod nije pušovan“ ili „pravne stranice su iz 2025.“). Starije beleške čuvaju tok rada i ranije rezultate, ali se pre akcije proverava trenutno stanje koda, baze i produkcije.
+
 ## 01.10.2026 — Radnici, profil, odobravanje poslovnog naloga, uslovi (Codex)
 
 - `/radnici` prikazuje samo fizička lica s aktivnim oglasom „Nudim uslugu“, ne listu svih članova; navigacija/podnožje/naslov i SEO naslov promenjeni su u „Radnici“. Opciono „O meni“ već postoji; traka popunjenosti sada objašnjava da detaljniji profil može pomoći pri izboru, ali ne garantuje posao i ne blokira rad.
