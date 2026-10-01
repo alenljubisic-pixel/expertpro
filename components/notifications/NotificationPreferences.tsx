@@ -13,6 +13,7 @@ const categories: { id: Category; title: string; description: string }[] = [
   { id: 'listings', title: 'Moji oglasi', description: 'Istek, neaktivnost i pauziranje oglasa.' },
   { id: 'opportunities', title: 'Novi hitni poslovi', description: 'Hitni oglasi u tvojoj blizini.' },
 ]
+const emailActive = new Set<Category>(['applications', 'messages', 'jobs'])
 
 const defaults = (): Preference[] => categories.map(({ id }) => ({ category: id, in_app: true, email: true }))
 
@@ -62,7 +63,7 @@ export default function NotificationPreferences() {
     <section className="bg-white rounded-xl border border-gray-100 p-6" aria-labelledby="notification-preferences-title">
       <h2 id="notification-preferences-title" className="font-semibold text-gray-900">Obaveštenja</h2>
       <p className="text-xs text-gray-500 mt-1 mb-4">Izaberi šta želiš da dobijaš. Potvrde e-mail adrese i bezbednosne poruke ne mogu da se isključe ovim izborom.</p>
-      <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mb-4">E-mail obaveštenja o poslovima još nisu aktivna; ovde možeš unapred sačuvati izbor.</p>
+      <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2 mb-4">E-mail za prijave, poruke i posao stiže u jednom sažetku, najviše jednom u dva sata. Isključi kategoriju koja ti smeta; obaveštenja u aplikaciji podešavaš zasebno. Za oglase i hitne prilike e-mail još nije aktivan.</p>
       <div className="grid grid-cols-[minmax(0,1fr)_4rem_4rem] sm:grid-cols-[minmax(0,1fr)_6rem_6rem] gap-x-2 items-center text-xs text-gray-500 border-b border-gray-100 pb-2">
         <span>Vrsta obaveštenja</span><span className="text-center">U aplikaciji</span><span className="text-center">E-mail</span>
       </div>
@@ -72,7 +73,7 @@ export default function NotificationPreferences() {
           <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_4rem_4rem] sm:grid-cols-[minmax(0,1fr)_6rem_6rem] gap-x-2 items-center py-3 border-b border-gray-100 last:border-0">
             <div><p className="text-sm font-medium text-gray-900">{item.title}</p><p className="text-xs text-gray-500">{item.description}</p></div>
             <label className="flex justify-center"><input type="checkbox" checked={row.in_app} disabled={loading || saving} onChange={event => change(item.id, 'in_app', event.target.checked)} aria-label={`${item.title} u aplikaciji`} /></label>
-            <label className="flex justify-center"><input type="checkbox" checked={row.email} disabled={loading || saving} onChange={event => change(item.id, 'email', event.target.checked)} aria-label={`${item.title} e-mailom`} /></label>
+            <label className="flex justify-center"><input type="checkbox" checked={emailActive.has(item.id) && row.email} disabled={loading || saving || !emailActive.has(item.id)} onChange={event => change(item.id, 'email', event.target.checked)} aria-label={`${item.title} e-mailom`} /></label>
           </div>
         )
       })}
