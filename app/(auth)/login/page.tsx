@@ -2,39 +2,69 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { safeAuthReturnPath } from '@/lib/auth/return-path'
 import { Zap, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [needsConfirmation, setNeedsConfirmation] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = safeAuthReturnPath(searchParams.get('next'))
+  const nextQuery = next === '/dashboard' ? '' : `?next=${encodeURIComponent(next)}`
   const supabase = createClient()
+
+  const callbackUrl = () => `${window.location.origin}/auth/callback${nextQuery}`
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setNeedsConfirmation(false)
+    setResendMessage('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
-      setError('Pogrešan email ili lozinka.')
+      if (error.code === 'email_not_confirmed') {
+        setNeedsConfirmation(true)
+        setError('Email još nije potvrđen. Otvori poruku za potvrdu ili zatraži novi link ispod.')
+      } else {
+        setError('Pogrešan email ili lozinka.')
+      }
       setLoading(false)
     } else {
-      router.push('/dashboard')
+      router.replace(next)
       router.refresh()
     }
+  }
+
+  const handleResendConfirmation = async () => {
+    setResending(true)
+    setResendMessage('')
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: { emailRedirectTo: callbackUrl() },
+    })
+    setResendMessage(error
+      ? 'Novi link nije poslat. Sačekaj malo pa pokušaj ponovo ili kontaktiraj podršku.'
+      : 'Ako je adresa ispravna, poslat je novi link. Proveri i Spam/Neželjenu poštu.')
+    setResending(false)
   }
 
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` }
+      options: { redirectTo: callbackUrl() }
     })
   }
 
@@ -46,7 +76,7 @@ export default function LoginPage() {
   const handleFacebookLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'facebook',
-      options: { redirectTo: `${window.location.origin}/auth/callback` }
+      options: { redirectTo: callbackUrl() }
     })
   }
 
@@ -62,7 +92,7 @@ export default function LoginPage() {
         <h2 className="text-center text-2xl font-bold text-gray-900">Prijavi se</h2>
         <p className="mt-2 text-center text-sm text-gray-500">
           Nemaš nalog?{' '}
-          <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+          <Link href={`/register${nextQuery}`} className="text-blue-600 hover:text-blue-700 font-medium">
             Registruj se besplatno
           </Link>
         </p>
@@ -109,8 +139,16 @@ export default function LoginPage() {
           {/* Email/Password Form */}
           <form onSubmit={handleEmailLogin} className="space-y-4">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
+              </div>
+            )}
+            {needsConfirmation && (
+              <div className="space-y-2">
+                <button type="button" onClick={handleResendConfirmation} disabled={resending} className="text-sm font-medium text-blue-600 hover:underline disabled:opacity-50">
+                  {resending ? 'Šaljem novi link...' : 'Pošalji ponovo email za potvrdu'}
+                </button>
+                {resendMessage && <p role="status" className="text-sm text-gray-600">{resendMessage}</p>}
               </div>
             )}
 
@@ -167,5 +205,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" /></div>}>
+      <LoginForm />
+    </Suspense>
   )
 }

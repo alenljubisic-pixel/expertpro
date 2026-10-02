@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { safeAuthReturnPath } from '@/lib/auth/return-path'
 
 function oauthAvatarUrl(provider: string | undefined, value: unknown): string | null {
   if (typeof value !== 'string') return null
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const requestedNext = requestUrl.searchParams.get('next') || '/dashboard'
-  const next = requestedNext === '/nova-lozinka' ? requestedNext : '/dashboard'
+  const next = requestedNext === '/nova-lozinka' ? requestedNext : safeAuthReturnPath(requestedNext)
   const origin = requestUrl.origin
 
   if (code) {
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
           is_verified: isTrustedOAuth,
         }, { onConflict: 'id' })
 
-        return NextResponse.redirect(`${origin}/dashboard/profile?setup=true`)
+        return NextResponse.redirect(`${origin}/dashboard/profil?setup=true`)
       }
 
       // Dopuni starije naloge i osveži eventualno istekao link provajdera.

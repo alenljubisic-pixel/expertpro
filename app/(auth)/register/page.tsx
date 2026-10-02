@@ -6,6 +6,7 @@ import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { safeAuthReturnPath } from '@/lib/auth/return-path'
 import { Zap, Mail, Lock, Eye, EyeOff, User, Building2, Users } from 'lucide-react'
 
 type UserType = 'individual' | 'company' | 'agency'
@@ -18,6 +19,8 @@ const USER_TYPE_OPTIONS = [
 
 function RegisterForm() {
   const searchParams = useSearchParams()
+  const next = safeAuthReturnPath(searchParams.get('next'))
+  const nextQuery = next === '/dashboard' ? '' : `?next=${encodeURIComponent(next)}`
   const initialType = (searchParams.get('type') as UserType) || 'individual'
 
   const [userType, setUserType] = useState<UserType>(initialType)
@@ -32,11 +35,29 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
   const [referralCode, setReferralCode] = useState(() => {
     const code = searchParams.get('ref')?.trim().toLowerCase() || ''
     return /^ep-[0-9a-f]{16}$/.test(code) ? code : ''
   })
   const supabase = createClient()
+
+  const callbackUrl = () => `${window.location.origin}/auth/callback${nextQuery}`
+
+  const handleResendConfirmation = async () => {
+    setResending(true)
+    setResendMessage('')
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: { emailRedirectTo: callbackUrl() },
+    })
+    setResendMessage(error
+      ? 'Novi link nije poslat. Sačekaj malo pa pokušaj ponovo ili kontaktiraj podršku.'
+      : 'Ako je adresa ispravna, poslat je novi link. Proveri i Spam/Neželjenu poštu.')
+    setResending(false)
+  }
 
   const rememberReferral = () => {
     const code = referralCode.trim().toLowerCase()
@@ -59,7 +80,7 @@ function RegisterForm() {
     rememberUsername()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` }
+      options: { redirectTo: callbackUrl() }
     })
   }
 
@@ -74,7 +95,7 @@ function RegisterForm() {
     rememberUsername()
     await supabase.auth.signInWithOAuth({
       provider: 'facebook',
-      options: { redirectTo: `${window.location.origin}/auth/callback` }
+      options: { redirectTo: callbackUrl() }
     })
   }
 
@@ -117,6 +138,7 @@ function RegisterForm() {
       email,
       password,
       options: {
+        emailRedirectTo: callbackUrl(),
         data: {
           full_name: displayName,
           type: userType,
@@ -165,12 +187,17 @@ function RegisterForm() {
             <p className="text-gray-500 mb-2">
               Poslali smo ti link za potvrdu na <strong>{email}</strong>.
             </p>
+            <p className="text-sm text-gray-500">Ako poruka ne stigne za nekoliko minuta, proveri Spam/Neželjenu poštu.</p>
+            <button type="button" onClick={handleResendConfirmation} disabled={resending} className="mt-4 text-sm font-medium text-blue-600 hover:underline disabled:opacity-50">
+              {resending ? 'Šaljem novi link...' : 'Pošalji ponovo email za potvrdu'}
+            </button>
+            {resendMessage && <p role="status" className="mt-2 text-sm text-gray-600">{resendMessage}</p>}
             {(userType === 'company' || userType === 'agency') && (
               <p className="text-sm text-amber-600 bg-amber-50 rounded-lg p-3 mt-4">
                 Tvoj nalog čeka odobrenje admina. Posle odobrenja dobićeš obaveštenje na platformi.
               </p>
             )}
-            <Link href="/login" className="mt-6 block w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors">
+            <Link href={`/login${nextQuery}`} className="mt-6 block w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors">
               Idi na prijavu
             </Link>
           </div>
@@ -191,7 +218,7 @@ function RegisterForm() {
         <h2 className="text-center text-2xl font-bold text-gray-900">Kreiraj nalog</h2>
         <p className="mt-2 text-center text-sm text-gray-500">
           Već imaš nalog?{' '}
-          <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+          <Link href={`/login${nextQuery}`} className="text-blue-600 hover:text-blue-700 font-medium">
             Prijavi se
           </Link>
         </p>

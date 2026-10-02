@@ -50,7 +50,7 @@ export default function ApplyButton({ listingId, currentUserId, existingApplicat
   if (!currentUserId) {
     return (
       <Link
-        href="/login"
+        href={`/login?next=${encodeURIComponent(`/oglasi/${listingId}`)}`}
         className="w-full block text-center bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors text-sm"
       >
         Prijavi se da bi se javio/la
@@ -133,6 +133,10 @@ export default function ApplyButton({ listingId, currentUserId, existingApplicat
       setApplied(true)
       setAppStatus('pending')
       setShowForm(false)
+    } else {
+      setApplyError(error.code === '23505'
+        ? 'Već si poslao/la prijavu za ovaj oglas. Osveži stranicu da vidiš status.'
+        : 'Prijava nije poslata. Proveri vezu i pokušaj ponovo. Ako se greška ponovi, kontaktiraj podršku.')
     }
     setApplying(false)
   }
