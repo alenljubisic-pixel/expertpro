@@ -66,7 +66,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               {profile?.type === 'company' && 'Firma'}
               {profile?.type === 'agency' && 'Agencija za rad'}
               {profile?.rating_avg && profile.rating_avg > 0
-                ? ` · ★ ${profile.rating_avg.toFixed(1)} (${profile.review_count} ocena)`
+                ? ` · ★ ${profile.rating_avg.toFixed(1)} (${profile.rating_count ?? 0} ocena)`
                 : ' · Još nema ocena'}
             </p>
           </div>

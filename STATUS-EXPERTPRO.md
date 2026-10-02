@@ -1,5 +1,9 @@
 # ExpertPro — zajednički status (Codex + Claude)
 
+## 02.10.2026 — broj ocena na privatnom dashboardu (Codex)
+
+- Zaglavlje `/dashboard` je pogrešno čitalo zastarelo `profiles.review_count` (0), dok se aktuelne javne ocene i prosek računaju kroz `profiles.rating_count` i `rating_avg`. Prebačeno na `rating_count`, isto kao javni profil; u oktobarskoj privatnoj statistici već se videla jedna primljena ocena. Mesečna statistika i lista sopstvenih poslova ostaju samo u prijavljenom dashboardu i master adminu, ne na javnom profilu.
+
 ## 02.10.2026 — prvi ulazak: obaveštenja i lokacija (Codex)
 
 - Na prijavljenom `/dashboard` dodat je početni vodič `FirstLaunchPermissions`: za ovaj uređaj pri prvom ulasku nudi postojeće dugme za web push + posebno dugme za dozvolu lokacije/predlog najbližeg grada. Svaki Android/Chrome zahtev za dozvolu nastaje tek posle korisnikovog klika i može biti odbijen; **dozvole nisu automatski odobrene**. Izbor „Gotovo / podesi kasnije“ pamti se samo na uređaju; push ostaje dostupan na profilu, a lokacija u pretrazi. Uređaj se ne prati u pozadini. TypeScript, ciljani ESLint (0 grešaka; 4 ranija upozorenja u dashboardu) i build prolaze. Izmena `4ce42c7` je objavljena na Vercelu (Ready); u prijavljenom Chrome dashboardu potvrđen prikaz oba dugmeta i objašnjenja. Stvarni Android TWA push i GPS i dalje zahtevaju test na telefonu pre slanja na Play.
