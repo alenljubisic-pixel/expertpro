@@ -1,5 +1,9 @@
 # ExpertPro — zajednički status (Codex + Claude)
 
+## 02.10.2026 — javni profil bez mesečne statistike (Codex; novija odluka korisnika)
+
+- Korisnik je izričito zatražio da se sa javnog profila uklone izbor meseca, dugme „Prikaži“ i mesečni broj završenih poslova — to ne želi da drugi korisnici gledaju. U `app/profil/[id]/page.tsx` uklonjeni su taj prikaz i pripadajući mesečni RPC poziv. Ocene i drugi podaci profila ostaju. Master admin mesečni pregled nije menjan. Ovaj zapis **zamenjuje prethodni zapis ispod** o poboljšanju mesečnog polja na javnom profilu; ne vraćati ga pri TWA radu. Lični dashboard i dalje ima sopstvenu mesečnu statistiku, što nije deo javnog profila. TypeScript i ciljani ESLint prolaze (jedno ranije `any` upozorenje); proveriti mobilni prikaz posle objave.
+
 ## 02.10.2026 — izbor meseca na javnom profilu (Codex)
 
 - Na mobilnom je polje „Mesec“ na `/profil/[id]` bilo nečitljivo i bez objašnjenja. U `app/profil/[id]/page.tsx` sada piše „Završeni poslovi po mesecu“, polje i dugme imaju kontrast i mobilnu širinu, a tekst objašnjava da se **samo broj završenih poslova** menja izborom meseca; ocene nisu filtrirane. Broj se prikazuje i kada je 0. Nije promenjen SQL ni izračunavanje statistike. TypeScript, produkcioni build i ciljani ESLint prolaze (ostaje jedno ranije `any` upozorenje). Proveriti prikaz na Android telefonu posle objave.

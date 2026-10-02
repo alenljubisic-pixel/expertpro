@@ -3,12 +3,11 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import { MapPin, Star, CheckCircle, Briefcase } from 'lucide-react'
+import { MapPin, Star, CheckCircle } from 'lucide-react'
 import { safeName } from '@/lib/safe-name'
 import ProfileAvatar from '@/components/profile/ProfileAvatar'
-import { reportMonth, monthLabel } from '@/lib/report-month'
 
-export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ month?: string }> }) {
+export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
 
@@ -20,9 +19,6 @@ export default async function PublicProfilePage({ params, searchParams }: { para
     .single()
 
   if (!profile) notFound()
-
-  const month = reportMonth((await searchParams).month)
-  const { data: completedCount } = await supabase.rpc('completed_job_count_monthly', { p_user_id: id, p_month: `${month}-01` })
 
   const { data: listings } = await supabase
     .from('listings')
@@ -62,25 +58,6 @@ export default async function PublicProfilePage({ params, searchParams }: { para
                 </p>
               </div>
 
-              <form method="get" className="mb-4 rounded-lg bg-blue-50 p-3">
-                <label htmlFor="profile-month" className="mb-2 block text-sm font-medium text-gray-800">
-                  Završeni poslovi po mesecu
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    id="profile-month"
-                    name="month"
-                    type="month"
-                    defaultValue={month}
-                    className="min-w-0 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-                    style={{ colorScheme: 'light' }}
-                  />
-                  <button type="submit" className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                    Prikaži
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-gray-600">Menja samo broj završenih poslova; ocene ostaju prikazane za sve vreme.</p>
-              </form>
               <div className="space-y-2 mb-5">
                 {profile.is_verified && (
                   <div className="flex items-center gap-2 text-sm text-green-600">
@@ -100,10 +77,6 @@ export default async function PublicProfilePage({ params, searchParams }: { para
                     {profile.rating_avg.toFixed(1)} ({profile.rating_count || 0} ocena)
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Briefcase className="h-4 w-4 shrink-0" />
-                  <span>{Number(completedCount) || 0} završenih poslova — {monthLabel(month)}</span>
-                </div>
               </div>
 
               {profile.skills && profile.skills.length > 0 && (
