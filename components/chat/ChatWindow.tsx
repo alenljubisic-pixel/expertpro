@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Send, AlertTriangle, Star } from 'lucide-react'
+import { ArrowLeft, Send, AlertTriangle, Star } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { safeInitial, safeName } from '@/lib/safe-name'
@@ -123,6 +123,9 @@ export default function ChatWindow({ conversationId, currentUserId, conversation
     <div className="flex-1 flex flex-col min-w-0">
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-gray-100">
+        <Link href="/poruke" aria-label="Nazad na razgovore" className="sm:hidden text-gray-600 hover:text-gray-900 p-1 -ml-1 flex-shrink-0">
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
         <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600">
           {safeInitial(other?.name)}
         </div>

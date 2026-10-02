@@ -101,7 +101,7 @@ export default async function MessagesPage({
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
         <h1 className="text-xl font-bold text-gray-900 mb-5">Poruke</h1>
 
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden" style={{ height: 'calc(100vh - 200px)', minHeight: 500 }}>
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden h-[calc(100dvh-165px)] min-h-[360px] sm:h-[calc(100vh-200px)] sm:min-h-[500px]">
           <div className="flex h-full">
             {/* Conversation list */}
             <ConversationList
@@ -118,7 +118,7 @@ export default async function MessagesPage({
                 conversations={conversations || []}
               />
             ) : (
-              <div className="flex-1 flex items-center justify-center text-center p-8">
+              <div className="hidden sm:flex flex-1 items-center justify-center text-center p-8">
                 <div>
                   <p className="text-4xl mb-3">💬</p>
                   <p className="text-gray-500">Izaberi razgovor</p>

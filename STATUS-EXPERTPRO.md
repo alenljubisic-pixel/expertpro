@@ -1,5 +1,10 @@
 # ExpertPro — zajednički status (Codex + Claude)
 
+## 02.10.2026 — mobilni razgovori: lista zaklanjala chat (Codex)
+
+- Prijavljen problem na telefonu: korisnik vidi poruku, ali tap na sagovornika ne otvara vidljiv chat. Uzrok u `components/chat/ConversationList.tsx` + `app/poruke/page.tsx`: na mobilnoj širini lista je `w-full`, dok je chat ostajao pored nje u istom flex redu i bio van vidljivog dela. Ispravljeno: bez izabranog razgovora vidi se samo lista; sa `?conv=` ili ulaskom preko obaveštenja vidi se chat preko cele širine i dugme „Nazad na razgovore“. Visina panela prilagođena mobilnom `dvh`. TypeScript, ciljani ESLint (0 grešaka; 3 stara `any` upozorenja) i lokalni produkcioni build su prošli. Čeka se produkcioni deploy i provera na stvarnom telefonu.
+- Poslednja `new_message` obaveštenja iz kontrolisanog testa vode na razgovor za posao koji su **obe strane već označile kao završen**. Taj razgovor mora ostati čitljiv kao istorija, ali pisanje je namerno zaključano po poslovnom pravilu. Mobilni prikaz sada treba da pokaže objašnjenje, ne da ostavi utisak da tap ne radi. Nije nađena nova poruka za neki drugi trenutno aktivan posao u ovom pregledu; ne otključavati završeni test posao samo radi provere.
+
 ## 02.10.2026 — vlasnikova odluka odmah dodeljuje posao (Codex; aktuelni tok)
 
 - Za `Tražim radnika` i `Hitno` kandidatova prijava sa porukom već predstavlja pristanak za izbor. Vlasnik klikne **Prihvati** jednom: prijava odmah postaje `accepted`, oglas `filled` i nestaje iz javne berze, ostale prijave se odbijaju uz in-app obaveštenja, pobednik dobija obaveštenje i samo taj par može da piše u razgovoru za oglas. Kandidat više ne mora da klikne „Potvrdi angažman“; uklonjeni su to dugme, „Odustani pre potvrde“ i vlasnikovo „Poništi izbor“. Oglas `Nudim uslugu` i dalje može prihvatiti više klijenata i ostaje aktivan. Nema nove naplate kredita pri izboru.

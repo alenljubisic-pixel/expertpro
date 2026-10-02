@@ -11,7 +11,7 @@ interface Props {
 
 export default function ConversationList({ conversations, currentUserId, activeConvId }: Props) {
   return (
-    <div className="w-full sm:w-72 border-r border-gray-100 flex flex-col flex-shrink-0 overflow-y-auto">
+    <div className={`${activeConvId ? 'hidden sm:flex' : 'flex'} w-full sm:w-72 border-r border-gray-100 flex-col flex-shrink-0 overflow-y-auto`}>
       <div className="p-4 border-b border-gray-100">
         <h2 className="text-sm font-semibold text-gray-900">Razgovori</h2>
       </div>
