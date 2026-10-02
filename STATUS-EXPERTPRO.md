@@ -1,5 +1,9 @@
 # ExpertPro — zajednički status (Codex + Claude)
 
+## 02.10.2026 — TWA assetlinks objavljen (Codex)
+
+- Claudeov commit `d061882` sa `TWA-ANDROID-APP.md` i `public/.well-known/assetlinks.json` poslat je na `main` sa Windows računara; Vercel Production deployment je **Ready**. Oba `https://www.expertpro.app/.well-known/assetlinks.json` i `https://expertpro.app/.well-known/assetlinks.json` vraćaju HTTP 200 i očekivani Android paket/otisak. Android APK/AAB, stvarna instalacija, digitalna veza u Chrome-u i Google Play objava **nisu provereni ovim korakom**. Keystore i potpisani build, po Claudeovom TWA dokumentu, postoje samo u njegovom cloud okruženju; obezbediti vlasniku bezbedan prenos keystore fajla i lozinke pre nego što se okruženje ugasi. Sledeći koraci su u `TWA-ANDROID-APP.md`.
+
 ## 02.10.2026 — pravilo razgovora i TWA primopredaja (dogovor, nije sve implementirano)
 
 - **Već urađeno i objavljeno:** prijavljen korisnik stalno vidi „Poruke“ u mobilnom meniju i desktop meniju profila (commit `684eecf`, Vercel Production **Ready**). Mobilni razgovor se otvara preko cele širine (commit `7fee50a`). Završeni posao ostavlja ceo chat dostupan za čitanje, ali zaključava slanje novih poruka za taj oglas. Lokalni TypeScript, ESLint i build su prošli; prikaz na stvarnom telefonu posle poslednje izmene nije potvrđen.

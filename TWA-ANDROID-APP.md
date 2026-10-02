@@ -7,7 +7,7 @@
 > ima smisla tek kasnije, kad bude mnogo više korisnika (videti razgovor sa
 > vlasnikom 02.10.2026 — preporuka je bila da se to ne radi na ~500 korisnika).
 
-## Status: Android projekat izgrađen i potpisan (02.10.2026, Claude) — čeka se samo deploy jednog fajla + vlasnikov Google Play nalog
+## Status: Android projekat izgrađen i potpisan (02.10.2026, Claude); assetlinks je objavljen — ostaju Play Console i provere na uređaju
 
 ### Šta je GOTOVO
 
@@ -26,7 +26,7 @@
 
 ### [ČEKA — treba akcija]
 
-6. **Deploy `assetlinks.json` na produkciju.** Fajl postoji lokalno u repo-u (`public/.well-known/assetlinks.json`) ali git na ovom računaru je trenutno blokiran postojećim `.git/index.lock` fajlom (zaglavljen od ranije — neki git proces se nije uredno završio, ili je neki git klijent/IDE otvoren i drži zaključano). **Treba obrisati `.git\index.lock`** u folderu repozitorijuma (ili zatvoriti program koji drži git zaključan), pa commit-ovati i poslati na `main` → Vercel. Dok taj fajl ne bude živ na sajtu, aplikacija neće proći Google-ovu verifikaciju vlasništva.
+6. **ZAVRŠENO (Codex, 02.10):** Zaostali `.git/index.lock` je uklonjen nakon potvrde da nema aktivnog Git procesa. Commit `d061882` je poslat na `main`; Vercel Production je **Ready**. `assetlinks.json` vraća HTTP 200 sa očekivanim paketom i SHA-256 otiskom na `https://www.expertpro.app/.well-known/assetlinks.json` i `https://expertpro.app/.well-known/assetlinks.json`. Ovo potvrđuje dostupnost fajla, ali ne i Android instalaciju ili Google Play odobrenje.
 7. **Google Play Console nalog** — jednokratna registracija, $25 jednokratno, vlasnikov Google nalog. Ovo Claude ne može umesto njega (traži lične/platne podatke).
 8. **Upload `.aab` fajla** na Play Console + popunjavanje liste prodavnice (opis, screenshotovi, ikonica, politika privatnosti — link na `/privatnost` koji već postoji, kategorija aplikacije, Data Safety forma).
 9. **Google review** (obično 1-7 dana, van naše kontrole) → aplikacija postaje javno dostupna na Play-u.
