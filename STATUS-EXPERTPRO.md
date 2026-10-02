@@ -1,5 +1,9 @@
 # ExpertPro — zajednički status (Codex + Claude)
 
+## 02.10.2026 — izbor meseca na javnom profilu (Codex)
+
+- Na mobilnom je polje „Mesec“ na `/profil/[id]` bilo nečitljivo i bez objašnjenja. U `app/profil/[id]/page.tsx` sada piše „Završeni poslovi po mesecu“, polje i dugme imaju kontrast i mobilnu širinu, a tekst objašnjava da se **samo broj završenih poslova** menja izborom meseca; ocene nisu filtrirane. Broj se prikazuje i kada je 0. Nije promenjen SQL ni izračunavanje statistike. TypeScript, produkcioni build i ciljani ESLint prolaze (ostaje jedno ranije `any` upozorenje). Proveriti prikaz na Android telefonu posle objave.
+
 ## 02.10.2026 — TWA assetlinks objavljen (Codex)
 
 - Claudeov commit `d061882` sa `TWA-ANDROID-APP.md` i `public/.well-known/assetlinks.json` poslat je na `main` sa Windows računara; Vercel Production deployment je **Ready**. Oba `https://www.expertpro.app/.well-known/assetlinks.json` i `https://expertpro.app/.well-known/assetlinks.json` vraćaju HTTP 200 i očekivani Android paket/otisak. Android APK/AAB, stvarna instalacija, digitalna veza u Chrome-u i Google Play objava **nisu provereni ovim korakom**. Keystore i potpisani build, po Claudeovom TWA dokumentu, postoje samo u njegovom cloud okruženju; obezbediti vlasniku bezbedan prenos keystore fajla i lozinke pre nego što se okruženje ugasi. Sledeći koraci su u `TWA-ANDROID-APP.md`.

@@ -62,10 +62,24 @@ export default async function PublicProfilePage({ params, searchParams }: { para
                 </p>
               </div>
 
-              <form method="get" className="mb-4 flex items-center gap-2 text-xs">
-                <label htmlFor="profile-month">Mesec</label>
-                <input id="profile-month" name="month" type="month" defaultValue={month} className="min-w-0 w-36 rounded border border-gray-200 px-2 py-1" />
-                <button className="text-blue-600">Prikaži</button>
+              <form method="get" className="mb-4 rounded-lg bg-blue-50 p-3">
+                <label htmlFor="profile-month" className="mb-2 block text-sm font-medium text-gray-800">
+                  Završeni poslovi po mesecu
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="profile-month"
+                    name="month"
+                    type="month"
+                    defaultValue={month}
+                    className="min-w-0 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                    style={{ colorScheme: 'light' }}
+                  />
+                  <button type="submit" className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                    Prikaži
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-gray-600">Menja samo broj završenih poslova; ocene ostaju prikazane za sve vreme.</p>
               </form>
               <div className="space-y-2 mb-5">
                 {profile.is_verified && (
@@ -86,12 +100,10 @@ export default async function PublicProfilePage({ params, searchParams }: { para
                     {profile.rating_avg.toFixed(1)} ({profile.rating_count || 0} ocena)
                   </div>
                 )}
-                {Number(completedCount) > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Briefcase className="w-4 h-4" />
-                    {completedCount} završenih poslova — {monthLabel(month)}
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Briefcase className="h-4 w-4 shrink-0" />
+                  <span>{Number(completedCount) || 0} završenih poslova — {monthLabel(month)}</span>
+                </div>
               </div>
 
               {profile.skills && profile.skills.length > 0 && (
