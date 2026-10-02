@@ -289,6 +289,11 @@ export default function Navbar() {
               </Link>
               <Link href="/podrska" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Žalbe i podrška</Link>
               <Link href="/dashboard" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>Moj profil</Link>
+              {profile?.is_admin && (
+                <Link href="/admin" className="flex items-center gap-2 text-sm font-medium text-blue-700 py-2" onClick={() => setMenuOpen(false)}>
+                  <Settings className="w-4 h-4" /> Admin panel
+                </Link>
+              )}
               <button onClick={handleSignOut} className="block w-full text-left text-sm font-medium text-red-600 py-2">Odjavi se</button>
             </>
           ) : (
