@@ -196,7 +196,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                 <span className="text-2xl">✅</span>
                 <div>
                   <p className="font-bold">Oglas je popunjen</p>
-                  <p className="text-green-100 text-sm">Kandidat je izabran i potvrđen. Oglas više nije aktivan za nove prijave.</p>
+                  <p className="text-green-100 text-sm">Vlasnik je prihvatio kandidata. Oglas više nije aktivan za nove prijave.</p>
                 </div>
               </div>
             )}
