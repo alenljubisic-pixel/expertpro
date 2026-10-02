@@ -1,5 +1,12 @@
 # ExpertPro — zajednički status (Codex + Claude)
 
+## 02.10.2026 — pravilo razgovora i TWA primopredaja (dogovor, nije sve implementirano)
+
+- **Već urađeno i objavljeno:** prijavljen korisnik stalno vidi „Poruke“ u mobilnom meniju i desktop meniju profila (commit `684eecf`, Vercel Production **Ready**). Mobilni razgovor se otvara preko cele širine (commit `7fee50a`). Završeni posao ostavlja ceo chat dostupan za čitanje, ali zaključava slanje novih poruka za taj oglas. Lokalni TypeScript, ESLint i build su prošli; prikaz na stvarnom telefonu posle poslednje izmene nije potvrđen.
+- **Poslovno pravilo potvrđeno od korisnika:** jedan posao/oglas i dodela = jedan zaseban razgovor. Ako ista dva korisnika ponovo sarađuju na novom poslu, otvara se **nov razgovor**; prethodna istorija se ne nastavlja niti otključava. Pristup razgovoru i istoriji traje i nakon završetka; samo je slanje zaključano. Pri TWA proveri ne sakrivati završene razgovore i ne uvoditi trajno direktno dopisivanje između korisnika bez aktivno dodeljenog posla.
+- **Predlog, još nije implementiran ni odobren kao konačna specifikacija:** dugme „Arhiviraj“ za korisničko sklanjanje završenog razgovora iz glavnog inboxa, uz zaseban prikaz „Arhivirano“ i mogućnost vraćanja. Ne brisati poruke niti automatski arhivirati bez daljeg dogovora; istorija je bitna za žalbe i proveru saradnje. Ovo nije postojeća funkcija i ne treba je prikazivati kao završenu.
+- **TWA:** korisnik kaže da je Claude započeo izradu Android TWA. Codex nije proverio njegov trenutni kod, build, instalaciju ni Play Store status. Claude/Codex treba da provere međusobne izmene pre spajanja i zatim na pravom telefonu testiraju: meni „Poruke“, ulaz u aktivan i završen chat, čitanje istorije, blokadu slanja završenog i novi razgovor za novi posao sa istim korisnikom.
+
 ## 02.10.2026 — Poruke u meniju; istorija ostaje čitljiva (Codex)
 
 - Korisnik je potvrdio nameru: dugme **Poruke** mora stalno biti u meniju prijavljenog korisnika, posebno na telefonu. Dodato u mobilni meni i desktop meni profila (`components/layout/Navbar.tsx`), sa direktnim ulaskom na `/poruke`. Završen posao ne skriva razgovor niti briše istoriju; jedino je slanje novih poruka za taj oglas blokirano. Postojeći `app/poruke/page.tsx` već učitava stare razgovore, a `ChatWindow` prikazuje istoriju i poruku da je slanje zaključano. TypeScript, ESLint (0 grešaka, jedno ranije upozorenje za sign-out navigaciju) i produkcioni build prolaze. Proveriti na stvarnom telefonu posle deploya.
