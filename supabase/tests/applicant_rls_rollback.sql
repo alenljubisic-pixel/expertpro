@@ -65,19 +65,6 @@ begin
 end;
 $select_candidate$;
 
-do $confirm_and_chat$
-declare
-  v_owner uuid := current_setting('expertpro.test_owner')::uuid;
-  v_worker uuid := current_setting('expertpro.test_worker')::uuid;
-  v_listing uuid := current_setting('expertpro.test_listing')::uuid;
-  v_conversation uuid;
-begin
-  perform set_config('request.jwt.claim.sub', v_worker::text, true);
-  perform public.confirm_application(current_setting('expertpro.test_application')::uuid);
-  -- A new statement below will observe the accepted application in STABLE RLS helpers.
-end;
-$confirm_and_chat$;
-
 do $chat$
 declare
   v_owner uuid := current_setting('expertpro.test_owner')::uuid;
@@ -89,7 +76,7 @@ begin
   insert into public.conversations (listing_id, participant_1_id, participant_2_id)
   values (v_listing, v_owner, v_worker) returning id into v_conversation;
   insert into public.messages (conversation_id, sender_id, content)
-  values (v_conversation, v_worker, 'Dozvoljena poruka posle potvrde');
+  values (v_conversation, v_worker, 'Dozvoljena poruka posle prihvatanja');
   perform set_config('expertpro.test_conversation', v_conversation::text, true);
 end;
 $chat$;

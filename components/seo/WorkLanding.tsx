@@ -13,7 +13,7 @@ const content = {
     listTitle: 'Otvoreni kratkoročni poslovi',
     listHref: '/oglasi?type=request&mode=short_job',
     examples: ['Selidba i utovar', 'Sitne popravke i montaža', 'Čišćenje i pomoć u kući', 'Ispomoć u magacinu ili na događaju'],
-    forClients: 'Opiši šta treba uraditi, grad, željeni termin i okvirnu cenu. Kandidati se prijavljuju uz poruku i, po želji, svoju ponudu. Tek kada odabrani kandidat potvrdi posao, oglas prelazi u dodeljenu saradnju.',
+    forClients: 'Opiši šta treba uraditi, grad, željeni termin i okvirnu cenu. Kandidati se prijavljuju uz poruku i, po želji, svoju ponudu. Kada prihvatiš jednog kandidata, posao mu je odmah dodeljen, a ostale prijave se odbijaju.',
     forWorkers: 'Ako si slobodan posle posla, pre podne ili vikendom, pregledaj aktuelne zahteve. Možeš i objaviti sopstvenu ponudu usluge sa raspoloživim danima, satnicom ili cenom po dogovoru.',
   },
   long: {

@@ -70,7 +70,7 @@ const FAQ_SECTIONS = [
       },
       {
         q: 'Kako kontaktiram radnika ili poslodavca?',
-        a: 'Na oglas se prijavite uz kratku poruku. Razgovor se otvara tek kada vlasnik oglasa izabere kandidata i kandidat potvrdi angažman. Kod oglasa "Nudim uslugu", razgovor se otvara kada majstor prihvati vaš upit. Po završetku posla razgovor se zatvara.',
+        a: 'Na oglas se prijavite uz kratku poruku. Kod oglasa „Tražim radnika“ i „Hitno“ razgovor se otvara odmah kada vlasnik prihvati jednog kandidata; dodatna potvrda kandidata nije potrebna. Kod oglasa „Nudim uslugu“ razgovor se otvara kada majstor prihvati vaš upit. Po završetku posla razgovor se zatvara.',
       },
     ],
   },

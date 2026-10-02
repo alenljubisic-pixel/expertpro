@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Send, CheckCircle, XCircle } from 'lucide-react'
@@ -20,32 +19,8 @@ export default function ApplyButton({ listingId, currentUserId, existingApplicat
   const [showForm, setShowForm] = useState(false)
   const [applied, setApplied] = useState(!!existingApplication)
   const [appStatus, setAppStatus] = useState(existingApplication?.status || '')
-  const [responding, setResponding] = useState(false)
   const [applyError, setApplyError] = useState('')
-  const router = useRouter()
   const supabase = createClient()
-
-  const handleConfirm = async () => {
-    if (!existingApplication) return
-    setResponding(true)
-    const { error } = await supabase.rpc('confirm_application', { p_application_id: existingApplication.id })
-    if (!error) {
-      setAppStatus('accepted')
-      router.refresh()
-    }
-    setResponding(false)
-  }
-
-  const handleDecline = async () => {
-    if (!existingApplication) return
-    setResponding(true)
-    const { error } = await supabase.rpc('decline_application', { p_application_id: existingApplication.id })
-    if (!error) {
-      setAppStatus('declined')
-      router.refresh()
-    }
-    setResponding(false)
-  }
 
   if (!currentUserId) {
     return (
@@ -64,31 +39,15 @@ export default function ApplyButton({ listingId, currentUserId, existingApplicat
         {appStatus === 'selected' ? (
           <div className="space-y-3">
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-              <p className="text-sm font-semibold text-amber-800">🎉 Izabran/a si za ovaj posao!</p>
-              <p className="text-xs text-amber-700 mt-1">Potvrdi angažman da bi oglas bio dodeljen tebi.</p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleDecline}
-                disabled={responding}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                Odustani
-              </button>
-              <button
-                onClick={handleConfirm}
-                disabled={responding}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50"
-              >
-                {responding ? 'Šaljem...' : 'Potvrdi angažman'}
-              </button>
+              <p className="text-sm font-semibold text-amber-800">Prijava je izabrana u starom toku.</p>
+              <p className="text-xs text-amber-700 mt-1">Obrati se podršci ako ovaj status ostane prikazan.</p>
             </div>
           </div>
         ) : appStatus === 'accepted' ? (
           <div className="space-y-2 text-center">
             <div className="flex items-center justify-center gap-2 text-green-600">
               <CheckCircle className="w-5 h-5" />
-              <span className="font-medium text-sm">{type === 'offer' ? 'Majstor je prihvatio tvoj upit.' : 'Angažman potvrđen — posao je tvoj!'}</span>
+              <span className="font-medium text-sm">{type === 'offer' ? 'Majstor je prihvatio tvoj upit.' : 'Vlasnik je prihvatio tvoju prijavu — posao je tvoj!'}</span>
             </div>
             <Link href={`/poruke?listing=${listingId}`} className="block text-sm text-blue-600 hover:underline">Otvori razgovor</Link>
           </div>
@@ -100,7 +59,7 @@ export default function ApplyButton({ listingId, currentUserId, existingApplicat
         ) : appStatus === 'rejected' ? (
           <div className="flex items-center justify-center gap-2 text-red-500">
             <XCircle className="w-5 h-5" />
-            <span className="text-sm">Izabran je drugi kandidat</span>
+            <span className="text-sm">Prijava nije prihvaćena</span>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
@@ -108,7 +67,7 @@ export default function ApplyButton({ listingId, currentUserId, existingApplicat
               <CheckCircle className="w-4 h-4" />
               <span className="text-sm font-medium">Prijava poslata</span>
             </div>
-            <p className="text-xs text-gray-500">Poruka je poslata uz prijavu. Razgovor se otvara tek kada {type === 'offer' ? 'majstor prihvati upit' : 'potvrdiš angažman'}.</p>
+            <p className="text-xs text-gray-500">Poruka je poslata uz prijavu. Razgovor se otvara kada {type === 'offer' ? 'majstor prihvati upit' : 'vlasnik prihvati tvoju prijavu'}.</p>
           </div>
         )}
       </div>
@@ -157,7 +116,7 @@ export default function ApplyButton({ listingId, currentUserId, existingApplicat
           >
             {type === 'offer' ? '🤝 Zainteresovan/a sam' : '📩 Prijavi se'}
           </button>
-          <p className="text-xs text-gray-500 text-center">Prvu poruku napiši uz prijavu; razgovor je moguć tek kada {type === 'offer' ? 'majstor prihvati upit' : 'potvrdiš angažman'}.</p>
+          <p className="text-xs text-gray-500 text-center">Prvu poruku napiši uz prijavu; razgovor je moguć tek kada {type === 'offer' ? 'majstor prihvati upit' : 'vlasnik prihvati tvoju prijavu'}.</p>
         </div>
       ) : (
         <div className="space-y-3">

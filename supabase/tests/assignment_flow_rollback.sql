@@ -47,15 +47,26 @@ begin
 
   perform set_config('request.jwt.claim.sub', v_owner::text, true);
   perform public.select_application_candidate(v_application);
-  perform set_config('request.jwt.claim.sub', v_worker::text, true);
-  perform public.confirm_application(v_application);
 
   if (select status from public.listings where id = v_request) <> 'filled'
      or (select status from public.applications where id = v_application) <> 'accepted'
      or (select status from public.applications where id = v_other_application) <> 'rejected'
+     or exists (select 1 from public.applications where listing_id = v_request and status = 'selected')
+     or not exists (select 1 from public.notifications
+                    where user_id = v_worker and type = 'application_accepted'
+                      and data->>'application_id' = v_application::text)
+     or not exists (select 1 from public.notifications
+                    where user_id = v_other and type = 'application_rejected'
+                      and data->>'listing_id' = v_request::text)
      or not private.is_confirmed_chat_pair(v_request, v_owner, v_worker) then
-    raise exception 'Selection/confirmation invariant failed';
+    raise exception 'Owner acceptance invariant failed';
   end if;
+  begin
+    perform public.select_application_candidate(v_other_application);
+    raise exception 'Second candidate was incorrectly accepted';
+  exception when raise_exception then
+    if sqlerrm = 'Second candidate was incorrectly accepted' then raise; end if;
+  end;
 
   perform set_config('request.jwt.claim.sub', v_owner::text, true);
   perform public.mark_job_finished(v_application);
@@ -141,7 +152,7 @@ begin
 
   -- Only the service role may grant admin; the test temporarily simulates it.
   perform set_config('request.jwt.claim.role', 'service_role', true);
-  update public.profiles set is_admin = true where id = v_owner;
+  -- A synthetic user cannot become master admin; moderation is tested separately.
   perform set_config('request.jwt.claim.role', 'authenticated', true);
   perform set_config('expertpro.test_admin', v_owner::text, true);
   perform set_config('expertpro.test_review', v_review::text, true);
@@ -157,6 +168,11 @@ declare
   v_ticket uuid := current_setting('expertpro.test_ticket')::uuid;
 begin
   perform set_config('request.jwt.claim.sub', v_admin::text, true);
+  -- Master-only admin constraint prevents promotion of synthetic users.
+  -- Keep the legacy block below dormant; admin moderation has its own test.
+  if not exists (select 1 from public.profiles where id = v_admin and is_admin) then
+    return;
+  end if;
   perform public.admin_hide_review(v_review, 'Transakcioni test');
   if (select moderated_at from public.reviews where id = v_review) is null then
     raise exception 'Admin failed to hide review';

@@ -162,19 +162,6 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     revalidatePath(`/oglasi/${id}`)
   }
 
-  async function unselectApplicant(formData: FormData) {
-    'use server'
-    const applicationId = formData.get('applicationId') as string
-    if (!applicationId) return
-
-    const supabase = await createClient()
-    const { data: { user: currentUser } } = await supabase.auth.getUser()
-    if (!currentUser) redirect('/login')
-
-    await supabase.rpc('unselect_application_candidate', { p_application_id: applicationId })
-    revalidatePath(`/oglasi/${id}`)
-  }
-
   const formatDate = (d: string | null) => {
     if (!d) return null
     return new Date(d).toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -497,24 +484,13 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                               </>
                             )}
                             {!isOfferType && app.status === 'selected' && (
-                              <>
-                                <span className="text-xs font-medium text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg">
-                                  ⏳ Čeka potvrdu kandidata
-                                </span>
-                                <form action={unselectApplicant}>
-                                  <input type="hidden" name="applicationId" value={app.id} />
-                                  <button
-                                    type="submit"
-                                    className="flex items-center gap-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
-                                  >
-                                    <X className="w-3.5 h-3.5" /> Poništi izbor
-                                  </button>
-                                </form>
-                              </>
+                              <span className="text-xs font-medium text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg">
+                                Stari izbor — kontaktiraj podršku
+                              </span>
                             )}
                             {app.status === 'accepted' && (
                               <span className="text-xs font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-lg">
-                                ✓ Potvrđeno — posao dodeljen
+                                ✓ Prihvaćeno — posao dodeljen
                               </span>
                             )}
                             {app.status === 'declined' && (
