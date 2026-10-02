@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.expertpro.twa",
+    "sha256_cert_fingerprints": ["57:27:6A:63:9E:23:AF:9E:36:76:00:8B:98:29:E8:FA:4F:B1:D5:CB:32:49:53:91:E4:33:7D:07:B1:E9:A8:B3"]
+  }
+}]
