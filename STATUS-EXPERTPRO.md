@@ -1,5 +1,9 @@
 # ExpertPro — zajednički status (Codex + Claude)
 
+## 02.10.2026 — Poruke u meniju; istorija ostaje čitljiva (Codex)
+
+- Korisnik je potvrdio nameru: dugme **Poruke** mora stalno biti u meniju prijavljenog korisnika, posebno na telefonu. Dodato u mobilni meni i desktop meni profila (`components/layout/Navbar.tsx`), sa direktnim ulaskom na `/poruke`. Završen posao ne skriva razgovor niti briše istoriju; jedino je slanje novih poruka za taj oglas blokirano. Postojeći `app/poruke/page.tsx` već učitava stare razgovore, a `ChatWindow` prikazuje istoriju i poruku da je slanje zaključano. TypeScript, ESLint (0 grešaka, jedno ranije upozorenje za sign-out navigaciju) i produkcioni build prolaze. Proveriti na stvarnom telefonu posle deploya.
+
 ## 02.10.2026 — mobilni razgovori: lista zaklanjala chat (Codex)
 
 - Prijavljen problem na telefonu: korisnik vidi poruku, ali tap na sagovornika ne otvara vidljiv chat. Uzrok u `components/chat/ConversationList.tsx` + `app/poruke/page.tsx`: na mobilnoj širini lista je `w-full`, dok je chat ostajao pored nje u istom flex redu i bio van vidljivog dela. Ispravljeno: bez izabranog razgovora vidi se samo lista; sa `?conv=` ili ulaskom preko obaveštenja vidi se chat preko cele širine i dugme „Nazad na razgovore“. Visina panela prilagođena mobilnom `dvh`. TypeScript, ciljani ESLint (0 grešaka; 3 stara `any` upozorenja) i lokalni produkcioni build su prošli. Commit `7fee50a` je poslat na `main`, Vercel Production deployment je **Ready**. Ostaje provera na stvarnom telefonu; ne tvrditi da je ona već urađena.
