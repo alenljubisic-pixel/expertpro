@@ -2,7 +2,7 @@
 
 ## 02.10.2026 — broj ocena na privatnom dashboardu (Codex)
 
-- Zaglavlje `/dashboard` je pogrešno čitalo zastarelo `profiles.review_count` (0), dok se aktuelne javne ocene i prosek računaju kroz `profiles.rating_count` i `rating_avg`. Prebačeno na `rating_count`, isto kao javni profil; u oktobarskoj privatnoj statistici već se videla jedna primljena ocena. Mesečna statistika i lista sopstvenih poslova ostaju samo u prijavljenom dashboardu i master adminu, ne na javnom profilu.
+- Zaglavlje `/dashboard` je pogrešno čitalo zastarelo `profiles.review_count` (0), dok se aktuelne javne ocene i prosek računaju kroz `profiles.rating_count` i `rating_avg`. Prebačeno na `rating_count`, isto kao javni profil; u oktobarskoj privatnoj statistici već se videla jedna primljena ocena. Ispravka `62dc0c8` je objavljena (Vercel Ready) i na prijavljenom nalogu u Chromeu potvrđeno `★ 5.0 (1 ocena)`. Mesečna statistika i lista sopstvenih poslova ostaju samo u prijavljenom dashboardu i master adminu, ne na javnom profilu.
 
 ## 02.10.2026 — prvi ulazak: obaveštenja i lokacija (Codex)
 
