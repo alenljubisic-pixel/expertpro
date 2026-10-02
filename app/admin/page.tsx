@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
+import ProfileAvatar from '@/components/profile/ProfileAvatar'
 import { Users, Briefcase, MessageSquare, AlertTriangle, CheckCircle, Clock, TrendingUp, Shield, Wallet } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 
@@ -153,9 +154,7 @@ export default async function AdminPage() {
               {pendingCompanies && pendingCompanies.length > 0 ? (
                 pendingCompanies.map((company) => (
                   <div key={company.id} className="flex items-center gap-3 p-4">
-                    <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center text-sm font-bold text-amber-700 flex-shrink-0">
-                      {company.name?.[0]?.toUpperCase() || '?'}
-                    </div>
+                    <ProfileAvatar src={company.avatar_url} type={company.type} name={company.name} className="w-9 h-9" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 text-sm truncate">{company.name}</p>
                       <p className="text-xs text-gray-400">
@@ -223,9 +222,7 @@ export default async function AdminPage() {
             <div className="divide-y divide-gray-50">
               {recentUsers?.map((u) => (
                 <div key={u.id} className="flex items-center gap-3 p-4">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600 flex-shrink-0">
-                    {u.name?.[0]?.toUpperCase() || '?'}
-                  </div>
+                  <ProfileAvatar src={u.avatar_url} type={u.type} name={u.username || u.name} className="w-8 h-8" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{u.name}</p>
                     <p className="text-xs text-gray-400 capitalize">

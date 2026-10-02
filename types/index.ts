@@ -8,11 +8,12 @@ export interface Profile {
   id: string
   type: UserType
   name: string
+  username?: string | null
   email?: string
   phone?: string
   city?: string
   bio?: string
-  avatar_url?: string
+  avatar_url?: string | null
   employment_status?: 'employed' | 'student' | 'unemployed' | 'freelancer'
   skills?: string[]
   company_name?: string

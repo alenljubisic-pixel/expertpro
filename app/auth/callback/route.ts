@@ -2,6 +2,19 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
+function oauthAvatarUrl(provider: string | undefined, value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'https:') return null
+    if (provider === 'google' && url.hostname === 'lh3.googleusercontent.com') return url.toString()
+    if (provider === 'facebook' && url.hostname === 'platform-lookaside.fbsbx.com') return url.toString()
+  } catch {
+    // Ignore malformed provider metadata.
+  }
+  return null
+}
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
@@ -37,16 +50,15 @@ export async function GET(request: NextRequest) {
         .eq('id', sessionData.user.id)
         .single()
 
-      const oauthAvatar =
-        sessionData.user.user_metadata?.avatar_url ||
-        sessionData.user.user_metadata?.picture ||
-        null
-
       // Google/Facebook nalog garantuje da je email/identitet već potvrđen
       // kod tog provajdera — ne treba nam dodatna email verifikacija na
       // sajtu, pa novom nalogu odmah damo "verifikovan" bedž.
       const provider = sessionData.user.app_metadata?.provider
       const isTrustedOAuth = provider === 'google' || provider === 'facebook'
+      const oauthAvatar = oauthAvatarUrl(
+        provider,
+        sessionData.user.user_metadata?.avatar_url || sessionData.user.user_metadata?.picture
+      )
 
       if (!profile || !profile.type) {
         await supabase.from('profiles').upsert({
@@ -62,11 +74,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(`${origin}/dashboard/profile?setup=true`)
       }
 
-      // Postojeći profil (npr. napravljen pre uvođenja avatara, ili je korisnik
-      // originalno registrovan email/lozinkom pa se sada prvi put uloguje i preko
-      // Google/Facebook naloga sa istim emailom) — dopuni sliku ako je nema,
-      // ali nikad ne prepisuj sliku koju je korisnik sam ručno postavio.
-      if (!profile.avatar_url && oauthAvatar) {
+      // Dopuni starije naloge i osveži eventualno istekao link provajdera.
+      // Ručno otpremljena fotografija u Supabase Storage ostaje netaknuta.
+      const existingAvatar = profile.avatar_url || ''
+      const isProviderAvatar = /^https:\/\/(lh3\.googleusercontent\.com|platform-lookaside\.fbsbx\.com)\//.test(existingAvatar)
+      if (oauthAvatar && (!existingAvatar || (isProviderAvatar && existingAvatar !== oauthAvatar))) {
         await supabase
           .from('profiles')
           .update({ avatar_url: oauthAvatar })

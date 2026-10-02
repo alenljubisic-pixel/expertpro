@@ -11,7 +11,8 @@ import NotificationPreferences from '@/components/notifications/NotificationPref
 import PushPermissionCard from '@/components/notifications/PushPermissionCard'
 import ProfileCompletionBar from '@/components/profile/ProfileCompletionBar'
 import { SERBIAN_CITIES } from '@/types'
-import { ArrowLeft, Save, Upload, User, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Upload, Loader2 } from 'lucide-react'
+import ProfileAvatar from '@/components/profile/ProfileAvatar'
 
 const MAX_AVATAR_BYTES = 3 * 1024 * 1024 // 3MB, mora se poklapati sa file_size_limit u migraciji
 const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -271,13 +272,10 @@ export default function ProfileEditPage() {
                 type="button"
                 onClick={handleAvatarClick}
                 disabled={avatarUploading}
-                className="relative w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-3xl font-bold text-blue-600 overflow-hidden flex-shrink-0 group"
+                className="relative w-20 h-20 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 group"
                 title="Promeni sliku"
               >
-                {avatarUrl
-                  ? <img src={avatarUrl} alt="" className="w-20 h-20 rounded-full object-cover" />
-                  : (name ? name[0].toUpperCase() : <User className="w-8 h-8" />)
-                }
+                <ProfileAvatar src={avatarUrl} type={profile?.type} name={profile?.username || name} className="w-20 h-20" />
                 <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   {avatarUploading
                     ? <Loader2 className="w-5 h-5 text-white animate-spin" />

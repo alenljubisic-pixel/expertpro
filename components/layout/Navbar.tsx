@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { RealtimeChannel, User } from '@supabase/supabase-js'
 import type { Profile } from '@/types'
+import ProfileAvatar from '@/components/profile/ProfileAvatar'
 import {
   Menu, X, Bell, MessageSquare, Plus, LogOut,
   User as UserIcon, Settings, ChevronDown, Zap, Coins, Heart
@@ -181,12 +182,7 @@ export default function Navbar() {
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                   >
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
-                      {profile?.avatar_url
-                        ? <img src={profile.avatar_url} className="w-8 h-8 rounded-full object-cover" alt="" />
-                        : <UserIcon className="w-4 h-4 text-blue-600" />
-                      }
-                    </div>
+                    <ProfileAvatar src={profile?.avatar_url} type={profile?.type} name={profile?.username || profile?.name} className="w-8 h-8" />
                     <ChevronDown className="w-4 h-4 text-gray-500" />
                   </button>
 

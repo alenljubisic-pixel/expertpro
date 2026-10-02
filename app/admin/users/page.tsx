@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
+import ProfileAvatar from '@/components/profile/ProfileAvatar'
 import { CheckCircle, Clock, ArrowLeft, Coins, Briefcase, Wallet } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 import { reportMonth, monthLabel } from '@/lib/report-month'
@@ -154,9 +155,7 @@ export default async function AdminUsersPage({
               const totalPending = stats ? Number(stats.credits_pending_total) + Number(stats.promotions_pending_total) : 0
               return (
               <div key={u.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600 flex-shrink-0">
-                  {u.name?.[0]?.toUpperCase() || '?'}
-                </div>
+                <ProfileAvatar src={u.avatar_url} type={u.type} name={u.username || u.name} className="w-10 h-10" />
                 <div className="flex-1 min-w-0">
                   <Link href={`/admin/users/${u.id}?month=${month}`} className="font-medium text-blue-700 hover:underline text-sm truncate">{u.type === 'individual' ? (contactById.get(u.id)?.legal_name || u.username) : u.name || 'N/A'} → detalji</Link>
                   <p className="text-xs text-gray-400">
