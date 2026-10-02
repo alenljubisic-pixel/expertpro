@@ -1,5 +1,9 @@
 # ExpertPro — zajednički status (Codex + Claude)
 
+## 02.10.2026 — prvi ulazak: obaveštenja i lokacija (Codex)
+
+- Na prijavljenom `/dashboard` dodat je početni vodič `FirstLaunchPermissions`: za ovaj uređaj pri prvom ulasku nudi postojeće dugme za web push + posebno dugme za dozvolu lokacije/predlog najbližeg grada. Svaki Android/Chrome zahtev za dozvolu nastaje tek posle korisnikovog klika i može biti odbijen; **dozvole nisu automatski odobrene**. Izbor „Gotovo / podesi kasnije“ pamti se samo na uređaju; push ostaje dostupan na profilu, a lokacija u pretrazi. Uređaj se ne prati u pozadini. TypeScript, ciljani ESLint (0 grešaka; 4 ranija upozorenja u dashboardu) i build prolaze. Izmena `4ce42c7` je objavljena na Vercelu (Ready); u prijavljenom Chrome dashboardu potvrđen prikaz oba dugmeta i objašnjenja. Stvarni Android TWA push i GPS i dalje zahtevaju test na telefonu pre slanja na Play.
+
 ## 02.10.2026 — TWA push/lokacija i Play Console blokada (Codex)
 
 - Potpisani APK/AAB i keystore pronađeni su u lokalnom ignorisanom `ANDROID-KEYSTORE-NE-BRISATI/` folderu. APK manifest potvrđuje Android dozvole za obaveštenja i lokaciju, uključenu TWA delegaciju obaveštenja i servis za obe vrste dozvola; potpis se poklapa sa objavljenim `assetlinks.json`. Korisnik **mora sam odobriti** OS upite: push se uključuje dodirom dugmeta u profilu/dashboardu, a grad se predlaže nakon njegovog klika za lokaciju. Android telefon nije povezan (`adb devices` prazno), zato stvarna push isporuka i lokacija u TWA **nisu E2E testirane**.
