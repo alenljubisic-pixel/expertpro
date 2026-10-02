@@ -7,7 +7,14 @@
 > ima smisla tek kasnije, kad bude mnogo više korisnika (videti razgovor sa
 > vlasnikom 02.10.2026 — preporuka je bila da se to ne radi na ~500 korisnika).
 
-## Status: Android projekat izgrađen i potpisan (02.10.2026, Claude); assetlinks je objavljen — ostaju Play Console i provere na uređaju
+## Status: Android projekat izgrađen i potpisan (02.10.2026, Claude); assetlinks je objavljen — Play nalog je blokiran do verifikacije, a uređaj još nije testiran
+
+### Provera dozvola i objave (02.10.2026, Codex)
+
+- Lokalna rezervna kopija **već postoji** u ignorisanom `ANDROID-KEYSTORE-NE-BRISATI/` folderu Windows repoa: `android.keystore`, potpisani `.apk` i `.aab`. Ranija tvrdnja ispod da su fajlovi samo u Claudeovom cloud okruženju više nije aktuelna. Ne stavljati keystore/lozinku u Git niti javni status; vlasnik treba da čuva i drugu bezbednu kopiju.
+- Direktno pregledan potpisani APK: paket `app.expertpro.twa`, `targetSdkVersion=36`, Android dozvole `POST_NOTIFICATIONS`, `ACCESS_FINE_LOCATION` i `ACCESS_COARSE_LOCATION`, aktivna `DelegationService` sa `enableNotification=true` i aktivnosti za traženje dozvole za obaveštenja/lokaciju. SHA-256 potpis APK-a odgovara javnom `assetlinks.json`. Ovo potvrđuje **pripremu paketa**, ne uspešan push/GPS na uređaju.
+- Web aplikacija traži push tek posle korisnikovog klika „Uključi push obaveštenja“ i OS dozvole; lokacija se traži na „Predloži najbliži grad“ i pamti pristanak za naredna otvaranja. Dozvole nisu automatski odobrene instalacijom TWA; za pravi test instalirati APK, odobriti dozvole i probati „Pošalji probno obaveštenje“ i predlog grada. Pri proveri ADB nije našao povezan telefon.
+- U Chrome Play Console nalog `alenljubisic@gmail.com` jeste **vlasnik** postojećeg ličnog developerskog profila „GermanPro“, ali taj profil i aplikacije su uklonjeni 30.01.2025. zbog nezavršene verifikacije naloga. „Create app“ je onemogućeno i promene neće biti objavljene. Google prikazuje „Complete account verification“; vlasnik mora dovršiti verifikaciju i otkloniti eventualne sledeće probleme pre otpremanja ExpertPro. Ako bi se umesto toga otvarao nov lični nalog, proveriti aktuelno Google pravilo zatvorenog testa (trenutno 12 testera tokom 14 dana) pre očekivanja javnog izdanja.
 
 ### Šta je GOTOVO
 
@@ -34,7 +41,7 @@
 ### Tehnički detalji za Codex / sledeću sesiju
 - Projekat je generisan NE kroz interaktivni `bubblewrap init` wizard (pokazao se nepouzdan za automatizaciju), nego direktno pisanjem `twa-manifest.json` fajla preko `@bubblewrap/core` biblioteke (`TwaManifest.fromWebManifest(...)` + ručna izmena `packageId`, `signingKey`, `features.locationDelegation`), pa `bubblewrap build`.
 - `build.gradle` izmenjen: `jcenter()` (ukinut servis) zamenjen sa `mavenCentral()` + Google-ov mirror, jer je Maven Central vraćao 429 (too many requests) kroz deljeni proxy.
-- Android projekat i keystore fajl trenutno postoje SAMO u Claude-ovom radnom okruženju (cloud sandbox), nisu deo git repo-a (to je i tačno tako treba — keystore se NIKAD ne commit-uje u git).
+- Android projekat je prema Claudeovom zapisu u cloud okruženju; rezervna kopija keystore/APK/AAB je sada i u lokalnom ignorisanom `ANDROID-KEYSTORE-NE-BRISATI/` folderu. Keystore se NIKAD ne commit-uje u Git.
 
 ### Šta NIJE deo ovog posla (podsetnik)
 - Nema prepravke Supabase baze, RLS-a, API ruta — aplikacija samo prikazuje isti sajt.

@@ -1,5 +1,10 @@
 # ExpertPro — zajednički status (Codex + Claude)
 
+## 02.10.2026 — TWA push/lokacija i Play Console blokada (Codex)
+
+- Potpisani APK/AAB i keystore pronađeni su u lokalnom ignorisanom `ANDROID-KEYSTORE-NE-BRISATI/` folderu. APK manifest potvrđuje Android dozvole za obaveštenja i lokaciju, uključenu TWA delegaciju obaveštenja i servis za obe vrste dozvola; potpis se poklapa sa objavljenim `assetlinks.json`. Korisnik **mora sam odobriti** OS upite: push se uključuje dodirom dugmeta u profilu/dashboardu, a grad se predlaže nakon njegovog klika za lokaciju. Android telefon nije povezan (`adb devices` prazno), zato stvarna push isporuka i lokacija u TWA **nisu E2E testirane**.
+- Live Play Console za `alenljubisic@gmail.com`: vlasnik je ličnog developerskog profila „GermanPro“, ali profil je uklonjen 30.01.2025. jer verifikacija naloga nije završena. „Create app“ je onemogućeno, izmene se ne objavljuju. Vlasnik mora završiti „Complete account verification“ i rešiti eventualne naknadne zahteve; tek zatim možemo otpremiti `.aab`. Ako bude nov lični nalog, važi trenutno Google pravilo najmanje 12 testera neprekidno 14 dana za pristup produkciji. Detalji bez tajni u `TWA-ANDROID-APP.md`.
+
 ## 02.10.2026 — javni profil bez mesečne statistike (Codex; novija odluka korisnika)
 
 - Korisnik je izričito zatražio da se sa javnog profila uklone izbor meseca, dugme „Prikaži“ i mesečni broj završenih poslova — to ne želi da drugi korisnici gledaju. U `app/profil/[id]/page.tsx` uklonjeni su taj prikaz i pripadajući mesečni RPC poziv. Ocene i drugi podaci profila ostaju. Master admin mesečni pregled nije menjan. Ovaj zapis **zamenjuje prethodni zapis ispod** o poboljšanju mesečnog polja na javnom profilu; ne vraćati ga pri TWA radu. Lični dashboard i dalje ima sopstvenu mesečnu statistiku, što nije deo javnog profila. TypeScript i ciljani ESLint prolaze (jedno ranije `any` upozorenje); proveriti mobilni prikaz posle objave.
